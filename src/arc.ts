@@ -231,8 +231,38 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
             '<div class="auto-review-comments popup" id="popup"> <div class="popup-close" id="close"><a title="close this popup (or hit Esc)">&#215;</a></div> <h2 class="handle">Which review comment to insert?</h2> <div class="main" id="main"> <div class="popup-active-pane"> <div class="userinfo" id="userinfo"> <img src="//sstatic.net/img/progress-dots.gif"/> </div> <div class="searchbox"> <input type="search" class="searchfilter" placeholder="filter the comments list"/> </div> <ul class="action-list"> </ul> </div> <div class="share-tip" id="remote-popup"> enter url for remote source of comments (use import/export to create jsonp) <input class="remoteurl" id="remoteurl" type="text"/> <img class="throbber" id="throbber1" src="//sstatic.net/img/progress-dots.gif"/> <span class="remoteerror" id="remoteerror1"></span> <div class="float-left"> <input type="checkbox" id="remoteauto"/> <label title="get from remote on every page refresh" for="remoteauto">auto-get</label> </div> <div class="float-right"> <a class="remote-get">get now</a> <span class="lsep"> | </span> <a class="remote-save">save</a> <span class="lsep"> | </span> <a class="remote-cancel">cancel</a> </div> </div> <div class="share-tip" id="welcome-popup"> configure "welcome" message (empty=none): <div> <input class="customwelcome" id="customwelcome" type="text"/> </div> <div class="float-right"> <a class="welcome-force">force</a> <span class="lsep"> | </span> <a class="welcome-save">save</a> <span class="lsep"> | </span> <a class="welcome-cancel">cancel</a> </div> </div> <div class="popup-actions"> <div class="float-left actions"> <a title="close this popup (or hit Esc)" class="popup-actions-cancel">cancel</a> <span class="lsep"> | </span> <a title="see info about this popup (v1.4.7)" class="popup-actions-help" href="//github.com/Benjol/SE-AutoReviewComments" target="_blank">info</a> <span class="lsep"> | </span> <a class="popup-actions-see">see-through</a> <span class="lsep"> | </span> <a title="filter comments by keyword" class="popup-actions-filter">filter</a> <span class="lsep"> | </span> <a title="reset any custom comments" class="popup-actions-reset">reset</a> <span class="lsep"> | </span> <a title="use this to import/export all comments" class="popup-actions-impexp">import/export</a> <span class="lsep"> | </span> <a title="use this to hide/show all comments" class="popup-actions-toggledesc">show/hide desc</a> <span class="lsep"> | </span> <a title="setup remote source" class="popup-actions-remote">remote</a> <img class="throbber" id="throbber2"src="//sstatic.net/img/progress-dots.gif"/> <span class="remoteerror" id="remoteerror2"></span> <span class="lsep"> | </span> <a title="configure welcome" class="popup-actions-welcome">welcome</a> </div> <div class="float-right"> <input class="popup-submit" type="button" disabled="disabled" value="Insert"> </div> </div> </div> </div>';
         var messageTemplate =
             '<div class="auto-review-comments announcement" id="announcement"> <span class="notify-close"> <a title="dismiss this notification">x</a> </span> <strong>$TITLE$</strong> $BODY$ </div>';
-        var optionTemplate =
-            '<li> <input id="comment-$ID$" type="radio" name="commentreview"/> <label for="comment-$ID$"> <span id="name-$ID$" class="action-name">$NAME$</span> <span id="desc-$ID$" class="action-desc">$DESCRIPTION$</span> <button class="quick-insert" title="Insert now">↓</button> </label> </li>';
+
+        const makeOption = (id: string, name: string, desc: string) => {
+            const li = document.createElement("li");
+
+            const reviewRadio = document.createElement("input");
+            reviewRadio.id = `comment-${id}`;
+            reviewRadio.type = "radio";
+            reviewRadio.name = "commentreview";
+
+            const lbl = document.createElement("label");
+            lbl.htmlFor = reviewRadio.id;
+
+            const nameEl = document.createElement("span");
+            nameEl.classList.add("action-name");
+            nameEl.id = `name-${id}`;
+            nameEl.textContent = name;
+
+            const descEl = document.createElement("span");
+            descEl.classList.add("action-desc");
+            descEl.id = `desc-${id}`;
+            descEl.textContent = desc;
+
+            const insertBtn = document.createElement("button");
+            insertBtn.classList.add("quick-insert");
+            insertBtn.textContent = "↓";
+            insertBtn.title = "Insert now";
+
+            lbl.append(nameEl, descEl, insertBtn);
+            li.append(reviewRadio, lbl);
+
+            return li;
+        };
 
         /**
          * All the different "targets" a comment can be placed on.
@@ -966,35 +996,31 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
 
             const comments = loadComments(numComments);
 
-            const parser = new DOMParser();
+            const listItems = comments
+                .filter(({ name }) => IsCommentValidForPostType(name, postType))
+                .map(({ name, desc }, i) => {
+                    const cname = name.replace(Target.MATCH_ALL, "");
 
-            const listItems = comments.map(({ name, desc }, i) => {
-                if (!IsCommentValidForPostType(name, postType)) return;
+                    var descr = desc
+                        .replace(/\$SITENAME\$/g, sitename)
+                        .replace(/\$SITEURL\$/g, site)
+                        .replace(/\$MYUSERID\$/g, myuserid)
+                        .replace(/\$/g, "$$$");
 
-                const cname = name.replace(Target.MATCH_ALL, "");
-
-                var descr = desc
-                    .replace(/\$SITENAME\$/g, sitename)
-                    .replace(/\$SITEURL\$/g, site)
-                    .replace(/\$MYUSERID\$/g, myuserid)
-                    .replace(/\$/g, "$$$");
-
-                var opt = optionTemplate
-                    .replace(/\$ID\$/g, i.toString())
-                    .replace("$NAME$", cname.replace(/\$/g, "$$$"))
-                    .replace(
-                        "$DESCRIPTION$",
+                    const optionElement = makeOption(
+                        i.toString(),
+                        cname.replace(/\$/g, "$$$"),
                         (showGreeting ? greeting : "") + descr
                     );
 
-                // Create the selectable option with the HTML preview text.
-                const optionElement = parser.parseFromString(opt, "text/html");
+                    const descrEl =
+                        optionElement.querySelector(".action-desc")!;
+                    descrEl.innerHTML = descr;
 
-                const descrEl = optionElement.querySelector(".action-desc")!;
-                descrEl.innerHTML = descr;
+                    return optionElement;
+                });
 
-                return optionElement;
-            });
+            ul.append(...listItems);
 
             ShowHideDescriptions(popup);
             AddOptionEventHandlers(popup);
@@ -1318,7 +1344,11 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
                 });
         }
 
-        var cssElement = document.querySelector(cssTemplate)!;
+        const parser = new DOMParser();
+        var cssElement = parser.parseFromString(cssTemplate, "text/html");
+
+        console.debug({ cssElement }); //TODO: remove
+
         document.querySelector("head")?.append(cssElement);
 
         type Locator<T extends HTMLElement = HTMLElement> = (
