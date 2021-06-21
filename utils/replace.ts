@@ -53,6 +53,7 @@ const getPackage = async (path: string): Promise<PackageInfo | null> => {
 
     const varMap: { [x: string]: string } = {
         VERSION: version,
+        PREFIX: "AutoReviewComments-",
         RAW_URL: raw,
         GITHUB_URL: homepage,
         STACKAPPS_URL: "http://stackapps.com/q/2116", //TODO: change?
