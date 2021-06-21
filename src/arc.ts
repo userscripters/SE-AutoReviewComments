@@ -275,17 +275,11 @@ type UserInfo = {
         ); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
 
         const username = "user";
-        const OP = "OP";
         const prefix = "AutoReviewComments-"; //prefix to avoid clashes in localstorage
         const myuserid = getLoggedInUserId();
 
         if (!load("WelcomeMessage"))
             save("WelcomeMessage", `Welcome to ${sitename}! `);
-
-        const greeting =
-            load("WelcomeMessage") == "NONE" ? "" : load("WelcomeMessage");
-
-        const showGreeting = false;
 
         // These are injection markers and MUST use single-quotes.
         // The injected strings use double-quotes themselves, so that would result in parser errors.
@@ -662,8 +656,6 @@ type UserInfo = {
                 'setup "welcome" message (empty=none):'
             );
 
-            wrap.append(text);
-
             const welcomeWrap = document.createElement("div");
 
             const input = document.createElement("input");
@@ -678,7 +670,7 @@ type UserInfo = {
 
             const sep = makeSeparator();
 
-            const actions = [
+            const actions: Node[] = [
                 makeButton("force", "force", "welcome-force"),
                 sep,
                 makeButton("save", "save", "welcome-save"),
@@ -688,7 +680,70 @@ type UserInfo = {
 
             actionsWrap.append(...actions);
 
-            wrap.append(welcomeWrap, actionsWrap);
+            wrap.append(text, welcomeWrap, actionsWrap);
+            return wrap;
+        };
+
+        /**
+         * @summary makes the remote popup
+         * @param {string} id
+         * @returns {HTMLElement}
+         */
+        const makeRemotePopup = (id: string) => {
+            const wrap = document.createElement("div");
+            wrap.classList.add("share-tip");
+            wrap.id = id;
+
+            const text = document.createTextNode(
+                "enter url for remote source of comments (use import/export to create jsonp)"
+            );
+
+            const input = document.createElement("input");
+            input.classList.add("remoteurl");
+            input.type = "text";
+            input.id = "remoteurl";
+
+            const image = makeImage(
+                "throbber1",
+                "https://sstatic.net/img/progress-dots.gif",
+                "throbber"
+            );
+
+            const errText = document.createElement("span");
+            errText.classList.add("remoteerror");
+            errText.id = "remoteerror1";
+
+            const autoWrap = document.createElement("div");
+            autoWrap.classList.add("float-left");
+
+            const autoInput = document.createElement("input");
+            autoInput.type = "checkbox";
+            autoInput.id = "remoteauto";
+
+            const autoLabel = document.createElement("label");
+            autoLabel.title = "get from remote on every page refresh";
+            autoLabel.htmlFor = autoInput.id;
+            autoLabel.textContent = "auto-get";
+
+            autoWrap.append(autoInput, autoLabel);
+
+            const actionsWrap = document.createElement("div");
+            actionsWrap.classList.add("float-right");
+
+            const sep = makeSeparator();
+
+            const actions: Node[] = [
+                makeButton("get now", "get remote", "remote-get"),
+                sep,
+                makeButton("save", "save remote", "remote-save"),
+                sep.cloneNode(),
+                makeButton("cancel", "cancel remote", "remote-cancel"),
+            ];
+
+            actionsWrap.append(...actions);
+
+            wrap.append(text, input, image, errText, autoWrap, actionsWrap);
+
             return wrap;
         };
 
@@ -710,29 +765,9 @@ type UserInfo = {
             main.classList.add("main");
             main.id = "main";
 
-            const markup = `
-                <div class="share-tip" id="remote-popup">
-                    enter url for remote source of comments (use import/export to create jsonp)
-                    <input class="remoteurl" id="remoteurl" type="text"/>
-                    <img class="throbber" id="throbber1" src="//sstatic.net/img/progress-dots.gif"/>
-                    <span class="remoteerror" id="remoteerror1"></span>
-                    <div class="float-left">
-                        <input type="checkbox" id="remoteauto"/>
-                        <label title="get from remote on every page refresh" for="remoteauto">auto-get</label>
-                    </div>
-                    <div class="float-right">
-                        <a class="remote-get">get now</a>
-                        <span class="lsep"> | </span>
-                        <a class="remote-save">save</a>
-                        <span class="lsep"> | </span>
-                        <a class="remote-cancel">cancel</a>
-                    </div>
-                </div>
-                `;
-
             main.append(
                 makeActivePopup("userinfo"),
-                makeRemotePopup(),
+                makeRemotePopup("remote-popup"),
                 makeWelcomePopup("welcome-popup"),
                 makePopupActions()
             );
@@ -1050,11 +1085,20 @@ type UserInfo = {
          */
         const isNewUser = (date: number) => Date.now() / 1000 - date < week;
 
+        type opGetter = {
+            op?: string;
+            (refresh?: boolean): string;
+        };
+
         /**
-         * @summary
+         * @summary get original poster username
+         * @description memoizable getter for poster name
+         * @param {boolean} [refresh]
          * @returns {string}
          */
-        const getOP = () => {
+        const getOP: opGetter = (refresh = false) => {
+            if (getOP.op && !refresh) return getOP.op;
+
             const question = document.getElementById("question")!;
 
             const userlink = question.querySelector(
@@ -1063,8 +1107,8 @@ type UserInfo = {
 
             if (userlink) return userlink.textContent || "";
 
-            const deletedUser = question.querySelector(".owner .user-details");
-            return deletedUser ? deletedUser.textContent || "" : "";
+            const deleted = question.querySelector(".owner .user-details");
+            return (getOP.op = (deleted && deleted.textContent) || "OP");
         };
 
         type StackAPIBatchResponse<T> = {
@@ -1130,8 +1174,10 @@ type UserInfo = {
             } = userInfo;
 
             if (isNewUser(creation_date)) {
-                showGreeting = true;
-                container.querySelector(".action-desc")?.prepend(greeting);
+                save("ShowGreeting", true);
+                container
+                    .querySelector(".action-desc")
+                    ?.prepend(load("WelcomeMessage") || "");
             }
 
             const userLink = link(`/users/${user_id}`, "");
@@ -1376,7 +1422,7 @@ type UserInfo = {
          */
         function ToEditable(el: HTMLElement) {
             var backup = el.innerHTML;
-            var html = Tag(backup.replace(greeting, "")); //remove greeting before editing..
+            var html = Tag(backup.replace(load("WelcomeMessage") || "", "")); //remove greeting before editing..
             if (html.indexOf("<textarea") > -1) return; //don't want to create a new textarea inside this one!
 
             const area = document.createElement("textarea");
@@ -1439,7 +1485,9 @@ type UserInfo = {
         function SaveEditable(el: HTMLElement) {
             var html = markDownToHtml(el.querySelector("textarea")!.value);
             save(el.id, Tag(html));
-            el.innerHTML = (showGreeting ? greeting : "") + UnTag(html);
+            el.innerHTML =
+                (load("showGreeting") ? load("WelcomeMessage") || "" : "") +
+                UnTag(html);
         }
 
         function CancelEditable(el: HTMLElement, backup: string) {
@@ -1511,7 +1559,9 @@ type UserInfo = {
                     const optionElement = makeOption(
                         i.toString(),
                         cname.replace(/\$/g, "$$$"),
-                        (showGreeting ? greeting : "") + descr
+                        (load("showGreeting")
+                            ? load("WelcomeMessage") || ""
+                            : "") + descr
                     );
 
                     const descrEl =
@@ -1804,43 +1854,189 @@ type UserInfo = {
         }
 
         /**
+         * @summary creates ARC modal and wires functionality
+         * @param {HTMLInputElement} targetObject
+         * @param {string} postType
+         * @returns {Promise<void>}
+         */
+        const autoLinkAction = async (
+            targetObject: HTMLInputElement,
+            postType: string
+        ) => {
+            const popup = makePopup();
+
+            popup
+                .querySelector(".popup-close")
+                ?.addEventListener("click", () =>
+                    fadeOut(popup).then((p) => p.remove())
+                );
+
+            CONFIG.postType = postType;
+
+            //Reset this, otherwise we get the greeting twice...
+            save("ShowGreeting", false);
+
+            //create/add options
+            WriteComments(popup);
+
+            popup.addEventListener("click", ({ target }) => {
+                const actionMap = {
+                    ".popup-actions-cancel": () =>
+                        fadeOut(popup).then((p) => p.remove()),
+                    ".popup-actions-reset": () => {
+                        ResetComments();
+                        WriteComments(popup);
+                    },
+                    ".popup-actions-impexp": () => ImportExport(popup),
+                    ".popup-actions-toggledesc": () => {
+                        var hideDesc = load("hide-desc") || "show";
+                        save("hide-desc", hideDesc == "show" ? "hide" : "show");
+                        ShowHideDescriptions(popup);
+                    },
+                    ".popup-submit": () => {
+                        var selected = popup.querySelector(
+                            "input[type=radio]:checked"
+                        )!;
+
+                        var md = htmlToMarkDown(
+                            selected.closest(".action-desc")!.innerHTML
+                        )
+                            .replace(/\[username\]/g, username)
+                            .replace(/\[OP\]/g, getOP());
+
+                        targetObject.value = md;
+                        targetObject.focus(); //focus provokes character count test
+
+                        const hereTxt = "[type here]";
+
+                        var caret = md.indexOf(hereTxt);
+                        if (caret >= 0)
+                            targetObject.setSelectionRange(
+                                caret,
+                                caret + hereTxt.length
+                            );
+
+                        fadeOut(popup).then((p) => p.remove());
+                    },
+                };
+
+                const [, action] =
+                    Object.entries(actionMap).find(([selector]) =>
+                        (<HTMLElement>target).matches(selector)
+                    ) || [];
+
+                if (!action) return;
+
+                action();
+            });
+
+            const see = popup.querySelector(".popup-actions-see")!;
+
+            see.addEventListener("mouseenter", () => {
+                fadeTo(popup, 0.4);
+
+                const notCloseEls = [
+                    ...popup.querySelectorAll<HTMLElement>(":not(#close)"),
+                ];
+
+                notCloseEls.forEach((el) => fadeOut(el));
+            });
+
+            see.addEventListener("mouseleave", () => {
+                fadeTo(popup, 1.0);
+
+                const notCloseEls = [
+                    ...popup.querySelectorAll<HTMLElement>(":not(#close)"),
+                ];
+
+                notCloseEls.forEach((el) => fadeTo(el, 1.0));
+            });
+
+            SetupRemoteBox(popup);
+            SetupWelcomeBox(popup);
+
+            //Auto-load from remote if required
+            if (!window.VersionChecked && load("AutoRemote") == "true") {
+                var throbber = document.getElementById("throbber2")!;
+                var remoteerror = document.getElementById("remoteerror2")!;
+                show(throbber);
+                loadFromRemote(
+                    load("RemoteUrl"),
+                    function () {
+                        WriteComments(popup);
+                        hide(throbber);
+                    },
+                    ({ message }: Error) => (remoteerror.textContent = message)
+                );
+            }
+
+            // Attach to #content, everything else is too fragile.
+            document.getElementById("content")?.append(popup);
+
+            center(popup);
+
+            StackExchange.helpers.bindMovablePopups();
+
+            //Get user info and inject
+            var userid = getUserId();
+
+            const userInfoEl = document.getElementById("userinfo")!;
+
+            const uinfo = await getUserInfo(userid);
+
+            if (!uinfo) {
+                fadeOut(userInfoEl);
+                return;
+            }
+
+            addUserInfo(userInfoEl, uinfo);
+
+            //We only actually perform the updates check when someone clicks, this should make it less costly, and more timely
+            //also wrap it so that it only gets called the *FIRST* time we open this dialog on any given page (not much of an optimisation).
+            if (
+                typeof checkForNewVersion == "function" &&
+                !window.VersionChecked
+            ) {
+                checkForNewVersion(popup); // eslint-disable-line no-undef
+                window.VersionChecked = true;
+            }
+        };
+
+        /**
          * @summary sets up a welcome box
          * @param {HTMLElement} popup
          * @returns {void}
          */
         function SetupWelcomeBox(popup: HTMLElement) {
             const welcome = document.getElementById("welcome-popup")!;
-            const custom =
-                welcome.querySelector<HTMLInputElement>("#customwelcome")!;
+            const custom = <HTMLInputElement>(
+                document.getElementById("customwelcome")!
+            );
 
             popup
                 .querySelector(".popup-actions-welcome")!
-                .addEventListener("click", function () {
-                    custom.value = greeting;
+                .addEventListener("click", () => {
+                    custom.value ||= load("WelcomeMessage");
                     show(welcome);
                 });
 
             popup
                 .querySelector(".welcome-cancel")!
-                .addEventListener("click", function () {
-                    hide(welcome);
-                });
+                .addEventListener("click", () => hide(welcome));
 
             popup
                 .querySelector(".welcome-force")!
-                .addEventListener("click", function () {
-                    showGreeting = true;
+                .addEventListener("click", () => {
+                    save("ShowGreeting", true);
                     WriteComments(popup);
                     hide(welcome);
                 });
 
             popup
                 .querySelector(".welcome-save")!
-                .addEventListener("click", function () {
+                .addEventListener("click", () => {
                     const { value } = custom;
-                    var msg = value || "NONE";
-                    save("WelcomeMessage", msg);
-                    greeting = value;
+                    save("WelcomeMessage", value);
                     hide(welcome);
                 });
         }
@@ -1915,7 +2111,7 @@ type UserInfo = {
         );
 
         attachAutoLinkInjector(
-            ".review-actions input:first",
+            ".review-actions input:first-child",
             findReviewQueueElements,
             injectAutoLinkReviewQueue,
             autoLinkAction
@@ -2142,157 +2338,6 @@ type UserInfo = {
             alink.style.float = "right";
 
             where.after(lsep, alink);
-        }
-
-        /**
-         * @summary creates ARC modal and wires functionality
-         * @param {HTMLInputElement} targetObject
-         * @param {string} postType
-         * @returns {Promise<void>}
-         */
-        async function autoLinkAction(
-            targetObject: HTMLInputElement,
-            postType: string
-        ) {
-            const popup = makePopup();
-
-            popup
-                .querySelector(".popup-close")
-                ?.addEventListener("click", () =>
-                    fadeOut(popup).then((p) => p.remove())
-                );
-
-            CONFIG.postType = postType;
-
-            //Reset this, otherwise we get the greeting twice...
-            showGreeting = false;
-
-            //create/add options
-            WriteComments(popup);
-
-            popup.addEventListener("click", ({ target }) => {
-                const actionMap = {
-                    ".popup-actions-cancel": () =>
-                        fadeOut(popup).then((p) => p.remove()),
-                    ".popup-actions-reset": () => {
-                        ResetComments();
-                        WriteComments(popup);
-                    },
-                    ".popup-actions-impexp": () => ImportExport(popup),
-                    ".popup-actions-toggledesc": () => {
-                        var hideDesc = load("hide-desc") || "show";
-                        save("hide-desc", hideDesc == "show" ? "hide" : "show");
-                        ShowHideDescriptions(popup);
-                    },
-                    ".popup-submit": () => {
-                        var selected = popup.querySelector(
-                            "input[type=radio]:checked"
-                        )!;
-
-                        var md = htmlToMarkDown(
-                            selected.closest(".action-desc")!.innerHTML
-                        )
-                            .replace(/\[username\]/g, username)
-                            .replace(/\[OP\]/g, OP);
-
-                        targetObject.value = md;
-                        targetObject.focus(); //focus provokes character count test
-
-                        const hereTxt = "[type here]";
-
-                        var caret = md.indexOf(hereTxt);
-                        if (caret >= 0)
-                            targetObject.setSelectionRange(
-                                caret,
-                                caret + hereTxt.length
-                            );
-
-                        fadeOut(popup).then((p) => p.remove());
-                    },
-                };
-
-                const [, action] =
-                    Object.entries(actionMap).find(([selector]) =>
-                        (<HTMLElement>target).matches(selector)
-                    ) || [];
-
-                if (!action) return;
-
-                action();
-            });
-
-            const see = popup.querySelector(".popup-actions-see")!;
-
-            see.addEventListener("mouseenter", () => {
-                fadeTo(popup, 0.4);
-
-                const notCloseEls = [
-                    ...popup.querySelectorAll<HTMLElement>(":not(#close)"),
-                ];
-
-                notCloseEls.forEach((el) => fadeOut(el));
-            });
-
-            see.addEventListener("mouseleave", () => {
-                fadeTo(popup, 1.0);
-
-                const notCloseEls = [
-                    ...popup.querySelectorAll<HTMLElement>(":not(#close)"),
-                ];
-
-                notCloseEls.forEach((el) => fadeTo(el, 1.0));
-            });
-
-            SetupRemoteBox(popup);
-            SetupWelcomeBox(popup);
-
-            //Auto-load from remote if required
-            if (!window.VersionChecked && load("AutoRemote") == "true") {
-                var throbber = document.getElementById("throbber2")!;
-                var remoteerror = document.getElementById("remoteerror2")!;
-                show(throbber);
-                loadFromRemote(
-                    load("RemoteUrl"),
-                    function () {
-                        WriteComments(popup);
-                        hide(throbber);
-                    },
-                    ({ message }: Error) => (remoteerror.textContent = message)
-                );
-            }
-
-            // Attach to #content, everything else is too fragile.
-            document.getElementById("content")?.append(popup);
-
-            center(popup);
-
-            StackExchange.helpers.bindMovablePopups();
-
-            //Get user info and inject
-            var userid = getUserId();
-
-            const userInfoEl = document.getElementById("userinfo")!;
-
-            const uinfo = await getUserInfo(userid);
-
-            if (!uinfo) {
-                fadeOut(userInfoEl);
-                return;
-            }
-
-            addUserInfo(userInfoEl, uinfo);
-
-            OP = getOP();
-
-            //We only actually perform the updates check when someone clicks, this should make it less costly, and more timely
-            //also wrap it so that it only gets called the *FIRST* time we open this dialog on any given page (not much of an optimisation).
-            if (
-                typeof checkForNewVersion == "function" &&
-                !window.VersionChecked
-            ) {
-                checkForNewVersion(popup); // eslint-disable-line no-undef
-                window.VersionChecked = true;
-            }
         }
     });
 })();
