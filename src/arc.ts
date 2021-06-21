@@ -19,6 +19,54 @@ interface Window {
 
 declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
 
+type Placement = readonly [insert: HTMLElement | null, place: HTMLElement];
+
+type Locator<T extends HTMLElement = HTMLElement> = (where: T) => Placement;
+
+type Notifier = (newVersion: string, oldVersion: string) => void;
+
+type Actor = (...args: any[]) => any;
+
+type Injector = (
+    injected: HTMLElement,
+    placed: HTMLElement,
+    action: Actor
+) => void;
+
+type UserType =
+    | "unregistered"
+    | "registered"
+    | "moderator"
+    | "team_admin"
+    | "does_not_exist";
+
+type BadgeCounts = {
+    bronze: number;
+    silver: number;
+    gold: number;
+};
+
+type UserInfo = {
+    creation_date: number;
+    is_employee: boolean;
+    last_access_date: number;
+    last_modified_date: number;
+    reputation: number;
+    reputation_change_day: number;
+    reputation_change_month: number;
+    reputation_change_quarter: number;
+    reputation_change_week: number;
+    reputation_change_year: number;
+    user_id: number;
+    display_name: string;
+    website_url: string;
+    profile_image: string;
+    link: string;
+    location: string;
+    user_type: UserType;
+    badge_counts: BadgeCounts;
+};
+
 (() => {
     const styleRegistry = new WeakMap();
 
@@ -81,6 +129,9 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
 
     /**
      * @summary gets an array of element siblings
+     * @param {HTMLElement} el
+     * @param {string} selector
+     * @returns {Element[]}
      */
     const siblings = <T extends Element>(
         el: HTMLElement,
@@ -127,6 +178,8 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
 
     /**
      * @summary fades out an element
+     * @param {HTMLElement} el
+     * @param {number} [speed]
      */
     const fadeOut = (el: HTMLElement, speed = 200) => fadeTo(el, speed);
 
@@ -162,9 +215,12 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
             );
         };
 
-        type Notifier = (newVersion: string, oldVersion: string) => void;
-
-        function updateCheck(notifier: Notifier) {
+        /**
+         * @summary if has never version, download
+         * @param {Notifier} notifier
+         * @returns {void}
+         */
+        const updateCheck = (notifier: Notifier) => {
             window.ARC_AutoUpdate = (newver: string) => {
                 if (isNewer(newver, VERSION)) notifier(newver, RAW_URL);
             };
@@ -173,26 +229,27 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
             script.src = RAW_URL;
 
             document.head.append(script);
-        }
+        };
 
         /**
          * @description Check to see if a new version has become available since last check
          * - only checks once a day
          * - does not check for first time visitors, shows them a welcome message instead
          * - called at the end of the main script if function exists
+         * @param {HTMLElement} popup
          */
-        const CheckForNewVersion = (popup: HTMLElement) => {
-            var today = new Date().setHours(0, 0, 0, 0);
-            var LastUpdateCheckDay = load("LastUpdateCheckDay");
-            if (LastUpdateCheckDay == null) {
+        const checkForNewVersion = (popup: HTMLElement) => {
+            const today = new Date().setHours(0, 0, 0, 0);
+            const LastUpdateCheckDay = load("LastUpdateCheckDay");
+
+            if (!LastUpdateCheckDay) {
                 //first time visitor
                 ShowMessage(
                     popup,
                     "Please read this!",
-                    `Thank you for installing this script. \
-                            Please note that you can edit the texts inline by double-clicking them. \
-                            For other options, please see the README at <a href="${GITHUB_URL}" target="_blank">here</a>.`,
-                    function () {}
+                    `Thank you for installing this script.
+                    Please note that you can edit the texts inline by double-clicking them.
+                    For other options, please see the README at <a href="${GITHUB_URL}" target="_blank">here</a>.`
                 );
             } else if (LastUpdateCheckDay != today) {
                 updateCheck((newVersion: string, installURL: string) => {
@@ -206,31 +263,508 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
                     );
                 });
             }
+
             save("LastUpdateCheckDay", today);
         };
 
-        var site = window.location.hostname;
-        var sitename = StackExchange.options.site.name || "";
-        var username = "user";
-        var OP = "OP";
-        var prefix = "AutoReviewComments-"; //prefix to avoid clashes in localstorage
-        var myuserid = getLoggedInUserId();
+        const site = window.location.hostname;
 
-        sitename = sitename.replace(/ ?Stack Exchange/, ""); //same for others ("Android Enthusiasts Stack Exchange", SR, and more)
+        const sitename = (StackExchange.options.site.name || "").replace(
+            / ?Stack Exchange/,
+            ""
+        ); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
+
+        const username = "user";
+        const OP = "OP";
+        const prefix = "AutoReviewComments-"; //prefix to avoid clashes in localstorage
+        const myuserid = getLoggedInUserId();
+
         if (!load("WelcomeMessage"))
-            save("WelcomeMessage", "Welcome to " + sitename + "! ");
-        var greeting =
+            save("WelcomeMessage", `Welcome to ${sitename}! `);
+
+        const greeting =
             load("WelcomeMessage") == "NONE" ? "" : load("WelcomeMessage");
-        var showGreeting = false;
+
+        const showGreeting = false;
 
         // These are injection markers and MUST use single-quotes.
         // The injected strings use double-quotes themselves, so that would result in parser errors.
-        var cssTemplate =
-            "<style>.auto-review-comments.popup{position:absolute;display:block;width:690px;padding:15px 15px 10px}.auto-review-comments.popup .float-left{float:left}.auto-review-comments.popup .float-right{float:right}.auto-review-comments.popup .throbber{display:none}.auto-review-comments.popup .remoteerror{color:red}.auto-review-comments.popup>div>textarea{width:100%;height:442px}.auto-review-comments.popup .main{overflow:hidden}.auto-review-comments.popup .main .userinfo{padding:5px;margin-bottom:7px;background:#eaefef}.auto-review-comments.popup .main .action-list{height:440px;margin:0 0 7px 0 !important;overflow-y:auto}.auto-review-comments.popup .main .action-list li{width:100%;padding:0;transition:.1s}.auto-review-comments.popup .main .action-list li:hover{background-color:#f2f2f2}.auto-review-comments.popup .main .action-list li.action-selected:hover{background-color:#e6e6e6}.auto-review-comments.popup .main .action-list li input{display:none}.auto-review-comments.popup .main .action-list li label{position:relative;display:block;padding:10px}.auto-review-comments.popup .main .action-list li label .action-name{display:block;margin-bottom:3px;cursor:default}.auto-review-comments.popup .main .action-list li label .action-desc{margin:0;color:#888;cursor:default}.auto-review-comments.popup .main .action-list li label .action-name textarea,.auto-review-comments.popup .main .action-list li label .action-desc textarea{width:99%;margin:0 0 -4px 0}.auto-review-comments.popup .main .action-list li label .action-desc textarea{height:42px}.auto-review-comments.popup .main .action-list li label .quick-insert{display:none;position:absolute;top:0;right:0;height:100%;margin:0;font-size:300%;color:transparent;border:0;transition:.3s;text-shadow:0 0 1px #fff;cursor:pointer;background-color:rgba(0,0,0,0.1);background:rgba(0,0,0,0.1);box-shadow:none;-moz-box-shadow:none;-webkit-box-shadow:none}.auto-review-comments.popup .main .action-list li:hover label .quick-insert{display:block}.auto-review-comments.popup .main .action-list li label .quick-insert:hover{background-color:#222;color:#fff}.auto-review-comments.popup .main .share-tip{display:none}.auto-review-comments.popup .main .share-tip .customwelcome{width:300px}.auto-review-comments.popup .main .share-tip .remoteurl{display:block;width:400px}.auto-review-comments.popup .actions,.auto-review-comments.popup .main .popup-actions .actions{margin:6px}.auto-review-comments.popup .main .popup-actions .popup-submit{float:none;margin:0 0 5px 0}.auto-review-comments.announcement{padding:7px;margin-bottom:10px;background:orange;font-size:15px}.auto-review-comments.announcement .notify-close{display:block;float:right;margin:0 4px;padding:0 4px;border:2px solid black;cursor:pointer;line-height:17px}.auto-review-comments.announcement .notify-close a{color:black;text-decoration:none;font-weight:bold;font-size:16px}.auto-review-comments.popup .main .searchbox{display:none}.auto-review-comments.popup .main .searchfilter{width:100%;box-sizing:border-box;display:block}</style>";
-        var markupTemplate =
-            '<div class="auto-review-comments popup" id="popup"> <div class="popup-close" id="close"><a title="close this popup (or hit Esc)">&#215;</a></div> <h2 class="handle">Which review comment to insert?</h2> <div class="main" id="main"> <div class="popup-active-pane"> <div class="userinfo" id="userinfo"> <img src="//sstatic.net/img/progress-dots.gif"/> </div> <div class="searchbox"> <input type="search" class="searchfilter" placeholder="filter the comments list"/> </div> <ul class="action-list"> </ul> </div> <div class="share-tip" id="remote-popup"> enter url for remote source of comments (use import/export to create jsonp) <input class="remoteurl" id="remoteurl" type="text"/> <img class="throbber" id="throbber1" src="//sstatic.net/img/progress-dots.gif"/> <span class="remoteerror" id="remoteerror1"></span> <div class="float-left"> <input type="checkbox" id="remoteauto"/> <label title="get from remote on every page refresh" for="remoteauto">auto-get</label> </div> <div class="float-right"> <a class="remote-get">get now</a> <span class="lsep"> | </span> <a class="remote-save">save</a> <span class="lsep"> | </span> <a class="remote-cancel">cancel</a> </div> </div> <div class="share-tip" id="welcome-popup"> configure "welcome" message (empty=none): <div> <input class="customwelcome" id="customwelcome" type="text"/> </div> <div class="float-right"> <a class="welcome-force">force</a> <span class="lsep"> | </span> <a class="welcome-save">save</a> <span class="lsep"> | </span> <a class="welcome-cancel">cancel</a> </div> </div> <div class="popup-actions"> <div class="float-left actions"> <a title="close this popup (or hit Esc)" class="popup-actions-cancel">cancel</a> <span class="lsep"> | </span> <a title="see info about this popup (v1.4.7)" class="popup-actions-help" href="//github.com/Benjol/SE-AutoReviewComments" target="_blank">info</a> <span class="lsep"> | </span> <a class="popup-actions-see">see-through</a> <span class="lsep"> | </span> <a title="filter comments by keyword" class="popup-actions-filter">filter</a> <span class="lsep"> | </span> <a title="reset any custom comments" class="popup-actions-reset">reset</a> <span class="lsep"> | </span> <a title="use this to import/export all comments" class="popup-actions-impexp">import/export</a> <span class="lsep"> | </span> <a title="use this to hide/show all comments" class="popup-actions-toggledesc">show/hide desc</a> <span class="lsep"> | </span> <a title="setup remote source" class="popup-actions-remote">remote</a> <img class="throbber" id="throbber2"src="//sstatic.net/img/progress-dots.gif"/> <span class="remoteerror" id="remoteerror2"></span> <span class="lsep"> | </span> <a title="configure welcome" class="popup-actions-welcome">welcome</a> </div> <div class="float-right"> <input class="popup-submit" type="button" disabled="disabled" value="Insert"> </div> </div> </div> </div>';
-        var messageTemplate =
-            '<div class="auto-review-comments announcement" id="announcement"> <span class="notify-close"> <a title="dismiss this notification">x</a> </span> <strong>$TITLE$</strong> $BODY$ </div>';
+
+        const addStyles = () => {
+            const style = document.createElement("style");
+            document.head.append(style);
+            const { sheet } = style;
+            if (!sheet) return; //TODO: add failure handling
+
+            const arc = "auto-review-comments";
+
+            [
+                `.${arc}.popup{
+                    position:absolute;
+                    display:block;
+                    width:690px;
+                    padding:15px 15px 10px
+                }`,
+                `.${arc}.popup .float-left{
+                    float:left
+                }`,
+                `.${arc}.popup .float-right{
+                    float:right
+                }`,
+                `.${arc}.popup .throbber{
+                    display:none
+                }`,
+                `.${arc}.popup .remoteerror{
+                    color:red}`,
+                `.${arc}.popup>div>textarea{
+                    width:100%;height:442px
+                }`,
+                `.${arc}.popup .main{
+                    overflow:hidden
+                }`,
+                `.${arc}.popup .main .userinfo{
+                    padding:5px;margin-bottom:7px;background:#eaefef
+                }`,
+                `.${arc}.popup .main .action-list{
+                    height:440px;margin:0 0 7px 0 !important;overflow-y:auto
+                }`,
+                `.${arc}.popup .main .action-list li{
+                    width:100%;padding:0;transition:.1s
+                }`,
+                `.${arc}.popup .main .action-list li:hover{
+                    background-color:#f2f2f2
+                }`,
+                `.${arc}.popup .main .action-list li.action-selected:hover{
+                    background-color:#e6e6e6
+                }`,
+                `.${arc}.popup .main .action-list li input{
+                    display:none
+                }`,
+                `.${arc}.popup .main .action-list li label{
+                    position:relative;display:block;padding:10px
+                }`,
+                `.${arc}.popup .main .action-list li label .action-name{
+                    display:block;
+                    margin-bottom:3px;
+                    cursor:default;
+                }`,
+                `.${arc}.popup .main .action-list li label .action-desc{
+                    margin:0;color:#888;cursor:default
+                }`,
+                `.${arc}.popup .main .action-list li label .action-name textarea,
+                .auto-review-comments.popup .main .action-list li label .action-desc textarea{
+                    width:99%;margin:0 0 -4px 0
+                }`,
+                `.${arc}.popup .main .action-list li label .action-desc textarea{
+                    height:42px}`,
+                `.${arc}.popup .main .action-list li label .quick-insert{
+                    display:none;
+                    position:absolute;
+                    top:0;
+                    right:0;
+                    height:100%;
+                    margin:0;font-size:300%;
+                    color:transparent;
+                    border:0;
+                    transition:.3s;
+                    text-shadow:0 0 1px #fff;
+                    cursor:pointer;
+                    background-color:rgba(0,0,0,0.1);
+                    background:rgba(0,0,0,0.1);
+                    box-shadow:none;
+                    -moz-box-shadow:none;
+                    -webkit-box-shadow:none;
+                }`,
+                `.${arc}.popup .main .action-list li:hover label .quick-insert{
+                    display:block}`,
+                `.${arc}.popup .main .action-list li label .quick-insert:hover{
+                    background-color:#222;
+                    color:#fff
+                }`,
+                `.${arc}.popup .main .share-tip{
+                    display:none
+                }`,
+                `.${arc}.popup .main .share-tip .customwelcome{
+                    width:300px
+                }`,
+                `.${arc}.popup .main .share-tip .remoteurl{
+                    display:block;width:400px
+                }`,
+                `.${arc}.popup .actions,.auto-review-comments.popup .main .popup-actions .actions{
+                    margin:6px
+                }`,
+                `.${arc}.popup .main .popup-actions .popup-submit{float:none;margin:0 0 5px 0}`,
+                `.${arc}.announcement{
+                    padding:7px;
+                    margin-bottom:10px;
+                    background:orange;
+                    font-size:15px;
+                }`,
+                `.${arc}.announcement .notify-close{
+                    display:block;
+                    float:right;
+                    margin:0 4px;
+                    padding:0 4px;
+                    border:2px solid black;
+                    cursor:pointer;
+                    line-height:17px;
+                }`,
+                `.${arc}.announcement .notify-close a{
+                    color:black;
+                    text-decoration:none;
+                    font-weight:bold;
+                    font-size:16px;
+                }`,
+                `.${arc}.popup .main .searchbox{display:none}`,
+                `.${arc}.popup .main .searchfilter{
+                    width:100%;
+                    box-sizing:border-box;
+                    display:block
+                }`,
+            ].forEach((rule) => sheet.insertRule(rule));
+        };
+
+        /**
+         * @summary makes a button
+         * @param {string} text
+         * @param {string} title
+         * @param {...string} classes
+         * @returns {HTMLAnchorElement}
+         */
+        const makeButton = (
+            text: string,
+            title: string,
+            ...classes: string[]
+        ) => {
+            const cancelBtn = document.createElement("a");
+            cancelBtn.classList.add(...classes);
+            cancelBtn.textContent = text;
+            cancelBtn.title = title;
+            return cancelBtn;
+        };
+
+        /**
+         * @summary makes a link button
+         * @param {string} url
+         * @param {string} text
+         * @param {string} title
+         * @param {...string} classes
+         * @returns {HTMLAnchorElement}
+         */
+        const makeLinkButton = (
+            url: string,
+            text: string,
+            title: string,
+            ...classes: string[]
+        ) => {
+            const btn = makeButton(text, title, ...classes);
+            btn.href = url;
+            btn.target = "_blank";
+            return btn;
+        };
+
+        /**
+         * @summary creates the popup close button
+         * @param {string} id id to give to the element
+         * @returns {HTMLElement}
+         */
+        const makeCloseBtn = (id: string) => {
+            const close = document.createElement("div");
+            close.classList.add("popup-close");
+            close.id = id;
+
+            const btn = makeButton("&#215;", "close this popup (or hit Esc)");
+
+            close.append(btn);
+            return close;
+        };
+
+        /**
+         * @summary makes an image element
+         * @param {string} id
+         * @param {string} src
+         * @param {...string} classes
+         * @returns {HTMLImageElement}
+         */
+        const makeImage = (id: string, src: string, ...classes: string[]) => {
+            const img = document.createElement("img");
+            img.classList.add(...classes);
+            img.src = src;
+            img.id = id;
+            return img;
+        };
+
+        /**
+         * @summary makes popup action list
+         * @returns {HTMLElement}
+         */
+        const makePopupActions = () => {
+            const wrap = document.createElement("div");
+            wrap.classList.add("popup-actions");
+
+            const actionsWrap = document.createElement("div");
+            actionsWrap.classList.add("float-left", "actions");
+
+            const submitWrap = document.createElement("div");
+            submitWrap.classList.add("float-right");
+
+            const submitBtn = document.createElement("input");
+            submitBtn.classList.add("popup-submit");
+            submitBtn.type = "button";
+            submitBtn.disabled = true;
+            submitBtn.value = "Insert";
+
+            submitWrap.append(submitBtn);
+
+            const cancelBtn = makeButton(
+                "cancel",
+                "close this popup (or hit Esc)",
+                "popup-actions-cancel"
+            );
+
+            const helpBtn = makeLinkButton(
+                GITHUB_URL,
+                "info",
+                `see info about this popup (v${VERSION})`,
+                "popup-actions-help"
+            );
+
+            const seeBtn = makeButton(
+                "see-through",
+                "see through",
+                "popup-actions-see"
+            );
+
+            const filterBtn = makeButton(
+                "filter",
+                "filter",
+                "popup-actions-filter"
+            );
+
+            const resetBtn = makeButton(
+                "reset",
+                "reset any custom comments",
+                "popup-actions-reset"
+            );
+
+            const importBtn = makeButton(
+                "import/export",
+                "use this to import/export all comments",
+                "popup-actions-impexp"
+            );
+
+            const descrBtn = makeButton(
+                "show/hide desc",
+                "use this to hide/show all comments",
+                "popup-actions-toggledesc"
+            );
+
+            const remoteBtn = makeButton(
+                "remote",
+                "setup remote source",
+                "popup-actions-remote"
+            );
+
+            const dotsImg = makeImage(
+                "throbber2",
+                "https://sstatic.net/img/progress-dots.gif", //TODO: make config
+                "throbber"
+            );
+
+            const errSpan = document.createElement("span");
+            errSpan.classList.add("remoteerror");
+            errSpan.id = "remoteerror2";
+
+            const welcomeBtn = makeButton(
+                "welcome",
+                "configure welcome",
+                "popup-actions-welcome"
+            );
+
+            const sep = makeSeparator();
+
+            const actionsList = [
+                cancelBtn,
+                sep,
+                helpBtn,
+                sep.cloneNode(),
+                seeBtn,
+                sep.cloneNode(),
+                filterBtn,
+                sep.cloneNode(),
+                resetBtn,
+                sep.cloneNode(),
+                importBtn,
+                sep.cloneNode(),
+                descrBtn,
+                sep.cloneNode(),
+                remoteBtn,
+                dotsImg,
+                errSpan,
+                sep.cloneNode(),
+                welcomeBtn,
+            ];
+
+            actionsWrap.append(...actionsList);
+            wrap.append(actionsWrap, submitWrap);
+            return wrap;
+        };
+
+        /**
+         * @summary makes active pane
+         * @param {string} id
+         * @returns {HTMLElement}
+         */
+        const makeActivePopup = (id: string) => {
+            const wrap = document.createElement("div");
+            wrap.classList.add("popup-active-pane");
+
+            const uinfo = document.createElement("div");
+            uinfo.classList.add("userinfo");
+            uinfo.id = id;
+
+            const image = makeImage(
+                "dots",
+                "https://sstatic.net/img/progress-dots.gif",
+                "userinfo"
+            );
+
+            uinfo.append(image);
+
+            const searchWrap = document.createElement("div");
+            searchWrap.classList.add("searchbox");
+
+            const search = document.createElement("input");
+            search.classList.add("searchfilter");
+            search.type = "search";
+            search.placeholder = "filter the comments list";
+
+            searchWrap.append(search);
+
+            const actions = document.createElement("ul");
+            actions.classList.add("action-list");
+
+            wrap.append(uinfo, searchWrap, actions);
+            return wrap;
+        };
+
+        /**
+         * @summary makes welcome popup
+         * @param {string} id
+         * @returns {HTMLElement}
+         */
+        const makeWelcomePopup = (id: string) => {
+            const wrap = document.createElement("div");
+            wrap.classList.add("share-tip");
+            wrap.id = id;
+
+            const text = document.createTextNode(
+                'setup "welcome" message (empty=none):'
+            );
+
+            wrap.append(text);
+
+            const welcomeWrap = document.createElement("div");
+
+            const input = document.createElement("input");
+            input.classList.add("customwelcome");
+            input.type = "text";
+            input.id = "customwelcome";
+
+            welcomeWrap.append(input);
+
+            const actionsWrap = document.createElement("div");
+            actionsWrap.classList.add("float-right");
+
+            const sep = makeSeparator();
+
+            const actions = [
+                makeButton("force", "force", "welcome-force"),
+                sep,
+                makeButton("save", "save", "welcome-save"),
+                sep.cloneNode(),
+                makeButton("cancel", "cancel", "welcome-cancel"),
+            ];
+
+            actionsWrap.append(...actions);
+
+            wrap.append(welcomeWrap, actionsWrap);
+            return wrap;
+        };
+
+        /**
+         * @summary creates the popup markup
+         * @returns {HTMLElement}
+         */
+        const makePopup = () => {
+            const popup = document.createElement("div");
+            popup.classList.add("auto-review-comments", "popup");
+
+            const close = makeCloseBtn("close");
+
+            const header = document.createElement("h2");
+            header.classList.add("handle");
+            header.textContent = "Which review comment to insert?";
+
+            const main = document.createElement("div");
+            main.classList.add("main");
+            main.id = "main";
+
+            const markup = `
+                <div class="share-tip" id="remote-popup">
+                    enter url for remote source of comments (use import/export to create jsonp)
+                    <input class="remoteurl" id="remoteurl" type="text"/>
+                    <img class="throbber" id="throbber1" src="//sstatic.net/img/progress-dots.gif"/>
+                    <span class="remoteerror" id="remoteerror1"></span>
+                    <div class="float-left">
+                        <input type="checkbox" id="remoteauto"/>
+                        <label title="get from remote on every page refresh" for="remoteauto">auto-get</label>
+                    </div>
+                    <div class="float-right">
+                        <a class="remote-get">get now</a>
+                        <span class="lsep"> | </span>
+                        <a class="remote-save">save</a>
+                        <span class="lsep"> | </span>
+                        <a class="remote-cancel">cancel</a>
+                    </div>
+                </div>
+                `;
+
+            main.append(
+                makeActivePopup("userinfo"),
+                makeRemotePopup(),
+                makeWelcomePopup("welcome-popup"),
+                makePopupActions()
+            );
+
+            popup.append(close, header, main);
+
+            return popup;
+        };
+
+        /**
+         * @summary makes a notification announcement
+         * @param {string} title
+         * @param {string} message
+         * @returns {HTMLElement}
+         */
+        const makeAnnouncement = (title: string, message: string) => {
+            const wrap = document.createElement("div");
+            wrap.classList.add("auto-review-comments", "announcement");
+            wrap.id = "announcement";
+
+            const close = document.createElement("span");
+            close.classList.add("notify-close");
+
+            const dismissal = document.createElement("a");
+            dismissal.title = "dismiss this notification";
+            dismissal.textContent = "x";
+
+            close.append(dismissal);
+
+            wrap.append(close, b(title), text(message));
+            return wrap;
+        };
 
         const makeOption = (id: string, name: string, desc: string) => {
             const li = document.createElement("li");
@@ -384,7 +918,7 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
          * @param {number} date
          */
         function datespan(date: number) {
-            var now = new Date().valueOf() / 1000;
+            var now = Date.now() / 1000;
             var then = new Date(date * 1000);
             var today = new Date().setHours(0, 0, 0) / 1000;
             var nowseconds = now - today;
@@ -423,7 +957,7 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
          * @returns {string}
          */
         function lastseen(date: number) {
-            var now = new Date().valueOf() / 1000;
+            var now = Date.now() / 1000;
             var today = new Date().setHours(0, 0, 0) / 1000;
             var nowseconds = now - today;
             var elapsedSeconds = now - date;
@@ -469,25 +1003,19 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
          * @param {HTMLElement} popup
          * @param {string} title
          * @param {string} body
-         * @param {Function} callback
+         * @param {Function} [callback]
          * @returns {void}
          */
-        function ShowMessage(
+        const ShowMessage = (
             popup: HTMLElement,
             title: string,
             body: string,
-            callback: (...args: any[]) => void
-        ) {
+            callback?: (...args: any[]) => void
+        ) => {
             const html = body.replace(/\n/g, "<BR/>");
 
-            const parser = new DOMParser();
-
-            const message = parser.parseFromString(
-                messageTemplate
-                    .replace("$TITLE$", title)
-                    .replace("$BODY$", html),
-                "text/html"
-            );
+            //TODO: replace HTML with text as makeAnnouncement uses textContent
+            const message = makeAnnouncement(title, html);
 
             message.addEventListener("click", ({ target }) => {
                 if (!(<HTMLElement>target).matches(".notify-close")) return;
@@ -497,28 +1025,36 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
                 fadeOut(parentElement!);
                 parentElement!.remove();
 
-                callback();
+                typeof callback === "function" && callback();
             });
 
             popup.querySelector("h2")!.before(message);
-        }
+        };
 
         /**
          * @summary gets user Id
          * @returns {string}
          */
-        function getUserId() {
+        const getUserId = () => {
             const { href } = document.querySelector<HTMLAnchorElement>(
                 ".post-signature .user-info a"
             )!;
-
             const [, uid] = href.match(/posts\/(\d+)\//) || [];
             return uid || "";
-        }
-        function isNewUser(date: number) {
-            return new Date().valueOf() / 1000 - date < week;
-        }
-        function getOP() {
+        };
+
+        /**
+         * @summary checks if the user is new
+         * @param {number} date
+         * @returns {boolean}
+         */
+        const isNewUser = (date: number) => Date.now() / 1000 - date < week;
+
+        /**
+         * @summary
+         * @returns {string}
+         */
+        const getOP = () => {
             const question = document.getElementById("question")!;
 
             const userlink = question.querySelector(
@@ -528,49 +1064,14 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
             if (userlink) return userlink.textContent || "";
 
             const deletedUser = question.querySelector(".owner .user-details");
-            if (deletedUser) return deletedUser.textContent || "";
-            return "[NULL]";
-        }
+            return deletedUser ? deletedUser.textContent || "" : "";
+        };
 
         type StackAPIBatchResponse<T> = {
             has_more: boolean;
             items: T[];
             quota_max: number;
             quota_remaining: number;
-        };
-
-        type UserType =
-            | "unregistered"
-            | "registered"
-            | "moderator"
-            | "team_admin"
-            | "does_not_exist";
-
-        type BadgeCounts = {
-            bronze: number;
-            silver: number;
-            gold: number;
-        };
-
-        type UserInfo = {
-            creation_date: number;
-            is_employee: boolean;
-            last_access_date: number;
-            last_modified_date: number;
-            reputation: number;
-            reputation_change_day: number;
-            reputation_change_month: number;
-            reputation_change_quarter: number;
-            reputation_change_week: number;
-            reputation_change_year: number;
-            user_id: number;
-            display_name: string;
-            website_url: string;
-            profile_image: string;
-            link: string;
-            location: string;
-            user_type: UserType;
-            badge_counts: BadgeCounts;
         };
 
         /**
@@ -1344,24 +1845,7 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
                 });
         }
 
-        const parser = new DOMParser();
-        var cssElement = parser.parseFromString(cssTemplate, "text/html");
-
-        console.debug({ cssElement }); //TODO: remove
-
-        document.querySelector("head")?.append(cssElement);
-
-        type Locator<T extends HTMLElement = HTMLElement> = (
-            where: T
-        ) => Placement;
-
-        type Actor = (...args: any[]) => any;
-
-        type Injector = (
-            injected: HTMLElement,
-            placed: HTMLElement,
-            action: Actor
-        ) => void;
+        addStyles();
 
         /**
          * @summary Attach an "auto" link somewhere in the DOM. This link is going to trigger the iconic ARC behavior.
@@ -1436,11 +1920,6 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
             injectAutoLinkReviewQueue,
             autoLinkAction
         );
-
-        type Placement = readonly [
-            insert: HTMLElement | null,
-            place: HTMLElement
-        ];
 
         /**
          * @description A locator for the help link next to the comment box under a post and the textarea for the comment.
@@ -1675,7 +2154,7 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
             targetObject: HTMLInputElement,
             postType: string
         ) {
-            const popup = document.querySelector<HTMLElement>(markupTemplate)!;
+            const popup = makePopup();
 
             popup
                 .querySelector(".popup-close")
@@ -1808,10 +2287,10 @@ declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
             //We only actually perform the updates check when someone clicks, this should make it less costly, and more timely
             //also wrap it so that it only gets called the *FIRST* time we open this dialog on any given page (not much of an optimisation).
             if (
-                typeof CheckForNewVersion == "function" &&
+                typeof checkForNewVersion == "function" &&
                 !window.VersionChecked
             ) {
-                CheckForNewVersion(popup); // eslint-disable-line no-undef
+                checkForNewVersion(popup); // eslint-disable-line no-undef
                 window.VersionChecked = true;
             }
         }
