@@ -82,8 +82,6 @@ type UserInfo = {
             left: "50%",
             top: "50%",
             transform: "translate(-50%, -50%)",
-            width: "48%",
-            height: "59%",
         };
         Object.assign(style, update);
         return element;
@@ -183,6 +181,46 @@ type UserInfo = {
      */
     const fadeOut = (el: HTMLElement, speed = 200) => fadeTo(el, speed);
 
+    class Store {
+        static prefix = "{{PREFIX}}";
+
+        static get numKeys() {
+            const { length } = localStorage;
+            return length;
+        }
+
+        /**
+         * @summary clears storage
+         * @param {string} startsWith
+         * @returns {void}
+         */
+        static clear(startsWith: string): void {
+            const { numKeys, prefix } = this;
+
+            for (let i = numKeys - 1; i >= 0; i--) {
+                const key = localStorage.key(i)!;
+
+                if (key.startsWith(prefix + startsWith))
+                    localStorage.removeItem(key);
+            }
+        }
+
+        static load(key: string) {
+            const { prefix } = this;
+            return localStorage[prefix + key];
+        }
+
+        static save(key: string, val: string | number | boolean): void {
+            const { prefix } = this;
+            return void (localStorage[prefix + key] = val);
+        }
+
+        static remove(key: string): void {
+            const { prefix } = this;
+            return localStorage.removeItem(prefix + key);
+        }
+    }
+
     const CONFIG = {
         postType: "",
     };
@@ -240,11 +278,11 @@ type UserInfo = {
          */
         const checkForNewVersion = (popup: HTMLElement) => {
             const today = new Date().setHours(0, 0, 0, 0);
-            const LastUpdateCheckDay = load("LastUpdateCheckDay");
+            const LastUpdateCheckDay = Store.load("LastUpdateCheckDay");
 
             if (!LastUpdateCheckDay) {
                 //first time visitor
-                ShowMessage(
+                notify(
                     popup,
                     "Please read this!",
                     `Thank you for installing this script.
@@ -253,18 +291,19 @@ type UserInfo = {
                 );
             } else if (LastUpdateCheckDay != today) {
                 updateCheck((newVersion: string, installURL: string) => {
-                    if (newVersion == load("LastVersionAcknowledged")) return;
+                    if (newVersion == Store.load("LastVersionAcknowledged"))
+                        return;
 
-                    ShowMessage(
+                    notify(
                         popup,
                         "New Version!",
                         `A new version (${newVersion}) of the <a href="${STACKAPPS_URL}">AutoReviewComments</a> userscript is now available, see the <a href="${GITHUB_URL}/releases">release notes</a> for details or <a href="${installURL}">click here</a> to install now.`,
-                        () => save("LastVersionAcknowledged", newVersion)
+                        () => Store.save("LastVersionAcknowledged", newVersion)
                     );
                 });
             }
 
-            save("LastUpdateCheckDay", today);
+            Store.save("LastUpdateCheckDay", today);
         };
 
         const site = window.location.hostname;
@@ -275,11 +314,10 @@ type UserInfo = {
         ); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
 
         const username = "user";
-        const prefix = "AutoReviewComments-"; //prefix to avoid clashes in localstorage
         const myuserid = getLoggedInUserId();
 
-        if (!load("WelcomeMessage"))
-            save("WelcomeMessage", `Welcome to ${sitename}! `);
+        if (!Store.load("WelcomeMessage"))
+            Store.save("WelcomeMessage", `Welcome to ${sitename}! `);
 
         // These are injection markers and MUST use single-quotes.
         // The injected strings use double-quotes themselves, so that would result in parser errors.
@@ -330,9 +368,6 @@ type UserInfo = {
                 }`,
                 `.${arc}.popup .main .action-list li.action-selected:hover{
                     background-color:#e6e6e6
-                }`,
-                `.${arc}.popup .main .action-list li input{
-                    display:none
                 }`,
                 `.${arc}.popup .main .action-list li label{
                     position:relative;display:block;padding:10px
@@ -467,7 +502,7 @@ type UserInfo = {
             close.classList.add("popup-close");
             close.id = id;
 
-            const btn = makeButton("&#215;", "close this popup (or hit Esc)");
+            const btn = makeButton("×", "close this popup (or hit Esc)");
 
             close.append(btn);
             return close;
@@ -489,12 +524,29 @@ type UserInfo = {
         };
 
         /**
-         * @summary makes popup action list
+         * @summary makes comment submit button
+         * @param {string} id
          * @returns {HTMLElement}
          */
-        const makePopupActions = () => {
+        const makeSubmitButton = (id: string) => {
+            const submitBtn = document.createElement("input");
+            submitBtn.classList.add("popup-submit");
+            submitBtn.type = "button";
+            submitBtn.value = "Insert";
+            submitBtn.id = id;
+            return submitBtn;
+        };
+
+        /**
+         * @summary makes popup action list
+         * @param {HTMLElement} popup
+         * @param {string} id
+         * @returns {HTMLElement}
+         */
+        const makePopupActions = (popup: HTMLElement, id: string) => {
             const wrap = document.createElement("div");
             wrap.classList.add("popup-actions");
+            wrap.id = id;
 
             const actionsWrap = document.createElement("div");
             actionsWrap.classList.add("float-left", "actions");
@@ -502,11 +554,8 @@ type UserInfo = {
             const submitWrap = document.createElement("div");
             submitWrap.classList.add("float-right");
 
-            const submitBtn = document.createElement("input");
-            submitBtn.classList.add("popup-submit");
-            submitBtn.type = "button";
-            submitBtn.disabled = true;
-            submitBtn.value = "Insert";
+            const submitBtn = makeSubmitButton(`${Store.prefix}-submit`);
+            disable(submitBtn);
 
             submitWrap.append(submitBtn);
 
@@ -527,6 +576,14 @@ type UserInfo = {
                 "see-through",
                 "see through",
                 "popup-actions-see"
+            );
+
+            seeBtn.addEventListener("mouseenter", () =>
+                fadeTo(popup, 200, 0.4)
+            );
+
+            seeBtn.addEventListener("mouseleave", () =>
+                fadeTo(popup, 200, 1.0)
             );
 
             const filterBtn = makeButton(
@@ -747,15 +804,29 @@ type UserInfo = {
             return wrap;
         };
 
+        type PopupMaker = {
+            popup?: HTMLElement;
+            (target: HTMLInputElement, postType: string): HTMLElement;
+        };
+
         /**
          * @summary creates the popup markup
+         * @description memoizable popup maker
+         * @param {HTMLInputElement} input target comment input
+         * @param {string} postType
          * @returns {HTMLElement}
          */
-        const makePopup = () => {
+        const makePopup: PopupMaker = (
+            input: HTMLInputElement,
+            postType: string
+        ) => {
+            if (makePopup.popup) return makePopup.popup;
+
             const popup = document.createElement("div");
             popup.classList.add("auto-review-comments", "popup");
 
             const close = makeCloseBtn("close");
+            close.addEventListener("click", () => fadeOut(popup));
 
             const header = document.createElement("h2");
             header.classList.add("handle");
@@ -765,16 +836,69 @@ type UserInfo = {
             main.classList.add("main");
             main.id = "main";
 
+            popup.addEventListener("click", ({ target }) => {
+                const actionMap: Record<
+                    string,
+                    (popup: HTMLElement, postType: string) => void
+                > = {
+                    ".popup-actions-cancel": (p) => fadeOut(p),
+                    ".popup-actions-reset": (p, t) => {
+                        resetComments();
+                        writeComments(p, t);
+                    },
+                    ".popup-actions-impexp": (p, t) => importExport(p, t),
+                    ".popup-actions-toggledesc": (p) => {
+                        Store.save("hide-desc", !Store.load("hide-desc"));
+                        ShowHideDescriptions(p);
+                    },
+                    ".popup-close": (p) => fadeOut(p),
+                    ".popup-submit": (p) => {
+                        const selected = p.querySelector(
+                            "input[type=radio]:checked"
+                        )!;
+
+                        const md = htmlToMarkDown(
+                            selected.closest(".action-desc")!.innerHTML
+                        )
+                            .replace(/\[username\]/g, username)
+                            .replace(/\[OP\]/g, getOP());
+
+                        input.value = md;
+                        input.focus(); //focus provokes character count test
+
+                        const hereTxt = "[type here]";
+
+                        var caret = md.indexOf(hereTxt);
+                        if (caret >= 0)
+                            input.setSelectionRange(
+                                caret,
+                                caret + hereTxt.length
+                            );
+
+                        fadeOut(p);
+                    },
+                };
+
+                const [, action] =
+                    Object.entries(actionMap).find(([selector]) =>
+                        (<HTMLElement>target).matches(selector)
+                    ) || [];
+
+                if (!action) return;
+
+                action(popup, postType);
+            });
+
             main.append(
                 makeActivePopup("userinfo"),
                 makeRemotePopup("remote-popup"),
                 makeWelcomePopup("welcome-popup"),
-                makePopupActions()
+                makePopupActions(popup, "popup-actions")
             );
 
             popup.append(close, header, main);
 
-            return popup;
+            return (makePopup.popup = popup);
         };
 
         /**
@@ -801,6 +925,13 @@ type UserInfo = {
             return wrap;
         };
 
+        /**
+         * @summary makes an auto comment option
+         * @param {string} id
+         * @param {string} name
+         * @param {string} desc
+         * @returns {HTMLElement}
+         */
         const makeOption = (id: string, name: string, desc: string) => {
             const li = document.createElement("li");
 
@@ -808,6 +939,7 @@ type UserInfo = {
             reviewRadio.id = `comment-${id}`;
             reviewRadio.type = "radio";
             reviewRadio.name = "commentreview";
+            reviewRadio.hidden = true;
 
             const lbl = document.createElement("label");
             lbl.htmlFor = reviewRadio.id;
@@ -912,7 +1044,7 @@ type UserInfo = {
             },
         ];
 
-        var weekday_name = [
+        const weekday_name = [
             "Sunday",
             "Monday",
             "Tuesday",
@@ -921,31 +1053,14 @@ type UserInfo = {
             "Friday",
             "Saturday",
         ];
-        var minute = 60,
+
+        const minute = 60,
             hour = 3600,
             day = 86400,
             sixdays = 518400,
             week = 604800,
             month = 2592000,
             year = 31536000;
-
-        //Wrap local storage access so that we avoid collisions with other scripts
-        function load(key: string) {
-            return localStorage[prefix + key];
-        }
-        function save(key: string, val: string | number | boolean) {
-            localStorage[prefix + key] = val;
-        }
-        function RemoveStorage(key: string) {
-            localStorage.removeItem(prefix + key);
-        }
-        function ClearStorage(startsWith: string) {
-            for (var i = localStorage.length - 1; i >= 0; i--) {
-                var key = localStorage.key(i)!;
-                if (key.indexOf(prefix + startsWith) == 0)
-                    localStorage.removeItem(key);
-            }
-        }
 
         /**
          * TODO: do something with this Cthulhu
@@ -1041,7 +1156,7 @@ type UserInfo = {
          * @param {Function} [callback]
          * @returns {void}
          */
-        const ShowMessage = (
+        const notify = (
             popup: HTMLElement,
             title: string,
             body: string,
@@ -1058,7 +1173,6 @@ type UserInfo = {
                 const { parentElement } = <HTMLElement>target;
 
                 fadeOut(parentElement!);
-                parentElement!.remove();
 
                 typeof callback === "function" && callback();
             });
@@ -1174,10 +1288,10 @@ type UserInfo = {
             } = userInfo;
 
             if (isNewUser(creation_date)) {
-                save("ShowGreeting", true);
+                Store.save("ShowGreeting", true);
                 container
                     .querySelector(".action-desc")
-                    ?.prepend(load("WelcomeMessage") || "");
+                    ?.prepend(Store.load("WelcomeMessage") || "");
             }
 
             const userLink = link(`/users/${user_id}`, "");
@@ -1205,7 +1319,7 @@ type UserInfo = {
             const API_KEY = "5J)5cHN9KbyhE9Yf9S*G)g((";
 
             const url = new URL(
-                `api.stackexchange.com/${API_VER}/users/${userid}`
+                `https://api.stackexchange.com/${API_VER}/users/${userid}`
             );
             url.search = new URLSearchParams({
                 site,
@@ -1235,8 +1349,12 @@ type UserInfo = {
             return lsep;
         };
 
-        //Show textarea in front of popup to import/export all comments (for other sites or for posting somewhere)
-        function ImportExport(popup: HTMLElement) {
+        /**
+         * @summary Show textarea in front of popup to import/export all comments (for other sites or for posting somewhere)
+         * @param {HTMLElement} popup
+         * @param {string} postType
+         */
+        function importExport(popup: HTMLElement, postType: string) {
             const tohide = document.getElementById("main")!;
 
             const wrap = document.createElement("div");
@@ -1278,10 +1396,12 @@ type UserInfo = {
                 background: "white",
             });
 
+            const numComments = Store.load("commentcount");
+
             var txt = "";
-            for (var i = 0; i < load("commentcount"); i++) {
-                var name = load("name-" + i);
-                var desc = load("desc-" + i);
+            for (var i = 0; i < numComments; i++) {
+                const name = Store.load("name-" + i);
+                const desc = Store.load("desc-" + i);
                 txt += "###" + name + "\n" + htmlToMarkDown(desc) + "\n\n"; //the leading ### makes prettier if pasting to markdown, and differentiates names from descriptions
             }
 
@@ -1289,13 +1409,17 @@ type UserInfo = {
 
             jsonpBtn.addEventListener("click", () => {
                 var txt = "callback(\n[\n";
-                for (var i = 0; i < load("commentcount"); i++) {
-                    txt +=
-                        '{ "name": "' +
-                        load("name-" + i) +
-                        '", "description": "' +
-                        load("desc-" + i).replace(/"/g, '\\"') +
-                        '"},\n\n';
+
+                const numComments = Store.load("commentcount");
+
+                for (var i = 0; i < numComments; i++) {
+                    const name = Store.load("name-" + i);
+                    const desc = Store.load("desc-" + i);
+
+                    txt += `{ "name": "${name}", "description": "${desc.replace(
+                        /"/g,
+                        '\\"'
+                    )}"},\n\n'`;
                 }
 
                 txtArea.value = txt + "]\n)";
@@ -1304,73 +1428,71 @@ type UserInfo = {
                 wrap.querySelector(".lsep:lt(2)")?.remove();
             });
 
-            cancelBtn.addEventListener("click", async () => {
-                await fadeOut(wrap);
-                wrap.remove();
-            });
+            cancelBtn.addEventListener("click", () => fadeOut(wrap));
 
             saveBtn.addEventListener("click", async () => {
-                DoImport(txtArea.value);
-                WriteComments(popup);
+                doImport(txtArea.value);
+                writeComments(popup, postType);
                 await fadeOut(wrap);
-                wrap.remove();
             });
 
             popup.append(wrap);
         }
 
         //Import complete text into comments
-        function DoImport(text: string) {
+        function doImport(text: string) {
             //clear out any existing stuff
-            ClearStorage("name-");
-            ClearStorage("desc-");
-            var arr = text.split("\n");
-            var nameIndex = 0,
-                descIndex = 0;
-            for (var i = 0; i < arr.length; i++) {
-                var line = arr[i].trim();
+            Store.clear("name-");
+            Store.clear("desc-");
+            const arr = text.split("\n");
+            let nameIndex = 0;
+            let descIndex = 0;
+            arr.forEach((untrimmed) => {
+                const line = untrimmed.trim();
+
+                //TODO: rework
+
                 if (line.indexOf("#") == 0) {
                     var name = line.replace(/^#+/g, "");
-                    save("name-" + nameIndex, name);
+                    Store.save("name-" + nameIndex, name);
                     nameIndex++;
-                } else if (line.length > 0) {
+                }
+
+                if (line.length > 0) {
                     var desc = markDownToHtml(line);
-                    save("desc-" + descIndex, Tag(desc));
+                    Store.save("desc-" + descIndex, tag(desc));
                     descIndex++;
                 }
-            }
+            });
+
             //This is de-normalised, but I don't care.
-            save("commentcount", Math.min(nameIndex, descIndex));
+            Store.save("commentcount", Math.min(nameIndex, descIndex));
         }
 
         // From https://stackoverflow.com/a/12034334/259953
-        var entityMapToHtml: Record<string, string> = {
+        const entityMapToHtml: Record<string, string> = {
             "&": "&amp;",
             "<": "&lt;",
             ">": "&gt;",
         };
-        var entityMapFromHtml: Record<string, string> = {
+
+        const entityMapFromHtml: Record<string, string> = {
             "&amp;": "&",
             "&lt;": "<",
             "&gt;": ">",
         };
 
         function escapeHtml(html: string) {
-            return String(html).replace(/[&<>]/g, function (s) {
-                return entityMapToHtml[s];
-            });
+            return String(html).replace(/[&<>]/g, (s) => entityMapToHtml[s]);
         }
 
         function unescapeHtml(html: string) {
-            return Object.keys(entityMapFromHtml).reduce(function (
-                result,
-                entity
-            ) {
-                return result.replace(new RegExp(entity, "g"), function (s) {
-                    return entityMapFromHtml[s];
-                });
-            },
-            String(html));
+            return Object.keys(entityMapFromHtml).reduce((result, entity) => {
+                return result.replace(
+                    new RegExp(entity, "g"),
+                    (s) => entityMapFromHtml[s]
+                );
+            }, String(html));
         }
 
         function htmlToMarkDown(html: string) {
@@ -1391,14 +1513,14 @@ type UserInfo = {
                 .replace(/\*([^`]+?)\*/g, "<em>$1</em>");
         }
 
-        function UnTag(text: string) {
+        function untag(text: string) {
             return text
                 .replace(/\$SITENAME\$/g, sitename)
                 .replace(/\$SITEURL\$/g, site)
                 .replace(/\$MYUSERID\$/g, myuserid);
         }
 
-        function Tag(html: string) {
+        function tag(html: string) {
             //put tags back in
             var regname = new RegExp(sitename, "g"),
                 regurl = new RegExp("//" + site, "g"),
@@ -1409,20 +1531,36 @@ type UserInfo = {
                 .replace(reguid, "/$MYUSERID$)");
         }
 
-        const disable = (selector: string) =>
-            (document.querySelector<HTMLButtonElement>(selector)!.disabled =
-                true);
+        type MaybeBtn = string | HTMLButtonElement | HTMLInputElement;
 
-        const enable = (selector: string) =>
-            (document.querySelector<HTMLButtonElement>(selector)!.disabled =
-                false);
+        /**
+         * @summary disables an element
+         * @param {MaybeBtn} elOrQuery
+         */
+        const disable = (elOrQuery: MaybeBtn) =>
+            ((typeof elOrQuery === "string"
+                ? document.querySelector<HTMLButtonElement>(elOrQuery)!
+                : elOrQuery
+            ).disabled = true);
+
+        /**
+         * @summary enables an element
+         * @param {MaybeBtn} elOrQuery
+         */
+        const enable = (elOrQuery: MaybeBtn) =>
+            ((typeof elOrQuery === "string"
+                ? document.querySelector<HTMLButtonElement>(elOrQuery)!
+                : elOrQuery
+            ).disabled = false);
 
         /**
          * @summary Replace contents of element with a textarea (containing markdown of contents), and save/cancel buttons
          */
         function ToEditable(el: HTMLElement) {
             var backup = el.innerHTML;
-            var html = Tag(backup.replace(load("WelcomeMessage") || "", "")); //remove greeting before editing..
+            var html = tag(
+                backup.replace(Store.load("WelcomeMessage") || "", "")
+            ); //remove greeting before editing..
             if (html.indexOf("<textarea") > -1) return; //don't want to create a new textarea inside this one!
 
             const area = document.createElement("textarea");
@@ -1432,7 +1570,7 @@ type UserInfo = {
             siblings<HTMLElement>(el, ".quick-insert").forEach(hide);
 
             // Disable insert while editing.
-            disable(".popup-submit");
+            disable(`#${Store.prefix}-submit`);
 
             BorkFor(el); //this is a hack
             //save/cancel links to add to textarea
@@ -1458,7 +1596,7 @@ type UserInfo = {
 
                 siblings<HTMLElement>(el, ".quick-insert").forEach(show);
 
-                enable(".popup-submit");
+                enable(`#${Store.prefix}-submit`);
 
                 const { parentElement } = cancel;
 
@@ -1484,10 +1622,11 @@ type UserInfo = {
         //Save textarea contents, replace element html with new edited content
         function SaveEditable(el: HTMLElement) {
             var html = markDownToHtml(el.querySelector("textarea")!.value);
-            save(el.id, Tag(html));
+            Store.save(el.id, tag(html));
             el.innerHTML =
-                (load("showGreeting") ? load("WelcomeMessage") || "" : "") +
-                UnTag(html);
+                (Store.load("showGreeting")
+                    ? Store.load("WelcomeMessage") || ""
+                    : "") + untag(html);
         }
 
         function CancelEditable(el: HTMLElement, backup: string) {
@@ -1497,19 +1636,19 @@ type UserInfo = {
         /**
          * @summary Empty all custom comments from storage and rewrite to ui
          */
-        function ResetComments() {
-            ClearStorage("name-");
-            ClearStorage("desc-");
+        function resetComments() {
+            Store.clear("name-");
+            Store.clear("desc-");
             defaultcomments.forEach(function (value, index) {
                 var targetsPrefix = "";
                 if (value.Target) {
                     var targets = value.Target.join(",");
                     targetsPrefix = "[" + targets + "] ";
                 }
-                save("name-" + index, targetsPrefix + value["Name"]);
-                save("desc-" + index, value["Description"]);
+                Store.save("name-" + index, targetsPrefix + value["Name"]);
+                Store.save("desc-" + index, value["Description"]);
             });
-            save("commentcount", defaultcomments.length);
+            Store.save("commentcount", defaultcomments.length);
         }
 
         /**
@@ -1521,8 +1660,8 @@ type UserInfo = {
         const loadComments = (numComments: number) => {
             const comments: { name: string; desc: string }[] = [];
             for (var i = 0; i < numComments; i++) {
-                const name = load("name-" + i);
-                const desc = load("desc-" + i);
+                const name = Store.load("name-" + i);
+                const desc = Store.load("desc-" + i);
                 comments.push({ name, desc });
             }
             return comments;
@@ -1531,17 +1670,16 @@ type UserInfo = {
         /**
          * @summary rewrite all comments to ui (typically after import or reset)
          * @param {HTMLElement} popup
+         * @param {string} postType
          */
-        function WriteComments(popup: HTMLElement) {
-            const numComments = load("commentcount");
+        function writeComments(popup: HTMLElement, postType: string) {
+            const numComments = Store.load("commentcount");
 
-            if (!numComments) ResetComments();
+            if (!numComments) resetComments();
 
             const ul = popup.querySelector(".action-list")!;
 
             empty(ul);
-
-            const { postType } = CONFIG;
 
             const comments = loadComments(numComments);
 
@@ -1559,8 +1697,8 @@ type UserInfo = {
                     const optionElement = makeOption(
                         i.toString(),
                         cname.replace(/\$/g, "$$$"),
-                        (load("showGreeting")
-                            ? load("WelcomeMessage") || ""
+                        (Store.load("showGreeting")
+                            ? Store.load("WelcomeMessage") || ""
                             : "") + descr
                     );
 
@@ -1596,30 +1734,28 @@ type UserInfo = {
             });
 
             popup.addEventListener("click", ({ target }) => {
-                if (!(<HTMLElement>target).matches("label > .quick-insert"))
-                    return;
+                const el = <HTMLElement>target;
 
-                var { parentElement } = <HTMLElement>target;
-                var li = parentElement!.parentElement;
-                var radio = (<HTMLElement>target).closest("input")!;
+                if (!el.matches("label > .quick-insert")) return;
 
-                // Mark action as selected.
-                li!.classList.add("action-selected");
+                const action = el.closest("li");
+                const radio = el.closest("input");
+
+                if (!action || !radio)
+                    return notify(popup, "Problem", "something went wrong");
+
+                action.classList.add("action-selected");
 
                 radio.checked = true;
 
-                popup
-                    .querySelector<HTMLButtonElement>(".popup-submit")!
-                    .click();
+                document.getElementById(`${Store.prefix}-submit`)?.click();
             });
 
             //add click handler to radio buttons
             popup.addEventListener("click", ({ target }) => {
-                if (!target) return;
+                if (!(<HTMLElement>target).matches("input[type=radio]")) return;
 
-                popup.querySelector<HTMLButtonElement>(
-                    ".popup-submit"
-                )!.disabled = false;
+                disable(`#${Store.prefix}-submit`);
 
                 const selected = [
                     ...popup.querySelectorAll(".action-selected"),
@@ -1629,7 +1765,7 @@ type UserInfo = {
                     classList.remove("action-selected")
                 );
 
-                if (load("hide-desc") == "hide") {
+                if (Store.load("hide-desc")) {
                     const unselectedDescrs = [
                         ...popup.querySelectorAll<HTMLSpanElement>(
                             ":not(.action-selected) .action-desc"
@@ -1652,7 +1788,7 @@ type UserInfo = {
             popup.addEventListener("keyup", (event) => {
                 if (event.code == "Enter") {
                     event.preventDefault();
-                    popup.querySelector<HTMLElement>(".popup-submit")?.click();
+                    document.getElementById(`${Store.prefix}-submit`)?.click();
                 }
             });
         }
@@ -1693,18 +1829,18 @@ type UserInfo = {
                 stext = sbox.querySelector<HTMLInputElement>(".searchfilter")!,
                 kicker = popup.querySelector(".popup-actions-filter")!,
                 storageKey = "showFilter",
-                shown = load(storageKey) == "show";
+                shown = Store.load(storageKey) == "show";
 
             var showHideFilter = function () {
                 if (shown) {
                     show(sbox);
                     stext.focus();
-                    save(storageKey, "show");
+                    Store.save(storageKey, "show");
                 } else {
                     hide(sbox);
                     stext.textContent = "";
                     filterOn(popup, "");
-                    save(storageKey, "hide");
+                    Store.save(storageKey, "hide");
                 }
             };
 
@@ -1740,7 +1876,7 @@ type UserInfo = {
                 ),
             ];
 
-            const isHide = load("hide-desc") == "hide";
+            const isHide = Store.load("hide-desc");
             descriptions.forEach((description) =>
                 isHide ? hide(description) : show(description)
             );
@@ -1790,12 +1926,12 @@ type UserInfo = {
                     { name: string; description: string }[]
                 >(url);
 
-                save("commentcount", data.length);
-                ClearStorage("name-");
-                ClearStorage("desc-");
+                Store.save("commentcount", data.length);
+                Store.clear("name-");
+                Store.clear("desc-");
                 data.forEach(({ name, description }, i) => {
-                    save("name-" + i, name);
-                    save("desc-" + i, markDownToHtml(description));
+                    Store.save("name-" + i, name);
+                    Store.save("desc-" + i, markDownToHtml(description));
                 });
                 success();
             } catch (err) {
@@ -1803,8 +1939,12 @@ type UserInfo = {
             }
         }
 
-        //Factored out from main popu creation, just because it's too long
-        function SetupRemoteBox(popup: HTMLElement) {
+        /**
+         * @summary Factored out from main popu creation, just because it's too long
+         * @param {HTMLElement} popup
+         * @param {string} postType
+         */
+        function setupRemoteBox(popup: HTMLElement, postType: string) {
             var remote = popup.querySelector<HTMLElement>("#remote-popup")!;
             var remoteerror = remote.querySelector("#remoteerror1");
             var urlfield =
@@ -1816,8 +1956,8 @@ type UserInfo = {
             popup
                 .querySelector(".popup-actions-remote")!
                 .addEventListener("click", function () {
-                    urlfield.value = load("RemoteUrl");
-                    autofield.checked = load("AutoRemote") == "true";
+                    urlfield.value = Store.load("RemoteUrl");
+                    autofield.checked = Store.load("AutoRemote") == "true";
                     show(remote);
                 });
 
@@ -1832,8 +1972,8 @@ type UserInfo = {
             popup
                 .querySelector(".remote-save")!
                 .addEventListener("click", function () {
-                    save("RemoteUrl", urlfield.value);
-                    save("AutoRemote", autofield.checked);
+                    Store.save("RemoteUrl", urlfield.value);
+                    Store.save("AutoRemote", autofield.checked);
                     hide(remote);
                 });
 
@@ -1844,7 +1984,7 @@ type UserInfo = {
                     loadFromRemote(
                         urlfield.value,
                         function () {
-                            WriteComments(popup);
+                            writeComments(popup, postType);
                             hide(throbber);
                         },
                         ({ message }: Error) =>
@@ -1854,116 +1994,76 @@ type UserInfo = {
         }
 
         /**
+         * @summary sets up a welcome box
+         * @param {HTMLElement} popup
+         * @param {string} postType
+         * @returns {void}
+         */
+        const setupWelcomeBox = (popup: HTMLElement, postType: string) => {
+            const custom =
+                popup.querySelector<HTMLInputElement>("#customwelcome")!;
+
+            popup
+                .querySelector(".popup-actions-welcome")!
+                .addEventListener("click", () => {
+                    custom.value ||= Store.load("WelcomeMessage");
+                    show(popup);
+                });
+
+            popup
+                .querySelector(".welcome-cancel")!
+                .addEventListener("click", () => hide(popup));
+
+            popup
+                .querySelector(".welcome-force")!
+                .addEventListener("click", () => {
+                    Store.save("ShowGreeting", true);
+                    writeComments(popup, postType);
+                    hide(popup);
+                });
+
+            popup
+                .querySelector(".welcome-save")!
+                .addEventListener("click", () => {
+                    const { value } = custom;
+                    Store.save("WelcomeMessage", value);
+                    hide(popup);
+                });
+        };
+
+        /**
          * @summary creates ARC modal and wires functionality
-         * @param {HTMLInputElement} targetObject
+         * @param {HTMLInputElement} target
          * @param {string} postType
          * @returns {Promise<void>}
          */
         const autoLinkAction = async (
-            targetObject: HTMLInputElement,
+            target: HTMLInputElement,
             postType: string
         ) => {
-            const popup = makePopup();
+            const popup = makePopup(target, postType);
 
-            popup
-                .querySelector(".popup-close")
-                ?.addEventListener("click", () =>
-                    fadeOut(popup).then((p) => p.remove())
-                );
+            fadeTo(popup, 200, 1);
 
             CONFIG.postType = postType;
 
             //Reset this, otherwise we get the greeting twice...
-            save("ShowGreeting", false);
+            Store.save("ShowGreeting", false);
 
-            //create/add options
-            WriteComments(popup);
-
-            popup.addEventListener("click", ({ target }) => {
-                const actionMap = {
-                    ".popup-actions-cancel": () =>
-                        fadeOut(popup).then((p) => p.remove()),
-                    ".popup-actions-reset": () => {
-                        ResetComments();
-                        WriteComments(popup);
-                    },
-                    ".popup-actions-impexp": () => ImportExport(popup),
-                    ".popup-actions-toggledesc": () => {
-                        var hideDesc = load("hide-desc") || "show";
-                        save("hide-desc", hideDesc == "show" ? "hide" : "show");
-                        ShowHideDescriptions(popup);
-                    },
-                    ".popup-submit": () => {
-                        var selected = popup.querySelector(
-                            "input[type=radio]:checked"
-                        )!;
-
-                        var md = htmlToMarkDown(
-                            selected.closest(".action-desc")!.innerHTML
-                        )
-                            .replace(/\[username\]/g, username)
-                            .replace(/\[OP\]/g, getOP());
-
-                        targetObject.value = md;
-                        targetObject.focus(); //focus provokes character count test
-
-                        const hereTxt = "[type here]";
-
-                        var caret = md.indexOf(hereTxt);
-                        if (caret >= 0)
-                            targetObject.setSelectionRange(
-                                caret,
-                                caret + hereTxt.length
-                            );
-
-                        fadeOut(popup).then((p) => p.remove());
-                    },
-                };
-
-                const [, action] =
-                    Object.entries(actionMap).find(([selector]) =>
-                        (<HTMLElement>target).matches(selector)
-                    ) || [];
-
-                if (!action) return;
-
-                action();
-            });
-
-            const see = popup.querySelector(".popup-actions-see")!;
-
-            see.addEventListener("mouseenter", () => {
-                fadeTo(popup, 0.4);
-
-                const notCloseEls = [
-                    ...popup.querySelectorAll<HTMLElement>(":not(#close)"),
-                ];
-
-                notCloseEls.forEach((el) => fadeOut(el));
-            });
-
-            see.addEventListener("mouseleave", () => {
-                fadeTo(popup, 1.0);
-
-                const notCloseEls = [
-                    ...popup.querySelectorAll<HTMLElement>(":not(#close)"),
-                ];
-
-                notCloseEls.forEach((el) => fadeTo(el, 1.0));
-            });
-
-            SetupRemoteBox(popup);
-            SetupWelcomeBox(popup);
+            //TODO: if popup is created only once, listeners should be setup only once
+            [writeComments, setupRemoteBox, setupWelcomeBox].forEach(
+                (initiator) => initiator(popup, postType)
+            );
 
             //Auto-load from remote if required
-            if (!window.VersionChecked && load("AutoRemote") == "true") {
+            if (!window.VersionChecked && Store.load("AutoRemote") == "true") {
                 var throbber = document.getElementById("throbber2")!;
                 var remoteerror = document.getElementById("remoteerror2")!;
                 show(throbber);
                 loadFromRemote(
-                    load("RemoteUrl"),
-                    function () {
-                        WriteComments(popup);
+                    Store.load("RemoteUrl"),
+                    () => {
+                        writeComments(popup, postType);
                         hide(throbber);
                     },
                     ({ message }: Error) => (remoteerror.textContent = message)
@@ -1978,16 +2078,13 @@ type UserInfo = {
             StackExchange.helpers.bindMovablePopups();
 
             //Get user info and inject
-            var userid = getUserId();
+            const userid = getUserId();
 
             const userInfoEl = document.getElementById("userinfo")!;
 
             const uinfo = await getUserInfo(userid);
 
-            if (!uinfo) {
-                fadeOut(userInfoEl);
-                return;
-            }
+            if (!uinfo) return fadeOut(userInfoEl);
 
             addUserInfo(userInfoEl, uinfo);
 
@@ -1997,51 +2094,10 @@ type UserInfo = {
                 typeof checkForNewVersion == "function" &&
                 !window.VersionChecked
             ) {
-                checkForNewVersion(popup); // eslint-disable-line no-undef
+                checkForNewVersion(popup);
                 window.VersionChecked = true;
             }
         };
-
-        /**
-         * @summary sets up a welcome box
-         * @param {HTMLElement} popup
-         * @returns {void}
-         */
-        function SetupWelcomeBox(popup: HTMLElement) {
-            const welcome = document.getElementById("welcome-popup")!;
-            const custom = <HTMLInputElement>(
-                document.getElementById("customwelcome")!
-            );
-
-            popup
-                .querySelector(".popup-actions-welcome")!
-                .addEventListener("click", () => {
-                    custom.value ||= load("WelcomeMessage");
-                    show(welcome);
-                });
-
-            popup
-                .querySelector(".welcome-cancel")!
-                .addEventListener("click", () => hide(welcome));
-
-            popup
-                .querySelector(".welcome-force")!
-                .addEventListener("click", () => {
-                    save("ShowGreeting", true);
-                    WriteComments(popup);
-                    hide(welcome);
-                });
-
-            popup
-                .querySelector(".welcome-save")!
-                .addEventListener("click", () => {
-                    const { value } = custom;
-                    save("WelcomeMessage", value);
-                    hide(welcome);
-                });
-        }
-
-        addStyles();
 
         /**
          * @summary Attach an "auto" link somewhere in the DOM. This link is going to trigger the iconic ARC behavior.
@@ -2055,7 +2111,7 @@ type UserInfo = {
          *                            It will receive the action function as the second argument, so it know what to invoke when the "auto" link is clicked.
          * @param {Actor} actor A function that will be called when the injected "auto" link is clicked.
          */
-        function attachAutoLinkInjector<T extends HTMLElement>(
+        function addTriggerButton<T extends HTMLElement>(
             selector: string,
             locator: Locator<T>,
             injector: Injector,
@@ -2067,7 +2123,7 @@ type UserInfo = {
              * @param {number} [retry=0] How often this operation was already retried. 20 retries will be performed in 50ms intervals.
              * @private
              */
-            const _internalInjector = (trigger: T, retry: number) => {
+            const _injector = (trigger: T, retry: number) => {
                 // If we didn't find the element after 20 retries, give up.
                 if (20 <= retry) return;
 
@@ -2075,7 +2131,7 @@ type UserInfo = {
 
                 // We didn't find it? Try again in 50ms.
                 if (!injectNextTo) {
-                    setTimeout(() => _internalInjector(trigger, retry + 1), 50);
+                    setTimeout(() => _injector(trigger, retry + 1), 50);
                 } else {
                     // Call our injector on the found element.
                     injector(injectNextTo, placeCommentIn, actor);
@@ -2085,37 +2141,9 @@ type UserInfo = {
             const content = document.getElementById("content")!;
             content.addEventListener("click", ({ target }) => {
                 if (!(<HTMLElement>target).matches(selector)) return;
-                _internalInjector(<T>target, 0);
+                _injector(<T>target, 0);
             });
         }
-
-        attachAutoLinkInjector(
-            ".js-add-link",
-            findCommentElements,
-            injectAutoLink,
-            autoLinkAction
-        );
-
-        attachAutoLinkInjector(
-            ".edit-post",
-            findEditSummaryElements,
-            injectAutoLinkEdit,
-            autoLinkAction
-        );
-
-        attachAutoLinkInjector(
-            ".close-question-link",
-            findClosureElements,
-            injectAutoLinkClosure,
-            autoLinkAction
-        );
-
-        attachAutoLinkInjector(
-            ".review-actions input:first-child",
-            findReviewQueueElements,
-            injectAutoLinkReviewQueue,
-            autoLinkAction
-        );
 
         /**
          * @description A locator for the help link next to the comment box under a post and the textarea for the comment.
@@ -2240,11 +2268,11 @@ type UserInfo = {
          * @param {Actor} what The function that will be called when the link is clicked.
          * @returns {void}
          */
-        function injectAutoLink(
+        const injectAutoLink = (
             where: HTMLElement,
             placeCommentIn: HTMLElement,
             what: Actor
-        ) {
+        ) => {
             // Don't add auto links if one already exists
             const existingAutoLinks = siblings(where, ".comment-auto-link");
             if (existingAutoLinks.length) return;
@@ -2258,7 +2286,7 @@ type UserInfo = {
             const lsep = makeSeparator();
             const alink = makeAutoLink(what, placeCommentIn, tgt);
             where.after(lsep, alink);
-        }
+        };
 
         /**
          * Inject the auto link next to the edit summary input box.
@@ -2268,13 +2296,13 @@ type UserInfo = {
          * @param {Actor} what The function that will be called when the link is clicked.
          * @returns {void}
          */
-        function injectAutoLinkEdit(
+        const injectAutoLinkEdit = (
             where: HTMLElement,
             placeCommentIn: HTMLElement,
             what: Actor
-        ) {
+        ) => {
             // Don't add auto links if one already exists
-            var existingAutoLinks = siblings(where, ".comment-auto-link");
+            const existingAutoLinks = siblings(where, ".comment-auto-link");
             if (existingAutoLinks.length) return;
 
             const { style } = where;
@@ -2292,7 +2320,7 @@ type UserInfo = {
             const lsep = makeSeparator();
             const alink = makeAutoLink(what, placeCommentIn, tgt);
             where.after(lsep, alink);
-        }
+        };
         /**
          * @summary Inject the auto link next to the given DOM element.
          * @param {HTMLElement} where The DOM element next to which we'll place the link.
@@ -2300,31 +2328,32 @@ type UserInfo = {
          * @param {Actor} what The function that will be called when the link is clicked.
          * @returns {void}
          */
-        function injectAutoLinkClosure(
+        const injectAutoLinkClosure = (
             where: HTMLElement,
             placeCommentIn: HTMLElement,
             what: Actor
-        ) {
+        ) => {
             // Don't add auto links if one already exists
-            var existingAutoLinks = siblings(where, ".comment-auto-link");
+            const existingAutoLinks = siblings(where, ".comment-auto-link");
             if (existingAutoLinks.length) return;
 
             const lsep = makeSeparator();
             const alink = makeAutoLink(what, placeCommentIn, Target.Closure);
             where.after(lsep, alink);
-        }
+        };
 
         /**
          * @summary Inject hte auto link next to the "characters left" counter below the edit summary in the review queue.
          * @param {HTMLElement} where The DOM element next to which we'll place the link.
          * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
          * @param {Actor} what The function that will be called when the link is clicked.
+         * @returns {void}
          */
-        function injectAutoLinkReviewQueue(
+        const injectAutoLinkReviewQueue = (
             where: HTMLElement,
             placeCommentIn: HTMLElement,
             what: Actor
-        ) {
+        ) => {
             // Don't add auto links if one already exists
             var existingAutoLinks = siblings(where, ".comment-auto-link");
             if (existingAutoLinks.length) return;
@@ -2338,6 +2367,36 @@ type UserInfo = {
             alink.style.float = "right";
 
             where.after(lsep, alink);
-        }
+        };
+
+        addStyles();
+
+        addTriggerButton(
+            ".js-add-link",
+            findCommentElements,
+            injectAutoLink,
+            autoLinkAction
+        );
+
+        addTriggerButton(
+            ".edit-post",
+            findEditSummaryElements,
+            injectAutoLinkEdit,
+            autoLinkAction
+        );
+
+        addTriggerButton(
+            ".close-question-link",
+            findClosureElements,
+            injectAutoLinkClosure,
+            autoLinkAction
+        );
+
+        addTriggerButton(
+            ".review-actions input:first-child",
+            findReviewQueueElements,
+            injectAutoLinkReviewQueue,
+            autoLinkAction
+        );
     });
 })();
