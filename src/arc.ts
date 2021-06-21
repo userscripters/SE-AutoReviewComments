@@ -35,9 +35,19 @@ type Injector = (
     action: Actor
 ) => void;
 
-type PopupMaker = {
+type WrapperPopupMaker = {
     popup?: HTMLElement;
     (target: HTMLInputElement, postType: PostType): HTMLElement;
+};
+
+type RemotePopupMaker = {
+    popup?: HTMLElement;
+    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
+};
+
+type ImportExportMaker = {
+    popup?: HTMLElement;
+    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
 };
 
 type UserType =
@@ -348,17 +358,9 @@ type UserInfo = {
                     width:690px;
                     padding:15px 15px 10px
                 }`,
-                `.${arc}.popup .float-left{
-                    float:left
-                }`,
-                `.${arc}.popup .float-right{
-                    float:right
-                }`,
                 `.${arc}.popup .throbber{
                     display:none
                 }`,
-                `.${arc}.popup .remoteerror{
-                    color:red}`,
                 `.${arc}.popup>div>textarea{
                     width:100%;
                     height:442px;
@@ -366,16 +368,26 @@ type UserInfo = {
                 `.${arc}.popup .main{
                     overflow:hidden
                 }`,
+                `.${arc}.popup .main .view {
+                    overflow: auto;
+                    padding: 1vh 1vw;
+                }`,
                 `.${arc}.popup .main .userinfo{
                     padding:5px;
                     margin-bottom:7px;
                     background:#eaefef
                 }`,
+                `.${arc}.popup .main .remoteurl, .${arc}.popup .main .customwelcome {
+                    display: block;
+                    width: 100%;
+                }`,
                 `.${arc}.popup .main .action-list{
                     height:440px;margin:0 0 7px 0 !important;overflow-y:auto
                 }`,
                 `.${arc}.popup .main .action-list li{
-                    width:100%;padding:0;transition:.1s
+                    width:100%;
+                    padding:0;
+                    transition:.1s
                 }`,
                 `.${arc}.popup .main .action-list li:hover{
                     background-color:#f2f2f2
@@ -384,7 +396,9 @@ type UserInfo = {
                     background-color:#e6e6e6
                 }`,
                 `.${arc}.popup .main .action-list li label{
-                    position:relative;display:block;padding:10px
+                    position:relative;
+                    display:block;
+                    padding:10px;
                 }`,
                 `.${arc}.popup .main .action-list li label .action-name{
                     display:block;
@@ -395,13 +409,6 @@ type UserInfo = {
                     margin:0;
                     color:#888;
                     cursor:default;
-                }`,
-                `.${arc}.popup .main .action-list li label .action-name textarea,
-                .auto-review-comments.popup .main .action-list li label .action-desc textarea{
-                    width:99%;
-                }`,
-                `.${arc}.popup .main .action-list li label .action-desc textarea{
-                    height:42px;
                 }`,
                 `.${arc}.popup .main .action-list li label .quick-insert{
                     display:none;
@@ -422,15 +429,19 @@ type UserInfo = {
                     -webkit-box-shadow:none;
                 }`,
                 `.${arc}.popup .main .action-list li:hover label .quick-insert{
-                    display:block}`,
+                    display:block
+                }`,
                 `.${arc}.popup .main .action-list li label .quick-insert:hover{
                     background-color:#222;
                     color:#fff
                 }`,
-                `.${arc}.popup .actions,.auto-review-comments.popup .main .popup-actions .actions{
+                `.${arc}.popup .actions,.auto-review-comments.popup .main .actions{
                     margin:6px
                 }`,
-                `.${arc}.popup .main .popup-actions .popup-submit{float:none;margin:0 0 5px 0}`,
+                `.${arc}.popup .main .popup-submit{
+                    float:none;
+                    margin:0 0 5px 0;
+                }`,
                 `.${arc}.announcement{
                     padding:7px;
                     margin-bottom:10px;
@@ -548,14 +559,14 @@ type UserInfo = {
         };
 
         /**
-         * @summary makes popup action list
-         * @param {HTMLElement} popup
-         * @param {string} id
+         * @summary makes popup action view
+         * @param {HTMLElement} popup wrapper popup
+         * @param {string} id actions wrapper id
          * @returns {HTMLElement}
          */
-        const makePopupActions = (popup: HTMLElement, id: string) => {
+        const makeActionsView = (popup: HTMLElement, id: string) => {
             const wrap = document.createElement("div");
-            wrap.classList.add("popup-actions");
+            wrap.classList.add("view");
             wrap.id = id;
 
             const actionsWrap = document.createElement("div");
@@ -634,10 +645,6 @@ type UserInfo = {
                 "throbber"
             );
 
-            const errSpan = document.createElement("span");
-            errSpan.classList.add("remoteerror");
-            errSpan.id = "remoteerror2";
-
             const welcomeBtn = makeButton(
                 "welcome",
                 "configure welcome",
@@ -663,7 +670,6 @@ type UserInfo = {
                 sep.cloneNode(),
                 remoteBtn,
                 dotsImg,
-                errSpan,
                 sep.cloneNode(),
                 welcomeBtn,
             ];
@@ -674,13 +680,13 @@ type UserInfo = {
         };
 
         /**
-         * @summary makes active pane
-         * @param {string} id
+         * @summary makes active view
+         * @param {string} id view id
          * @returns {HTMLElement}
          */
-        const makeActivePopup = (id: string) => {
+        const makeActiveView = (id: string) => {
             const wrap = document.createElement("div");
-            wrap.classList.add("popup-active-pane");
+            wrap.classList.add("view");
 
             const uinfo = document.createElement("div");
             uinfo.classList.add("userinfo");
@@ -723,10 +729,11 @@ type UserInfo = {
          * @param {PostType} postType parent post type
          * @returns {HTMLElement}
          */
-        const makeWelcomePopup: WelcomePopupMaker = (popup, id, postType) => {
-            if (makeWelcomePopup.popup) return makeWelcomePopup.popup;
+        const makeWelcomeView: WelcomePopupMaker = (popup, id, postType) => {
+            if (makeWelcomeView.popup) return makeWelcomeView.popup;
 
             const wrap = document.createElement("div");
+            wrap.classList.add("view");
             wrap.id = id;
 
             const text = document.createTextNode(
@@ -740,39 +747,37 @@ type UserInfo = {
             input.type = "text";
             input.id = "customwelcome";
 
+            input.addEventListener("change", () => {
+                Store.save("WelcomeMessage", input.value);
+                hide(wrap);
+            });
+
             welcomeWrap.append(input);
 
             const actionsWrap = document.createElement("div");
             actionsWrap.classList.add("float-right");
 
-            const sep = makeSeparator();
-
             const actions: Node[] = [
                 makeButton("force", "force", "welcome-force"),
-                sep,
-                makeButton("save", "save", "welcome-save"),
-                sep.cloneNode(),
+                makeSeparator(),
                 makeButton("cancel", "cancel", "welcome-cancel"),
             ];
 
-            wrap.addEventListener("click", ({ target }) => {
+            popup.addEventListener("click", ({ target }) => {
                 const el = <HTMLElement>target;
 
-                const actionMap: Record<string, (p: HTMLElement) => void> = {
-                    ".popup-actions-welcome": (p) => {
+                const actionMap: Record<
+                    string,
+                    (p: HTMLElement, w: HTMLElement) => void
+                > = {
+                    ".popup-actions-welcome": (_p, w) => {
                         input.value ||= Store.load("WelcomeMessage");
-                        show(p);
+                        show(w);
                     },
-                    ".welcome-cancel": hide,
-                    ".welcome-force": (p) => {
+                    ".welcome-cancel": (_p, w) => hide(w),
+                    ".welcome-force": () => {
                         Store.save("ShowGreeting", true);
-                        writeComments(p, postType);
-                        hide(p);
-                    },
-                    ".welcome-save": (p) => {
-                        const { value } = input;
-                        Store.save("WelcomeMessage", value);
-                        hide(p);
+                        updateComments(popup, postType);
                     },
                 };
 
@@ -783,7 +788,7 @@ type UserInfo = {
 
                 if (!action) return debugLogger.log({ target });
 
-                action(popup);
+                action(popup, wrap);
             });
 
             actionsWrap.append(...actions);
@@ -793,23 +798,31 @@ type UserInfo = {
         };
 
         /**
-         * @summary makes the remote popup
-         * @param {string} id
+         * @summary makes the remote view
+         * @param {HTMLElement} popup wrapper popup
+         * @param {string} id view id
+         * @param {PostType} postType parent post type
          * @returns {HTMLElement}
          */
-        const makeRemotePopup = (id: string) => {
+        const makeRemoteView: RemotePopupMaker = (popup, id, postType) => {
+            if (makeRemoteView.popup) return makeRemoteView.popup;
+
             const wrap = document.createElement("div");
-            wrap.classList.add("share-tip");
+            wrap.classList.add("view");
             wrap.id = id;
 
             const text = document.createTextNode(
-                "enter url for remote source of comments (use import/export to create jsonp)"
+                "Remote source of comments (use import/export to create JSONP)"
             );
 
-            const input = document.createElement("input");
-            input.classList.add("remoteurl");
-            input.type = "text";
-            input.id = "remoteurl";
+            const remoteInput = document.createElement("input");
+            remoteInput.classList.add("remoteurl");
+            remoteInput.type = "text";
+            remoteInput.id = "remoteurl";
+
+            remoteInput.addEventListener("change", () => {
+                Store.save("RemoteUrl", remoteInput.value);
+            });
 
             const image = makeImage(
                 "throbber1",
@@ -817,40 +830,74 @@ type UserInfo = {
                 "throbber"
             );
 
-            const errText = document.createElement("span");
-            errText.classList.add("remoteerror");
-            errText.id = "remoteerror1";
-
             const autoWrap = document.createElement("div");
             autoWrap.classList.add("float-left");
 
             const autoInput = document.createElement("input");
             autoInput.type = "checkbox";
             autoInput.id = "remoteauto";
+            autoInput.checked = Store.load("AutoRemote");
+
+            autoInput.addEventListener("change", () => {
+                Store.save("AutoRemote", autoInput.checked);
+            });
 
             const autoLabel = document.createElement("label");
             autoLabel.title = "get from remote on every page refresh";
             autoLabel.htmlFor = autoInput.id;
-            autoLabel.innerHTML = "auto-get";
+            autoLabel.textContent = "auto-get";
 
             autoWrap.append(autoInput, autoLabel);
 
             const actionsWrap = document.createElement("div");
             actionsWrap.classList.add("float-right");
 
-            const sep = makeSeparator();
-
             const actions: Node[] = [
                 makeButton("get now", "get remote", "remote-get"),
-                sep,
-                makeButton("save", "save remote", "remote-save"),
-                sep.cloneNode(),
+                makeSeparator(),
                 makeButton("cancel", "cancel remote", "remote-cancel"),
             ];
 
+            popup.addEventListener("click", ({ target }) => {
+                const el = <HTMLElement>target;
+
+                const actionMap = {
+                    ".popup-actions-remote": () => {
+                        remoteInput.value &&= Store.load("RemoteUrl");
+                        autoInput.checked = Store.load("AutoRemote");
+                        show(wrap);
+                    },
+                    ".remote-cancel": () => {
+                        hide(image);
+                        hide(wrap);
+                    },
+                    ".remote-get": () => {
+                        show(image);
+                        loadFromRemote(
+                            remoteInput.value,
+                            () => {
+                                updateComments(popup, postType);
+                                hide(image);
+                            },
+                            ({ message }: Error) =>
+                                notify(popup, "Problem", message)
+                        );
+                    },
+                };
+
+                const [, action] =
+                    Object.entries(actionMap).find(([key]) =>
+                        el.matches(key)
+                    ) || [];
+
+                if (!action) return debugLogger.log({ el, wrap });
+
+                action();
+            });
+
             actionsWrap.append(...actions);
 
-            wrap.append(text, input, image, errText, autoWrap, actionsWrap);
+            wrap.append(text, remoteInput, image, autoWrap, actionsWrap);
 
             return wrap;
         };
@@ -862,7 +909,7 @@ type UserInfo = {
          * @param {PostType} postType
          * @returns {HTMLElement}
          */
-        const makePopup: PopupMaker = (input, postType) => {
+        const makePopup: WrapperPopupMaker = (input, postType) => {
             if (makePopup.popup) return makePopup.popup;
 
             const popup = document.createElement("div");
@@ -880,22 +927,19 @@ type UserInfo = {
             main.id = "main";
 
             popup.addEventListener("click", ({ target }) => {
-                debugLogger.log({ target });
-
                 const actionMap: Record<
                     string,
                     (popup: HTMLElement, postType: PostType) => void
                 > = {
-                    ".popup-actions-welcome": (p) =>
-                        show(
-                            makeWelcomePopup(popup, "welcome-popup", postType)
-                        ),
+                    ".popup-actions-welcome": () =>
+                        show(makeWelcomeView(popup, "welcome-popup", postType)),
                     ".popup-actions-cancel": (p) => fadeOut(p),
                     ".popup-actions-reset": (p, t) => {
                         resetComments();
-                        writeComments(p, t);
+                        updateComments(p, t);
                     },
-                    ".popup-actions-impexp": (p, t) => importExport(p, t),
+                    ".popup-actions-impexp": (p, t) =>
+                        show(makeImpExpView(p, "impexp-popup", t)),
                     ".popup-actions-toggledesc": (p) => {
                         const newVisibility = !Store.load("hide-desc");
                         Store.save("hide-desc", newVisibility);
@@ -943,17 +987,23 @@ type UserInfo = {
                         (<HTMLElement>target).matches(selector)
                     ) || [];
 
-                if (!action) return;
+                if (!action) return debugLogger.log({ target, postType });
 
                 action(popup, postType);
             });
 
-            main.append(
-                makeActivePopup("userinfo"),
-                makeRemotePopup("remote-popup"),
-                makeWelcomePopup(popup, "welcome-popup", postType),
-                makePopupActions(popup, "popup-actions")
-            );
+            const views: HTMLElement[] = [
+                makeActiveView("userinfo"),
+                makeRemoteView(popup, "remote-popup", postType),
+                makeWelcomeView(popup, "welcome-popup", postType),
+                makeImpExpView(popup, "impexp-popup", postType),
+                makeActionsView(popup, "popup-actions"),
+            ];
+
+            const hidden = views.slice(1, -1);
+            hidden.forEach(hide);
+
+            main.append(...views);
 
             popup.append(close, header, main);
 
@@ -1411,50 +1461,38 @@ type UserInfo = {
 
         /**
          * @summary Show textarea in front of popup to import/export all comments (for other sites or for posting somewhere)
-         * @param {HTMLElement} popup
-         * @param {string} postType
+         * @param {HTMLElement} popup wrapper popup
+         * @param {string} id view id
+         * @param {PostType} postType parent post type
          */
-        function importExport(popup: HTMLElement, postType: string) {
-            const tohide = document.getElementById("main")!;
+        const makeImpExpView: ImportExportMaker = (popup, id, postType) => {
+            if (makeImpExpView.popup) return makeImpExpView.popup;
 
             const wrap = document.createElement("div");
+            wrap.classList.add("view");
+            wrap.id = id;
 
             const actionWrap = document.createElement("div");
             actionWrap.classList.add("actions");
 
             const txtArea = document.createElement("textarea");
 
+            txtArea.addEventListener("change", async () => {
+                doImport(txtArea.value);
+                updateComments(popup, postType);
+                hide(wrap);
+            });
+
             const jsonpBtn = document.createElement("a");
             jsonpBtn.classList.add("jsonp");
-
-            const saveBtn = document.createElement("a");
-            saveBtn.classList.add("save");
 
             const cancelBtn = document.createElement("a");
             cancelBtn.classList.add("cancel");
 
-            actionWrap.append(
-                jsonpBtn,
-                makeSeparator(),
-                saveBtn,
-                makeSeparator(),
-                cancelBtn
-            );
+            actionWrap.append(jsonpBtn, makeSeparator(), cancelBtn);
 
             //TODO: <div> & <textarea> same level??
             wrap.append(txtArea, actionWrap);
-
-            const { style } = tohide;
-
-            //Painful, but shortest way I've found to position div over the tohide element
-            Object.assign(wrap.style, {
-                position: "absolute",
-                left: style.left, //tohide.position().left,
-                top: style.top, //tohide.position().top,
-                width: style.width,
-                height: style.height,
-                background: "white",
-            });
 
             const numComments = Store.load("commentcount");
 
@@ -1490,14 +1528,9 @@ type UserInfo = {
 
             cancelBtn.addEventListener("click", () => fadeOut(wrap));
 
-            saveBtn.addEventListener("click", async () => {
-                doImport(txtArea.value);
-                writeComments(popup, postType);
-                await fadeOut(wrap);
-            });
-
             popup.append(wrap);
-        }
+            return wrap;
+        };
 
         //Import complete text into comments
         function doImport(text: string) {
@@ -1623,7 +1656,7 @@ type UserInfo = {
             const html = markdownToHTML(value);
             Store.save(id, tag(html));
             return (
-                ((Store.load("showGreeting") && Store.load("WelcomeMessage")) ||
+                ((Store.load("ShowGreeting") && Store.load("WelcomeMessage")) ||
                     "") + untag(html)
             );
         };
@@ -1656,6 +1689,7 @@ type UserInfo = {
             area.addEventListener("change", ({ target }) => {
                 const { id, value } = <HTMLTextAreaElement>target;
                 el.innerHTML = saveComment(id, value);
+                enable(`#${Store.prefix}-submit`);
             });
 
             //save/cancel links to add to textarea
@@ -1713,67 +1747,7 @@ type UserInfo = {
             return comments;
         };
 
-        /**
-         * @summary rewrite all comments to ui (typically after import or reset)
-         * @param {HTMLElement} popup
-         * @param {string} postType
-         */
-        function writeComments(popup: HTMLElement, postType: string) {
-            const numComments = Store.load("commentcount");
-
-            if (!numComments) resetComments();
-
-            const ul = popup.querySelector(".action-list")!;
-
-            empty(ul);
-
-            const comments = loadComments(numComments);
-
-            const listItems = comments
-                .filter(({ name }) => IsCommentValidForPostType(name, postType))
-                .map(({ name, desc }, i) => {
-                    const cname = name.replace(Target.MATCH_ALL, "");
-
-                    var descr = desc
-                        .replace(/\$SITENAME\$/g, sitename)
-                        .replace(/\$SITEURL\$/g, site)
-                        .replace(/\$MYUSERID\$/g, myuserid)
-                        .replace(/\$/g, "$$$");
-
-                    const optionElement = makeOption(
-                        i.toString(),
-                        cname.replace(/\$/g, "$$$"),
-                        (Store.load("showGreeting")
-                            ? Store.load("WelcomeMessage") || ""
-                            : "") + descr
-                    );
-
-                    const descrEl =
-                        optionElement.querySelector(".action-desc")!;
-                    descrEl.innerHTML = descr;
-
-                    return optionElement;
-                });
-
-            ul.append(...listItems);
-
-            toggleDescriptionVisibility(popup);
-            AddOptionEventHandlers(popup);
-            AddSearchEventHandlers(popup);
-        }
-
-        /**
-         * @summary Checks if a given comment could be used together with a given post type.
-         * @param {string} comment The comment itself.
-         * @param {Target} postType The type of post the comment could be placed on.
-         * @return {boolean} true if the comment is valid for the type of post; false otherwise.
-         */
-        function IsCommentValidForPostType(comment: string, postType: string) {
-            const designator = comment.match(Target.MATCH_ALL);
-            return designator ? -1 < designator.indexOf(postType) : true;
-        }
-
-        function AddOptionEventHandlers(popup: HTMLElement) {
+        function setupOptionEventHandlers(popup: HTMLElement) {
             popup.addEventListener("dblclick", ({ target }) => {
                 const el = <HTMLElement>target;
                 if (!el.matches(".action-desc")) return;
@@ -1835,6 +1809,67 @@ type UserInfo = {
                     document.getElementById(`${Store.prefix}-submit`)?.click();
                 }
             });
+        }
+
+        /**
+         * @summary updates comments in the UI
+         * @param {HTMLElement} popup wrapper popup
+         * @param {string} postType parent post type
+         * @returns {void}
+         */
+        function updateComments(popup: HTMLElement, postType: string) {
+            const numComments = Store.load("commentcount");
+
+            if (!numComments) resetComments();
+
+            const ul = popup.querySelector(".action-list")!;
+
+            empty(ul);
+
+            const comments = loadComments(numComments);
+
+            const listItems = comments
+                .filter(({ name }) => IsCommentValidForPostType(name, postType))
+                .map(({ name, desc }, i) => {
+                    const cname = name.replace(Target.MATCH_ALL, "");
+
+                    var descr = desc
+                        .replace(/\$SITENAME\$/g, sitename)
+                        .replace(/\$SITEURL\$/g, site)
+                        .replace(/\$MYUSERID\$/g, myuserid)
+                        .replace(/\$/g, "$$$");
+
+                    const optionElement = makeOption(
+                        i.toString(),
+                        cname.replace(/\$/g, "$$$"),
+                        ((Store.load("showGreeting") &&
+                            Store.load("WelcomeMessage")) ||
+                            "") + descr
+                    );
+
+                    const descrEl =
+                        optionElement.querySelector(".action-desc")!;
+                    descrEl.innerHTML = descr;
+
+                    return optionElement;
+                });
+
+            ul.append(...listItems);
+
+            toggleDescriptionVisibility(popup);
+            setupOptionEventHandlers(popup);
+            AddSearchEventHandlers(popup);
+        }
+
+        /**
+         * @summary Checks if a given comment could be used together with a given post type.
+         * @param {string} comment The comment itself.
+         * @param {Target} postType The type of post the comment could be placed on.
+         * @return {boolean} true if the comment is valid for the type of post; false otherwise.
+         */
+        function IsCommentValidForPostType(comment: string, postType: string) {
+            const designator = comment.match(Target.MATCH_ALL);
+            return designator ? -1 < designator.indexOf(postType) : true;
         }
 
         function filterOn(popup: HTMLElement, text: string) {
@@ -1967,11 +2002,11 @@ type UserInfo = {
         //TODO: test out the change
         //customise welcome
         //reverse compatible!
-        async function loadFromRemote(
+        const loadFromRemote = async (
             url: string,
             success: (...args: any[]) => any,
-            error: (...args: any[]) => any
-        ) {
+            error: (err: Error) => unknown
+        ) => {
             try {
                 const data = await getJSONP<
                     { name: string; description: string }[]
@@ -1988,102 +2023,6 @@ type UserInfo = {
             } catch (err) {
                 error(err);
             }
-        }
-
-        /**
-         * @summary Factored out from main popup creation, just because it's too long
-         * @param {HTMLElement} popup
-         * @param {string} postType
-         */
-        function setupRemoteBox(popup: HTMLElement, postType: string) {
-            var remote = popup.querySelector<HTMLElement>("#remote-popup")!;
-            var remoteerror = remote.querySelector("#remoteerror1");
-            var urlfield =
-                remote.querySelector<HTMLInputElement>("#remoteurl")!;
-            var autofield =
-                remote.querySelector<HTMLInputElement>("#remoteauto")!;
-            var throbber = remote.querySelector<HTMLElement>("#throbber1")!;
-
-            popup
-                .querySelector(".popup-actions-remote")!
-                .addEventListener("click", function () {
-                    urlfield.value = Store.load("RemoteUrl");
-                    autofield.checked = Store.load("AutoRemote") == "true";
-                    show(remote);
-                });
-
-            popup
-                .querySelector(".remote-cancel")!
-                .addEventListener("click", function () {
-                    hide(throbber);
-                    remoteerror!.innerHTML = "";
-                    hide(remote);
-                });
-
-            popup
-                .querySelector(".remote-save")!
-                .addEventListener("click", function () {
-                    Store.save("RemoteUrl", urlfield.value);
-                    Store.save("AutoRemote", autofield.checked);
-                    hide(remote);
-                });
-
-            popup
-                .querySelector(".remote-get")!
-                .addEventListener("click", function () {
-                    show(throbber);
-                    loadFromRemote(
-                        urlfield.value,
-                        function () {
-                            writeComments(popup, postType);
-                            hide(throbber);
-                        },
-                        ({ message }: Error) =>
-                            (remoteerror!.innerHTML = message)
-                    );
-                });
-        }
-
-        /**
-         * @summary sets up a welcome box
-         * @param {HTMLElement} popup
-         * @param {string} postType
-         * @returns {void}
-         */
-        const setupWelcomeBox = (popup: HTMLElement, postType: string) => {
-            const custom = <HTMLInputElement>(
-                document.getElementById("customwelcome")
-            );
-            popup.addEventListener("click", ({ target }) => {
-                const el = <HTMLElement>target;
-
-                const actionMap: Record<string, (p: HTMLElement) => void> = {
-                    ".popup-actions-welcome": (p) => {
-                        custom.value ||= Store.load("WelcomeMessage");
-                        show(p);
-                    },
-                    ".welcome-cancel": hide,
-                    ".welcome-force": (p) => {
-                        Store.save("ShowGreeting", true);
-                        writeComments(p, postType);
-                        hide(p);
-                    },
-                    ".welcome-save": (p) => {
-                        const { value } = custom;
-                        Store.save("WelcomeMessage", value);
-                        hide(p);
-                    },
-                };
-
-                const [, action] =
-                    Object.entries(actionMap).find(([key]) =>
-                        el.matches(key)
-                    ) || [];
-
-                if (!action) return debugLogger.log({ target });
-
-                action(popup);
-            });
         };
 
         /**
@@ -2111,10 +2050,7 @@ type UserInfo = {
         ) => {
             const popup = makePopup(target, postType);
 
-            if (!popup.isConnected) {
-                // Attach to #content, everything else is too fragile.
-                document.body.append(popup);
-            }
+            if (!popup.isConnected) document.body.append(popup);
 
             showPopup(popup);
 
@@ -2122,22 +2058,19 @@ type UserInfo = {
             Store.save("ShowGreeting", false);
 
             //TODO: if popup is created only once, listeners should be setup only once
-            [writeComments, setupRemoteBox, setupWelcomeBox].forEach(
-                (initiator) => initiator(popup, postType)
-            );
+            [updateComments].forEach((initiator) => initiator(popup, postType));
 
             //Auto-load from remote if required
             if (!window.VersionChecked && Store.load("AutoRemote") == "true") {
                 var throbber = document.getElementById("throbber2")!;
-                var remoteerror = document.getElementById("remoteerror2")!;
                 show(throbber);
                 loadFromRemote(
                     Store.load("RemoteUrl"),
                     () => {
-                        writeComments(popup, postType);
+                        updateComments(popup, postType);
                         hide(throbber);
                     },
-                    ({ message }: Error) => (remoteerror.innerHTML = message)
+                    ({ message }: Error) => notify(popup, "Problem", message)
                 );
             }
 
