@@ -19,6 +19,8 @@ interface Window {
 
 declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
 
+type PostType = "answer" | "question";
+
 type Placement = readonly [insert: HTMLElement | null, place: HTMLElement];
 
 type Locator<T extends HTMLElement = HTMLElement> = (where: T) => Placement;
@@ -32,6 +34,11 @@ type Injector = (
     placed: HTMLElement,
     action: Actor
 ) => void;
+
+type PopupMaker = {
+    popup?: HTMLElement;
+    (target: HTMLInputElement, postType: string): HTMLElement;
+};
 
 type UserType =
     | "unregistered"
@@ -152,11 +159,12 @@ type UserInfo = {
     /**
      * @summary fades element to provided opacity
      * @param {HTMLElement} element
+     * @param {number} min
      * @param {number} [speed]
-     * @param {number} [min]
+     *
      * @returns {Promise<HTMLElement>}
      */
-    const fadeTo = async (element: HTMLElement, speed = 200, min = 0) => {
+    const fadeTo = async (element: HTMLElement, min: number, speed = 200) => {
         const { style } = element;
         style.opacity = style.opacity || "1";
         const steps = Math.ceil(speed / 16);
@@ -179,13 +187,17 @@ type UserInfo = {
      * @param {HTMLElement} el
      * @param {number} [speed]
      */
-    const fadeOut = (el: HTMLElement, speed = 200) => fadeTo(el, speed);
+    const fadeOut = (el: HTMLElement, speed = 200) => fadeTo(el, 0, speed);
 
     class Store {
         static prefix = "{{PREFIX}}";
 
+        static storage = localStorage;
+
         static get numKeys() {
-            const { length } = localStorage;
+            const {
+                storage: { length },
+            } = this;
             return length;
         }
 
@@ -195,35 +207,41 @@ type UserInfo = {
          * @returns {void}
          */
         static clear(startsWith: string): void {
-            const { numKeys, prefix } = this;
+            const { numKeys, prefix, storage } = this;
 
             for (let i = numKeys - 1; i >= 0; i--) {
-                const key = localStorage.key(i)!;
+                const key = storage.key(i)!;
 
                 if (key.startsWith(prefix + startsWith))
-                    localStorage.removeItem(key);
+                    storage.removeItem(key);
             }
         }
 
         static load(key: string) {
-            const { prefix } = this;
-            return localStorage[prefix + key];
+            const { prefix, storage } = this;
+            const val = storage[prefix + key];
+            return val && JSON.parse(val);
         }
 
         static save(key: string, val: string | number | boolean): void {
-            const { prefix } = this;
-            return void (localStorage[prefix + key] = val);
+            const { prefix, storage } = this;
+            return void (storage[prefix + key] = JSON.stringify(val));
         }
 
         static remove(key: string): void {
-            const { prefix } = this;
-            return localStorage.removeItem(prefix + key);
+            const { prefix, storage } = this;
+            return storage.removeItem(prefix + key);
         }
     }
 
-    const CONFIG = {
-        postType: "",
-    };
+    class Debugger {
+        constructor(public on: boolean) {}
+
+        log(msg: unknown, ...params: unknown[]) {
+            const { on } = this;
+            on && console.debug(msg, ...params);
+        }
+    }
 
     StackExchange.ready(() => {
         const VERSION = "{{VERSION}}";
@@ -232,6 +250,8 @@ type UserInfo = {
         const STACKAPPS_URL = "{{STACKAPPS_URL}}";
         const API_VER = "{{API_VER}}";
         const FILTER_UNSAFE = "{{FILTER_UNSAFE}}";
+
+        const debugLogger = new Debugger(Store.load("debug"));
 
         // Self Updating Userscript, see https://gist.github.com/Benjol/874058
         if (typeof window.ARC_AutoUpdate === "function")
@@ -313,7 +333,6 @@ type UserInfo = {
             ""
         ); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
 
-        const username = "user";
         const myuserid = getLoggedInUserId();
 
         if (!Store.load("WelcomeMessage"))
@@ -578,13 +597,15 @@ type UserInfo = {
                 "popup-actions-see"
             );
 
-            seeBtn.addEventListener("mouseenter", () =>
-                fadeTo(popup, 200, 0.4)
-            );
+            seeBtn.addEventListener("mouseenter", () => {
+                fadeTo(popup, 0.4);
+                fadeOut(seeBtn.closest(".main")!);
+            });
 
-            seeBtn.addEventListener("mouseleave", () =>
-                fadeTo(popup, 200, 1.0)
-            );
+            seeBtn.addEventListener("mouseleave", () => {
+                fadeTo(popup, 1.0);
+                fadeTo(seeBtn.closest(".main")!, 1);
+            });
 
             const filterBtn = makeButton(
                 "filter",
@@ -804,11 +825,6 @@ type UserInfo = {
             return wrap;
         };
 
-        type PopupMaker = {
-            popup?: HTMLElement;
-            (target: HTMLInputElement, postType: string): HTMLElement;
-        };
-
         /**
          * @summary creates the popup markup
          * @description memoizable popup maker
@@ -837,6 +853,8 @@ type UserInfo = {
             main.id = "main";
 
             popup.addEventListener("click", ({ target }) => {
+                debugLogger.log({ target });
+
                 const actionMap: Record<
                     string,
                     (popup: HTMLElement, postType: string) => void
@@ -851,7 +869,6 @@ type UserInfo = {
                         Store.save("hide-desc", !Store.load("hide-desc"));
                         ShowHideDescriptions(p);
                     },
-                    ".popup-close": (p) => fadeOut(p),
                     ".popup-submit": (p) => {
                         const selected = p.querySelector(
                             "input[type=radio]:checked"
@@ -860,7 +877,7 @@ type UserInfo = {
                         const md = htmlToMarkDown(
                             selected.closest(".action-desc")!.innerHTML
                         )
-                            .replace(/\[username\]/g, username)
+                            .replace(/\[username\]/g, "") //TODO: get user info
                             .replace(/\[OP\]/g, getOP());
 
                         input.value = md;
@@ -916,12 +933,13 @@ type UserInfo = {
             close.classList.add("notify-close");
 
             const dismissal = document.createElement("a");
+            dismissal.classList.add("notify-close");
             dismissal.title = "dismiss this notification";
             dismissal.textContent = "x";
 
             close.append(dismissal);
 
-            wrap.append(close, b(title), text(message));
+            wrap.append(b(title), text(message), close);
             return wrap;
         };
 
@@ -1459,7 +1477,7 @@ type UserInfo = {
                 }
 
                 if (line.length > 0) {
-                    var desc = markDownToHtml(line);
+                    var desc = markdownToHTML(line);
                     Store.save("desc-" + descIndex, tag(desc));
                     descIndex++;
                 }
@@ -1503,7 +1521,7 @@ type UserInfo = {
             return unescapeHtml(markdown);
         }
 
-        function markDownToHtml(markdown: string) {
+        function markdownToHTML(markdown: string) {
             var html = escapeHtml(markdown).replace(
                 /\[([^\]]+)\]\((.+?)\)/g,
                 '<a href="$2">$1</a>'
@@ -1554,13 +1572,33 @@ type UserInfo = {
             ).disabled = false);
 
         /**
-         * @summary Replace contents of element with a textarea (containing markdown of contents), and save/cancel buttons
+         * @summary Save textarea contents, replace element html with new edited content
+         * @param {string} id
+         * @param {string} value
+         * @returns {string}
          */
-        function ToEditable(el: HTMLElement) {
-            var backup = el.innerHTML;
-            var html = tag(
+        const saveComment = (id: string, value: string) => {
+            const html = markdownToHTML(value);
+            Store.save(id, tag(html));
+            return (
+                ((Store.load("showGreeting") && Store.load("WelcomeMessage")) ||
+                    "") + untag(html)
+            );
+        };
+
+        /**
+         * @summary Replace contents of element with a textarea (containing markdown of contents), and save/cancel buttons
+         * @param {HTMLElement} el
+         */
+        function openEditMode(el: HTMLElement) {
+            const { textContent } = el;
+
+            const backup = textContent || "";
+
+            const html = tag(
                 backup.replace(Store.load("WelcomeMessage") || "", "")
             ); //remove greeting before editing..
+
             if (html.indexOf("<textarea") > -1) return; //don't want to create a new textarea inside this one!
 
             const area = document.createElement("textarea");
@@ -1572,23 +1610,13 @@ type UserInfo = {
             // Disable insert while editing.
             disable(`#${Store.prefix}-submit`);
 
-            BorkFor(el); //this is a hack
-            //save/cancel links to add to textarea
-            const actions = document.createElement("div");
-            actions.classList.add("actions");
+            BorkFor(el); //this is a hack //TODO: remove hack
 
-            const save = document.createElement("a");
-            save.addEventListener("click", (event) => {
-                event.preventDefault(); //TODO: check if needed
-
-                const { parentElement } = save;
-
-                SaveEditable(parentElement!.parentElement!);
+            area.addEventListener("change", ({ target }) => {
+                const { id, value } = <HTMLTextAreaElement>target;
+                el.innerHTML = saveComment(id, value);
                 UnborkFor(el);
             });
-
-            const sep = document.createElement("span");
-            sep.classList.add("lsep");
 
             const cancel = document.createElement("a");
             cancel.addEventListener("click", (event) => {
@@ -1604,7 +1632,11 @@ type UserInfo = {
                 UnborkFor(el);
             });
 
-            actions.append(save, sep, cancel);
+            //save/cancel links to add to textarea
+            const actions = document.createElement("div");
+            actions.classList.add("actions");
+
+            actions.append(cancel);
             el.append(area, actions);
         }
 
@@ -1618,15 +1650,6 @@ type UserInfo = {
             var label = el.closest("label")!;
             const { previousElementSibling } = label;
             label.htmlFor = previousElementSibling!.id;
-        }
-        //Save textarea contents, replace element html with new edited content
-        function SaveEditable(el: HTMLElement) {
-            var html = markDownToHtml(el.querySelector("textarea")!.value);
-            Store.save(el.id, tag(html));
-            el.innerHTML =
-                (Store.load("showGreeting")
-                    ? Store.load("WelcomeMessage") || ""
-                    : "") + untag(html);
         }
 
         function CancelEditable(el: HTMLElement, backup: string) {
@@ -1729,8 +1752,10 @@ type UserInfo = {
 
         function AddOptionEventHandlers(popup: HTMLElement) {
             popup.addEventListener("dblclick", ({ target }) => {
-                if (!(<HTMLElement>target).matches(".action-desc")) return;
-                ToEditable(<HTMLElement>target);
+                const el = <HTMLElement>target;
+
+                if (!el.matches(".action-desc")) return;
+                openEditMode(el);
             });
 
             popup.addEventListener("click", ({ target }) => {
@@ -1739,7 +1764,9 @@ type UserInfo = {
                 if (!el.matches("label > .quick-insert")) return;
 
                 const action = el.closest("li");
-                const radio = el.closest("input");
+                const radio = action?.querySelector("input");
+
+                debugLogger.log({ action, radio });
 
                 if (!action || !radio)
                     return notify(popup, "Problem", "something went wrong");
@@ -1931,7 +1958,7 @@ type UserInfo = {
                 Store.clear("desc-");
                 data.forEach(({ name, description }, i) => {
                     Store.save("name-" + i, name);
-                    Store.save("desc-" + i, markDownToHtml(description));
+                    Store.save("desc-" + i, markdownToHTML(description));
                 });
                 success();
             } catch (err) {
@@ -2032,6 +2059,19 @@ type UserInfo = {
         };
 
         /**
+         * @summary shows the popup (prevents SE overrides)
+         * @param {HTMLElement} popup
+         * @returns {void}
+         */
+        const showPopup = (popup: HTMLElement) => {
+            fadeTo(popup, 1);
+            const { style, classList } = popup;
+            style.display = "";
+            classList.remove("popup-closing");
+            classList.remove("popup-closed");
+        };
+
+        /**
          * @summary creates ARC modal and wires functionality
          * @param {HTMLInputElement} target
          * @param {string} postType
@@ -2043,9 +2083,7 @@ type UserInfo = {
         ) => {
             const popup = makePopup(target, postType);
 
-            fadeTo(popup, 200, 1);
-
-            CONFIG.postType = postType;
+            showPopup(popup);
 
             //Reset this, otherwise we get the greeting twice...
             Store.save("ShowGreeting", false);
@@ -2159,10 +2197,10 @@ type UserInfo = {
 
             const div = document.getElementById(divId)!;
 
-            var injectNextTo = div.querySelector<HTMLElement>(
+            const injectNextTo = div.querySelector<HTMLElement>(
                 ".js-comment-help-link"
             )!;
-            var placeCommentIn = div.querySelector("textarea")!;
+            const placeCommentIn = div.querySelector("textarea")!;
             return [injectNextTo, placeCommentIn];
         }
 
@@ -2194,13 +2232,13 @@ type UserInfo = {
          * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the
          *                     comment should be placed.
          */
-        function findClosureElements(_where: HTMLElement): Placement {
+        const findClosureElements = (_where: HTMLElement): Placement => {
             //TODO: why where is not used?
             const injectTo = document.querySelector<HTMLElement>(
                 ".close-as-off-topic-pane textarea"
             )!;
             return [injectTo, injectTo];
-        }
+        };
 
         /**
          * @summary A locator for the edit summary you get in the "Help and Improvement" review queue.
@@ -2217,13 +2255,13 @@ type UserInfo = {
         }
 
         /**
-         * @summary
+         * @summary makes the "auto" button
          * @param {Actor} what The function that will be called when the link is clicked.
          * @param {HTMLElement} next The DOM element next to which we'll place the link.
          * @param {HTMLElement} where The DOM element into which the comment should be placed.
          * @returns {HTMLAnchorElement}
          */
-        const makeAutoLink = (
+        const makePopupOpenButton = (
             callback: Actor,
             next: Parameters<Actor>[0],
             where: Parameters<Actor>[1]
@@ -2237,8 +2275,6 @@ type UserInfo = {
             });
             return alink;
         };
-
-        type PostType = "answer" | "question";
 
         /**
          * @summary gets target type by post type
@@ -2284,7 +2320,7 @@ type UserInfo = {
             const tgt = getTargetType(where, clsMap);
 
             const lsep = makeSeparator();
-            const alink = makeAutoLink(what, placeCommentIn, tgt);
+            const alink = makePopupOpenButton(what, placeCommentIn, tgt);
             where.after(lsep, alink);
         };
 
@@ -2318,7 +2354,7 @@ type UserInfo = {
             const tgt = getTargetType(where, clsMap);
 
             const lsep = makeSeparator();
-            const alink = makeAutoLink(what, placeCommentIn, tgt);
+            const alink = makePopupOpenButton(what, placeCommentIn, tgt);
             where.after(lsep, alink);
         };
         /**
@@ -2338,7 +2374,11 @@ type UserInfo = {
             if (existingAutoLinks.length) return;
 
             const lsep = makeSeparator();
-            const alink = makeAutoLink(what, placeCommentIn, Target.Closure);
+            const alink = makePopupOpenButton(
+                what,
+                placeCommentIn,
+                Target.Closure
+            );
             where.after(lsep, alink);
         };
 
@@ -2355,11 +2395,11 @@ type UserInfo = {
             what: Actor
         ) => {
             // Don't add auto links if one already exists
-            var existingAutoLinks = siblings(where, ".comment-auto-link");
+            const existingAutoLinks = siblings(where, ".comment-auto-link");
             if (existingAutoLinks.length) return;
 
             const lsep = makeSeparator();
-            const alink = makeAutoLink(
+            const alink = makePopupOpenButton(
                 what,
                 placeCommentIn,
                 Target.EditSummaryQuestion
