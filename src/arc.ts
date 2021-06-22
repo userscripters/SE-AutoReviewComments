@@ -40,13 +40,28 @@ type WrapperPopupMaker = {
     (target: HTMLInputElement, postType: PostType): HTMLElement;
 };
 
-type RemotePopupMaker = {
-    popup?: HTMLElement;
+type ActionsViewMaker = {
+    view?: HTMLElement;
+    (popup: HTMLElement, id: string): HTMLElement;
+};
+
+type SearchViewMaker = {
+    view?: HTMLElement;
+    (id: string): HTMLElement;
+};
+
+type WelcomeViewMaker = {
+    view?: HTMLElement;
     (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
 };
 
-type ImportExportMaker = {
-    popup?: HTMLElement;
+type RemoteViewMaker = {
+    view?: HTMLElement;
+    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
+};
+
+type ImpExpViewMaker = {
+    view?: HTMLElement;
     (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
 };
 
@@ -230,6 +245,10 @@ type UserInfo = {
             return void (storage[prefix + key] = JSON.stringify(val));
         }
 
+        static toggle(key: string) {
+            return Store.save(key, !Store.load(key));
+        }
+
         static remove(key: string): void {
             const { prefix, storage } = this;
             return storage.removeItem(prefix + key);
@@ -255,9 +274,21 @@ type UserInfo = {
 
         const debugLogger = new Debugger(Store.load("debug"));
 
+        const site = window.location.hostname;
+
+        const sitename = (StackExchange.options.site.name || "").replace(
+            /\s?Stack Exchange/,
+            ""
+        ); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
+
+        const myuserid = getLoggedInUserId();
+
         // Self Updating Userscript, see https://gist.github.com/Benjol/874058
         if (typeof window.ARC_AutoUpdate === "function")
             return window.ARC_AutoUpdate(VERSION);
+
+        if (!Store.load("WelcomeMessage"))
+            Store.save("WelcomeMessage", `Welcome to ${sitename}! `);
 
         /**
          * @summary checks if a given version is newer
@@ -307,9 +338,9 @@ type UserInfo = {
                 notify(
                     popup,
                     "Please read this!",
-                    `Thank you for installing this script.
+                    `Thank you for installing the userscript.
                     Please note that you can edit the texts inline by double-clicking them.
-                    For other options, please see the README at <a href="${GITHUB_URL}" target="_blank">here</a>.`
+                    For other options, please see the README <a href="${GITHUB_URL}" target="_blank">here</a>.`
                 );
             } else if (LastUpdateCheckDay != today) {
                 updateCheck((newVersion: string, installURL: string) => {
@@ -328,21 +359,10 @@ type UserInfo = {
             Store.save("LastUpdateCheckDay", today);
         };
 
-        const site = window.location.hostname;
-
-        const sitename = (StackExchange.options.site.name || "").replace(
-            / ?Stack Exchange/,
-            ""
-        ); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
-
-        const myuserid = getLoggedInUserId();
-
-        if (!Store.load("WelcomeMessage"))
-            Store.save("WelcomeMessage", `Welcome to ${sitename}! `);
-
-        // These are injection markers and MUST use single-quotes.
-        // The injected strings use double-quotes themselves, so that would result in parser errors.
-
+        /**
+         * @summary injects ARC-specific CSS into the page
+         * @returns {void}
+         */
         const addStyles = () => {
             const style = document.createElement("style");
             document.head.append(style);
@@ -356,7 +376,7 @@ type UserInfo = {
                     position:absolute;
                     display:block;
                     width:690px;
-                    padding:15px 15px 10px
+                    padding:15px 15px 10px;
                 }`,
                 `.${arc}.popup .throbber{
                     display:none
@@ -364,6 +384,9 @@ type UserInfo = {
                 `.${arc}.popup>div>textarea{
                     width:100%;
                     height:442px;
+                }`,
+                `.${arc}.popup .view textarea {
+                    resize: vertical;
                 }`,
                 `.${arc}.popup .main{
                     overflow:hidden
@@ -375,14 +398,15 @@ type UserInfo = {
                 `.${arc}.popup .main .userinfo{
                     padding:5px;
                     margin-bottom:7px;
-                    background:#eaefef
+                    background:#eaefef;
                 }`,
                 `.${arc}.popup .main .remoteurl, .${arc}.popup .main .customwelcome {
                     display: block;
                     width: 100%;
                 }`,
                 `.${arc}.popup .main .action-list{
-                    height:440px;margin:0 0 7px 0 !important;overflow-y:auto
+                    margin:0 0 7px 0 !important;
+                    overflow-y:auto;
                 }`,
                 `.${arc}.popup .main .action-list li{
                     width:100%;
@@ -442,6 +466,9 @@ type UserInfo = {
                     float:none;
                     margin:0 0 5px 0;
                 }`,
+                `.${arc}.announcement strong:first-child {
+                    display: block;
+                }`,
                 `.${arc}.announcement{
                     padding:7px;
                     margin-bottom:10px;
@@ -462,9 +489,6 @@ type UserInfo = {
                     text-decoration:none;
                     font-weight:bold;
                     font-size:16px;
-                }`,
-                `.${arc}.popup .main .searchbox{
-                    display:none
                 }`,
                 `.${arc}.popup .main .searchfilter{
                     width:100%;
@@ -559,12 +583,25 @@ type UserInfo = {
         };
 
         /**
+         * @summary hides the rest of the views and shows the current one
+         * @param {HTMLElement} view current view
+         * @returns {HTMLElement}
+         */
+        const switchToView = (view: HTMLElement) => {
+            document
+                .querySelectorAll<HTMLElement>(`.main .view:not(:last-child)`)
+                .forEach(hide);
+            show(view);
+            return view;
+        };
+
+        /**
          * @summary makes popup action view
          * @param {HTMLElement} popup wrapper popup
          * @param {string} id actions wrapper id
          * @returns {HTMLElement}
          */
-        const makeActionsView = (popup: HTMLElement, id: string) => {
+        const makeActionsView: ActionsViewMaker = (popup, id) => {
             const wrap = document.createElement("div");
             wrap.classList.add("view");
             wrap.id = id;
@@ -579,12 +616,6 @@ type UserInfo = {
             disable(submitBtn);
 
             submitWrap.append(submitBtn);
-
-            const cancelBtn = makeButton(
-                "cancel",
-                "close this popup (or hit Esc)",
-                "popup-actions-cancel"
-            );
 
             const helpBtn = makeLinkButton(
                 GITHUB_URL,
@@ -654,8 +685,6 @@ type UserInfo = {
             const sep = makeSeparator();
 
             const actionsList = [
-                cancelBtn,
-                sep,
                 helpBtn,
                 sep.cloneNode(),
                 seeBtn,
@@ -680,25 +709,24 @@ type UserInfo = {
         };
 
         /**
-         * @summary makes active view
+         * @summary makes the search view
          * @param {string} id view id
          * @returns {HTMLElement}
          */
-        const makeActiveView = (id: string) => {
+        const makeSearchView: SearchViewMaker = (id) => {
+            if (makeSearchView.view) return makeSearchView.view;
+
             const wrap = document.createElement("div");
             wrap.classList.add("view");
+            wrap.id = id;
+
+            const header = document.createElement("h2");
+            header.classList.add("handle");
+            header.innerHTML = "Which review comment to insert?";
 
             const uinfo = document.createElement("div");
             uinfo.classList.add("userinfo");
-            uinfo.id = id;
-
-            const image = makeImage(
-                "dots",
-                "https://sstatic.net/img/progress-dots.gif",
-                "userinfo"
-            );
-
-            uinfo.append(image);
+            uinfo.id = "userinfo";
 
             const searchWrap = document.createElement("div");
             searchWrap.classList.add("searchbox");
@@ -713,13 +741,8 @@ type UserInfo = {
             const actions = document.createElement("ul");
             actions.classList.add("action-list");
 
-            wrap.append(uinfo, searchWrap, actions);
-            return wrap;
-        };
-
-        type WelcomePopupMaker = {
-            popup?: HTMLElement;
-            (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
+            wrap.append(header, uinfo, searchWrap, actions);
+            return (makeSearchView.view = wrap);
         };
 
         /**
@@ -729,8 +752,8 @@ type UserInfo = {
          * @param {PostType} postType parent post type
          * @returns {HTMLElement}
          */
-        const makeWelcomeView: WelcomePopupMaker = (popup, id, postType) => {
-            if (makeWelcomeView.popup) return makeWelcomeView.popup;
+        const makeWelcomeView: WelcomeViewMaker = (popup, id, postType) => {
+            if (makeWelcomeView.view) return makeWelcomeView.view;
 
             const wrap = document.createElement("div");
             wrap.classList.add("view");
@@ -794,7 +817,80 @@ type UserInfo = {
             actionsWrap.append(...actions);
 
             wrap.append(text, welcomeWrap, actionsWrap);
-            return wrap;
+            return (makeWelcomeView.view = wrap);
+        };
+
+        /**
+         * @summary Show textarea in front of popup to import/export all comments (for other sites or for posting somewhere)
+         * @param {HTMLElement} popup wrapper popup
+         * @param {string} id view id
+         * @param {PostType} postType parent post type
+         * @returns {HTMLElement}
+         */
+        const makeImpExpView: ImpExpViewMaker = (popup, id, postType) => {
+            if (makeImpExpView.view) return makeImpExpView.view;
+
+            const wrap = document.createElement("div");
+            wrap.classList.add("view");
+            wrap.id = id;
+
+            const actionWrap = document.createElement("div");
+            actionWrap.classList.add("actions");
+
+            const txtArea = document.createElement("textarea");
+
+            txtArea.addEventListener("change", async () => {
+                doImport(txtArea.value);
+                updateComments(popup, postType);
+            });
+
+            const jsonpBtn = makeButton("JSONP", "JSONP", "jsonp");
+
+            const cancelBtn = makeButton(
+                "cancel",
+                "cancel import/export",
+                "cancel"
+            );
+
+            cancelBtn.addEventListener("click", () => hide(wrap));
+
+            actionWrap.append(jsonpBtn, makeSeparator(), cancelBtn);
+
+            wrap.append(txtArea, actionWrap);
+
+            const numComments = Store.load("commentcount");
+
+            var txt = "";
+            for (var i = 0; i < numComments; i++) {
+                const name = Store.load("name-" + i);
+                const desc = Store.load("desc-" + i);
+                txt += "###" + name + "\n" + HTMLtoMarkdown(desc) + "\n\n"; //the leading ### makes prettier if pasting to markdown, and differentiates names from descriptions
+            }
+
+            txtArea.value = txt;
+
+            jsonpBtn.addEventListener("click", () => {
+                var txt = "callback(\n[\n";
+
+                const numComments = Store.load("commentcount");
+
+                for (var i = 0; i < numComments; i++) {
+                    const name = Store.load("name-" + i);
+                    const desc = Store.load("desc-" + i);
+
+                    txt += `{ "name": "${name}", "description": "${desc.replace(
+                        /"/g,
+                        '\\"'
+                    )}"},\n\n'`;
+                }
+
+                txtArea.value = txt + "]\n)";
+
+                wrap.querySelector("a:lt(2)")?.remove();
+                wrap.querySelector(".lsep:lt(2)")?.remove();
+            });
+
+            return (makeImpExpView.view = wrap);
         };
 
         /**
@@ -804,8 +900,8 @@ type UserInfo = {
          * @param {PostType} postType parent post type
          * @returns {HTMLElement}
          */
-        const makeRemoteView: RemotePopupMaker = (popup, id, postType) => {
-            if (makeRemoteView.popup) return makeRemoteView.popup;
+        const makeRemoteView: RemoteViewMaker = (popup, id, postType) => {
+            if (makeRemoteView.view) return makeRemoteView.view;
 
             const wrap = document.createElement("div");
             wrap.classList.add("view");
@@ -865,7 +961,6 @@ type UserInfo = {
                     ".popup-actions-remote": () => {
                         remoteInput.value &&= Store.load("RemoteUrl");
                         autoInput.checked = Store.load("AutoRemote");
-                        show(wrap);
                     },
                     ".remote-cancel": () => {
                         hide(image);
@@ -899,7 +994,7 @@ type UserInfo = {
 
             wrap.append(text, remoteInput, image, autoWrap, actionsWrap);
 
-            return wrap;
+            return (makeRemoteView.view = wrap);
         };
 
         /**
@@ -916,11 +1011,10 @@ type UserInfo = {
             popup.classList.add("auto-review-comments", "popup");
 
             const close = makeCloseBtn("close");
-            close.addEventListener("click", () => fadeOut(popup));
-
-            const header = document.createElement("h2");
-            header.classList.add("handle");
-            header.innerHTML = "Which review comment to insert?";
+            close.addEventListener("click", () => {
+                fadeOut(popup);
+                hide(popup);
+            });
 
             const main = document.createElement("div");
             main.classList.add("main");
@@ -931,20 +1025,25 @@ type UserInfo = {
                     string,
                     (popup: HTMLElement, postType: PostType) => void
                 > = {
-                    ".popup-actions-welcome": () =>
-                        show(makeWelcomeView(popup, "welcome-popup", postType)),
-                    ".popup-actions-cancel": (p) => fadeOut(p),
+                    ".popup-actions-welcome": (p, t) =>
+                        switchToView(makeWelcomeView(p, "welcome-popup", t)),
+                    ".popup-actions-remote": (p, t) =>
+                        switchToView(makeRemoteView(p, "remote-popup", t)),
+                    ".popup-actions-impexp": (p, t) =>
+                        switchToView(makeImpExpView(p, "impexp-popup", t)),
+                    ".popup-actions-filter": () =>
+                        switchToView(makeSearchView("search-popup")),
                     ".popup-actions-reset": (p, t) => {
                         resetComments();
                         updateComments(p, t);
                     },
-                    ".popup-actions-impexp": (p, t) =>
-                        show(makeImpExpView(p, "impexp-popup", t)),
+
                     ".popup-actions-toggledesc": (p) => {
                         const newVisibility = !Store.load("hide-desc");
                         Store.save("hide-desc", newVisibility);
                         toggleDescriptionVisibility(p, newVisibility);
                     },
+
                     ".popup-submit": (p) => {
                         const selected = p.querySelector("input:checked")!;
                         const descr = selected.closest(".action-desc");
@@ -993,7 +1092,7 @@ type UserInfo = {
             });
 
             const views: HTMLElement[] = [
-                makeActiveView("userinfo"),
+                makeSearchView("search-popup"),
                 makeRemoteView(popup, "remote-popup", postType),
                 makeWelcomeView(popup, "welcome-popup", postType),
                 makeImpExpView(popup, "impexp-popup", postType),
@@ -1005,18 +1104,35 @@ type UserInfo = {
 
             main.append(...views);
 
-            popup.append(close, header, main);
+            popup.append(close, main);
 
             return (makePopup.popup = popup);
+        };
+
+        /**
+         * @summary creates a <span> element
+         * @param {string} text
+         * @param {{ unsafe ?: boolean, classes ?: string[] }} options
+         */
+        const span = (text: string, { classes = [], unsafe = false }) => {
+            const el = document.createElement("span");
+            el.classList.add(...classes);
+            unsafe ? (el.innerHTML = text) : (el.innerText = text);
+            return el;
         };
 
         /**
          * @summary makes a notification announcement
          * @param {string} title
          * @param {string} message
+         * @param  {boolean} [unsafe]
          * @returns {HTMLElement}
          */
-        const makeAnnouncement = (title: string, message: string) => {
+        const makeAnnouncement = (
+            title: string,
+            message: string,
+            unsafe = false
+        ) => {
             const wrap = document.createElement("div");
             wrap.classList.add("auto-review-comments", "announcement");
             wrap.id = "announcement";
@@ -1024,14 +1140,13 @@ type UserInfo = {
             const close = document.createElement("span");
             close.classList.add("notify-close");
 
-            const dismissal = document.createElement("a");
-            dismissal.classList.add("notify-close");
-            dismissal.title = "dismiss this notification";
-            dismissal.innerHTML = "x";
+            const dismissal = makeButton("x", "dismiss this notification");
 
             close.append(dismissal);
 
-            wrap.append(b(title), text(message), close);
+            const txt = unsafe ? span(message, { unsafe }) : text(message);
+
+            wrap.append(b(title), txt, close);
             return wrap;
         };
 
@@ -1270,24 +1385,19 @@ type UserInfo = {
             popup: HTMLElement,
             title: string,
             body: string,
-            callback?: (...args: any[]) => void
+            callback?: () => void
         ) => {
-            const html = body.replace(/\n/g, "<BR/>");
-
-            //TODO: replace HTML with text as makeAnnouncement uses textContent
-            const message = makeAnnouncement(title, html);
+            const message = makeAnnouncement(title, body, true);
 
             message.addEventListener("click", ({ target }) => {
-                if (!(<HTMLElement>target).matches(".notify-close")) return;
-
-                const { parentElement } = <HTMLElement>target;
-
-                fadeOut(parentElement!);
-
+                if (!(<HTMLElement>target).matches(".notify-close a")) return;
+                fadeOut(message);
+                message.remove();
                 typeof callback === "function" && callback();
             });
 
-            popup.querySelector("h2")!.before(message);
+            popup.prepend(message);
+            return message;
         };
 
         /**
@@ -1300,6 +1410,10 @@ type UserInfo = {
             )!;
             const [, uid] = href.match(/posts\/(\d+)\//) || [];
             return uid || "";
+        };
+
+        const getOwnerUserData = () => {
+            document.querySelector(".owner .user-info");
         };
 
         /**
@@ -1407,6 +1521,8 @@ type UserInfo = {
             const userLink = link(`/users/${user_id}`, "");
             userLink.append(b(display_name));
 
+            empty(container);
+
             container.append(
                 capitalize(user_type),
                 text(" user "),
@@ -1457,79 +1573,6 @@ type UserInfo = {
             lsep.classList.add("lsep");
             lsep.innerHTML = " | ";
             return lsep;
-        };
-
-        /**
-         * @summary Show textarea in front of popup to import/export all comments (for other sites or for posting somewhere)
-         * @param {HTMLElement} popup wrapper popup
-         * @param {string} id view id
-         * @param {PostType} postType parent post type
-         */
-        const makeImpExpView: ImportExportMaker = (popup, id, postType) => {
-            if (makeImpExpView.popup) return makeImpExpView.popup;
-
-            const wrap = document.createElement("div");
-            wrap.classList.add("view");
-            wrap.id = id;
-
-            const actionWrap = document.createElement("div");
-            actionWrap.classList.add("actions");
-
-            const txtArea = document.createElement("textarea");
-
-            txtArea.addEventListener("change", async () => {
-                doImport(txtArea.value);
-                updateComments(popup, postType);
-                hide(wrap);
-            });
-
-            const jsonpBtn = document.createElement("a");
-            jsonpBtn.classList.add("jsonp");
-
-            const cancelBtn = document.createElement("a");
-            cancelBtn.classList.add("cancel");
-
-            actionWrap.append(jsonpBtn, makeSeparator(), cancelBtn);
-
-            //TODO: <div> & <textarea> same level??
-            wrap.append(txtArea, actionWrap);
-
-            const numComments = Store.load("commentcount");
-
-            var txt = "";
-            for (var i = 0; i < numComments; i++) {
-                const name = Store.load("name-" + i);
-                const desc = Store.load("desc-" + i);
-                txt += "###" + name + "\n" + HTMLtoMarkdown(desc) + "\n\n"; //the leading ### makes prettier if pasting to markdown, and differentiates names from descriptions
-            }
-
-            txtArea.value = txt;
-
-            jsonpBtn.addEventListener("click", () => {
-                var txt = "callback(\n[\n";
-
-                const numComments = Store.load("commentcount");
-
-                for (var i = 0; i < numComments; i++) {
-                    const name = Store.load("name-" + i);
-                    const desc = Store.load("desc-" + i);
-
-                    txt += `{ "name": "${name}", "description": "${desc.replace(
-                        /"/g,
-                        '\\"'
-                    )}"},\n\n'`;
-                }
-
-                txtArea.value = txt + "]\n)";
-
-                wrap.querySelector("a:lt(2)")?.remove();
-                wrap.querySelector(".lsep:lt(2)")?.remove();
-            });
-
-            cancelBtn.addEventListener("click", () => fadeOut(wrap));
-
-            popup.append(wrap);
-            return wrap;
         };
 
         //Import complete text into comments
@@ -1747,35 +1790,14 @@ type UserInfo = {
             return comments;
         };
 
-        function setupOptionEventHandlers(popup: HTMLElement) {
-            popup.addEventListener("dblclick", ({ target }) => {
-                const el = <HTMLElement>target;
-                if (!el.matches(".action-desc")) return;
-                openEditMode(el);
-            });
-
-            popup.addEventListener("click", ({ target }) => {
-                const el = <HTMLElement>target;
-
-                if (!el.matches("label > .quick-insert")) return;
-
-                const action = el.closest("li");
-                const radio = action?.querySelector("input");
-
-                debugLogger.log({ action, radio });
-
-                if (!action || !radio)
-                    return notify(popup, "Problem", "something went wrong");
-
-                action.classList.add("action-selected");
-
-                radio.checked = true;
-
-                document.getElementById(`${Store.prefix}-submit`)?.click();
-            });
-
-            //add click handler to radio buttons
-            popup.addEventListener("click", ({ target }) => {
+        /**
+         * @summary makes the comment click handler (selecting comments)
+         * @param {HTMLElement} popup wrapper popup
+         * @returns {EventListener}
+         */
+        const makeCommentClickHandler =
+            (popup: HTMLElement): EventListener =>
+            ({ target }) => {
                 const el = <HTMLElement>target;
 
                 if (!el.matches("input[type=radio]")) return;
@@ -1801,6 +1823,53 @@ type UserInfo = {
                 debugLogger.log({ acts, action, descr });
 
                 show(descr);
+                enable(`${Store.prefix}-submit`);
+            };
+
+        /**
+         * @summary makes the comment quick insert handler
+         * @param {HTMLElement} popup wrapper popup
+         * @returns {EventListener}
+         */
+        const makeQuickInsertHandler =
+            (popup: HTMLElement): EventListener =>
+            ({ target }) => {
+                const el = <HTMLElement>target;
+
+                if (!el.matches("label > .quick-insert")) return;
+
+                const action = el.closest("li");
+                const radio = action?.querySelector("input");
+
+                debugLogger.log({ action, radio });
+
+                if (!action || !radio)
+                    return notify(popup, "Problem", "something went wrong");
+
+                action.classList.add("action-selected");
+
+                radio.checked = true;
+
+                document.getElementById(`${Store.prefix}-submit`)?.click();
+            };
+
+        /**
+         * @summary sets up comment event listeners
+         * @param {HTMLElement} popup wrapper popup
+         */
+        function setupCommentHandlers(popup: HTMLElement) {
+            popup.addEventListener("dblclick", ({ target }) => {
+                const el = <HTMLElement>target;
+                if (!el.matches(".action-desc")) return;
+                openEditMode(el);
+            });
+
+            const insertHandler = makeQuickInsertHandler(popup);
+            const selectHandler = makeCommentClickHandler(popup);
+
+            popup.addEventListener("click", (event) => {
+                insertHandler(event);
+                selectHandler(event);
             });
 
             popup.addEventListener("keyup", (event) => {
@@ -1857,8 +1926,8 @@ type UserInfo = {
             ul.append(...listItems);
 
             toggleDescriptionVisibility(popup);
-            setupOptionEventHandlers(popup);
-            AddSearchEventHandlers(popup);
+            setupCommentHandlers(popup);
+            setupSearchEventHandlers(popup);
         }
 
         /**
@@ -1904,40 +1973,41 @@ type UserInfo = {
         }
 
         /**
-         * @summary
+         * @summary sets up search event handlers
          * @param {HTMLElement} popup
          * @returns {void}
          */
-        function AddSearchEventHandlers(popup: HTMLElement) {
+        const setupSearchEventHandlers = (popup: HTMLElement) => {
             const sbox = popup.querySelector<HTMLElement>(".searchbox")!;
             const stext =
                 sbox.querySelector<HTMLInputElement>(".searchfilter")!;
             const kicker = popup.querySelector(".popup-actions-filter")!;
             const storageKey = "showFilter";
-            let shown = Store.load(storageKey);
 
-            var showHideFilter = function () {
-                if (shown) {
+            const showHideFilter = () => {
+                const show = Store.load(storageKey);
+
+                if (show) {
                     show(sbox);
                     stext.focus();
-                    Store.save(storageKey, true);
                 } else {
                     hide(sbox);
                     stext.innerHTML = "";
                     filterOn(popup, "");
-                    Store.save(storageKey, false);
                 }
+
+                Store.save(storageKey, show);
             };
 
-            var filterOnText = function () {
-                var { value } = stext;
+            const filterOnText = () => {
+                const { value } = stext;
                 filterOn(popup, value);
             };
 
             showHideFilter();
 
-            kicker.addEventListener("click", function () {
-                shown = !shown;
+            kicker.addEventListener("click", () => {
+                Store.toggle(storageKey);
                 showHideFilter();
                 return false;
             });
@@ -1949,7 +2019,7 @@ type UserInfo = {
             stext.addEventListener("cut", callback);
             stext.addEventListener("paste", callback);
             stext.addEventListener("search", callback);
-        }
+        };
 
         /**
          * @summary Adjust the descriptions so they show or hide based on the user's preference.
@@ -2084,6 +2154,8 @@ type UserInfo = {
             const userInfoEl = document.getElementById("userinfo")!;
 
             const uinfo = await getUserInfo(userid);
+
+            debugLogger.log({ uinfo, userid });
 
             if (!uinfo) return fadeOut(userInfoEl);
 
