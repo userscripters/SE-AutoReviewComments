@@ -19,6 +19,8 @@ interface Window {
 
 declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
 
+type Target = "Q" | "A" | "C" | "EA" | "EQ";
+
 type PostType = "answer" | "question";
 
 type Placement = readonly [insert: HTMLElement | null, place: HTMLElement];
@@ -281,14 +283,15 @@ StackExchange.ready(() => {
         ""
     ); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
 
+    // A regular expression to match the possible targets in a string.
+    const allTgtMatcher = new RegExp("\\[(E?[AQ]|C)(?:,(E?[AQ]|C))*\\]");
+
     /**
      * All the different "targets" a comment can be placed on.
      * The given values are used as prefixes in the comment titles, to make it easy for the user to change the targets,
      * by simply adding the prefix to their comment title.
      */
-    const Target = {
-        // A regular expression to match the possible targets in a string.
-        MATCH_ALL: new RegExp("\\[(E?[AQ]|C)(?:,(E?[AQ]|C))*\\]"),
+    const Target: { [x: string]: Target } = {
         Closure: "C",
         CommentQuestion: "Q",
         CommentAnswer: "A",
@@ -1919,7 +1922,7 @@ StackExchange.ready(() => {
         const listItems = comments
             .filter(({ name }) => isCommentValidForType(name, postType))
             .map(({ name, desc }, i) => {
-                const cname = name.replace(Target.MATCH_ALL, "");
+                const cname = name.replace(allTgtMatcher, "");
 
                 var descr = desc
                     .replace(/\$SITENAME\$/g, sitename)
@@ -1953,7 +1956,7 @@ StackExchange.ready(() => {
      * @return {boolean} true if the comment is valid for the type of post; false otherwise.
      */
     const isCommentValidForType = (text: string, postType: PostType) => {
-        const designator = text.match(Target.MATCH_ALL);
+        const designator = text.match(allTgtMatcher);
         return designator?.includes(postType) || true;
     };
 
@@ -2334,11 +2337,10 @@ StackExchange.ready(() => {
         where: HTMLElement,
         clsMap: [PostType, string][]
     ) => {
-        const parentPost =
-            where.closest(".answer") || where.closest(".question");
-        if (!parentPost) return; //TODO: implement failure state handling
+        const parent = where.closest(".answer") || where.closest(".question");
+        if (!parent) return Target.CommentQuestion;
 
-        const { classList } = parentPost;
+        const { classList } = parent;
 
         //if not found, we have a problem
         const [, tgt] = clsMap.find(([c]) => classList.contains(c)) || [];
@@ -2387,7 +2389,11 @@ StackExchange.ready(() => {
         if (existingAutoLinks.length) return;
 
         const lsep = makeSeparator();
-        const alink = makePopupOpenButton(actor, placeCommentIn, Target.Closure);
+        const alink = makePopupOpenButton(
+            actor,
+            placeCommentIn,
+            Target.Closure
+        );
         where.after(lsep, alink);
     };
 
