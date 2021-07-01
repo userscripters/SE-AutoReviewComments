@@ -1224,6 +1224,7 @@ StackExchange.ready(() => {
 
         setupCommentHandlers(popup, commentViewId);
         setupSearchHandlers(popup, ".popup-actions-filter");
+        switchToView(views[0]);
 
         return (makePopup.popup = popup);
     };
@@ -1883,8 +1884,8 @@ StackExchange.ready(() => {
         const selectHandler = makeCommentClickHandler(popup);
 
         popup.addEventListener("click", (event) => {
+            debugLogger.log({ currView, viewId, event });
             if (currView !== viewId) return;
-
             insertHandler(event);
             selectHandler(event);
         });
