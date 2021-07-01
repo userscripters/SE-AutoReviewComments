@@ -1617,54 +1617,74 @@ StackExchange.ready(() => {
         "&gt;": ">",
     };
 
-    function escapeHtml(html: string) {
-        return String(html).replace(/[&<>]/g, (s) => entityMapToHtml[s]);
-    }
+    /**
+     * @summary escapes HTML entities
+     * @param {string} html
+     * @returns {string}
+     */
+    const escapeHtml = (html: string) =>
+        String(html).replace(/[&<>]/g, (s) => entityMapToHtml[s]);
 
-    function unescapeHtml(html: string) {
-        return Object.keys(entityMapFromHtml).reduce((result, entity) => {
-            return result.replace(
-                new RegExp(entity, "g"),
-                (s) => entityMapFromHtml[s]
-            );
-        }, String(html));
-    }
-
-    function HTMLtoMarkdown(html: string) {
-        var markdown = html
-            .replace(/<a href="(.+?)">(.+?)<\/a>/g, "[$2]($1)")
-            .replace(/<em>(.+?)<\/em>/g, "*$1*")
-            .replace(/<strong>(.+?)<\/strong>/g, "**$1**");
-        return unescapeHtml(markdown);
-    }
-
-    function markdownToHTML(markdown: string) {
-        var html = escapeHtml(markdown).replace(
-            /\[([^\]]+)\]\((.+?)\)/g,
-            '<a href="$2">$1</a>'
+    /**
+     * @summary unescapes HTML entities
+     * @param {string} html
+     * @returns {string}
+     */
+    const unescapeHtml = (html: string) =>
+        Object.entries(entityMapFromHtml).reduce(
+            (acc, [k, v]) => acc.replace(new RegExp(k, "g"), v),
+            String(html)
         );
-        return html
+
+    /**
+     * @summary changes HTML to Markdown
+     * @param {string} html
+     * @returns {string}
+     */
+    const HTMLtoMarkdown = (html: string) =>
+        unescapeHtml(
+            html
+                .replace(/<a href="(.+?)">(.+?)<\/a>/g, "[$2]($1)")
+                .replace(/<em>(.+?)<\/em>/g, "*$1*")
+                .replace(/<strong>(.+?)<\/strong>/g, "**$1**")
+        );
+
+    /**
+     * @summary changes Markdown to HTML
+     * @param {string} markdown
+     * @returns {string}
+     */
+    const markdownToHTML = (markdown: string) =>
+        escapeHtml(markdown)
+            .replace(/\[([^\]]+)\]\((.+?)\)/g, '<a href="$2">$1</a>')
             .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
             .replace(/\*([^`]+?)\*/g, "<em>$1</em>");
-    }
 
-    function untag(text: string) {
-        return text
+    /**
+     * @summary untags the comment text
+     * @param {string} text
+     * @returns {string}
+     */
+    const untag = (text: string) =>
+        text
             .replace(/\$SITENAME\$/g, sitename)
             .replace(/\$SITEURL\$/g, site)
             .replace(/\$MYUSERID\$/g, getLoggedInUserId());
-    }
 
-    function tag(html: string) {
-        //put tags back in
-        var regname = new RegExp(sitename, "g"),
-            regurl = new RegExp("//" + site, "g"),
-            reguid = new RegExp("/" + getLoggedInUserId() + "[)]", "g");
+    /**
+     * @summary tags the comment text
+     * @param {string} html
+     * @returns {string}
+     */
+    const tag = (html: string) => {
+        const regname = new RegExp(sitename, "g");
+        const regurl = new RegExp(`//${site}`, "g");
+        const reguid = new RegExp(`/${getLoggedInUserId()}[)]`, "g");
         return html
             .replace(regname, "$SITENAME$")
             .replace(regurl, "//$SITEURL$")
             .replace(reguid, "/$MYUSERID$)");
-    }
+    };
 
     type MaybeBtn = string | HTMLButtonElement | HTMLInputElement;
 
