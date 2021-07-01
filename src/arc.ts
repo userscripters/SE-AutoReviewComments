@@ -879,10 +879,9 @@ StackExchange.ready(() => {
         input.type = "text";
         input.id = "customwelcome";
 
-        input.addEventListener("change", () => {
-            Store.save("WelcomeMessage", input.value);
-            hide(wrap);
-        });
+        input.addEventListener("change", () =>
+            Store.save("WelcomeMessage", input.value)
+        );
 
         welcomeWrap.append(input);
 
@@ -906,7 +905,8 @@ StackExchange.ready(() => {
                     input.value ||= Store.load("WelcomeMessage");
                     show(w);
                 },
-                ".welcome-cancel": (_p, w) => hide(w),
+                ".welcome-cancel": () =>
+                    switchToView(makeSearchView("search-popup")),
                 ".welcome-force": () => {
                     Store.save("ShowGreeting", true);
                     updateComments(popup, postType);
@@ -1061,12 +1061,10 @@ StackExchange.ready(() => {
             const actionMap = {
                 ".popup-actions-remote": () => {
                     remoteInput.value &&= Store.load("RemoteUrl");
-                    autoInput.checked = Store.load("AutoRemote");
+                    autoInput.checked = Store.load("AutoRemote", false);
                 },
-                ".remote-cancel": () => {
-                    hide(image);
-                    hide(wrap);
-                },
+                ".remote-cancel": () =>
+                    switchToView(makeSearchView("search-popup")),
                 ".remote-get": () => {
                     show(image);
                     loadFromRemote(
