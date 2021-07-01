@@ -248,10 +248,10 @@ StackExchange.ready(() => {
             }
         }
 
-        static load(key: string) {
+        static load<T>(key: string, def?: T): T {
             const { prefix, storage } = this;
             const val = storage[prefix + key];
-            return val && JSON.parse(val);
+            return val ? JSON.parse(val) : def;
         }
 
         static save(key: string, val: string | number | boolean): void {
@@ -966,33 +966,31 @@ StackExchange.ready(() => {
 
         wrap.append(txtArea, actionWrap);
 
-        const numComments = Store.load("commentcount");
+        const numComments = Store.load<number>("commentcount");
+        const loaded = loadComments(numComments);
 
-        var txt = "";
-        for (var i = 0; i < numComments; i++) {
-            const name = Store.load("name-" + i);
-            const desc = Store.load("desc-" + i);
-            txt += "###" + name + "\n" + HTMLtoMarkdown(desc) + "\n\n"; //the leading ### makes prettier if pasting to markdown, and differentiates names from descriptions
-        }
+        const content = loaded
+            .map(({ name, desc }) => `###${name}\n${HTMLtoMarkdown(desc)}`)
+            .join("\n\n");
 
-        txtArea.value = txt;
+        txtArea.value = content;
 
+        const cbk = "callback";
         jsonpBtn.addEventListener("click", () => {
-            var txt = "callback(\n[\n";
+            const numComments = Store.load<number>("commentcount");
 
-            const numComments = Store.load("commentcount");
+            const loaded = loadComments(numComments);
+            const content = loaded
+                .map(
+                    ({ name, desc }) =>
+                        `{ "name": "${name}", "description": "${desc.replace(
+                            /"/g,
+                            '\\"'
+                        )}"},'`
+                )
+                .join("\n\n");
 
-            for (var i = 0; i < numComments; i++) {
-                const name = Store.load("name-" + i);
-                const desc = Store.load("desc-" + i);
-
-                txt += `{ "name": "${name}", "description": "${desc.replace(
-                    /"/g,
-                    '\\"'
-                )}"},\n\n'`;
-            }
-
-            txtArea.value = txt + "]\n)";
+            txtArea.value = cbk + "([\n" + content + "\n])";
 
             wrap.querySelector("a:lt(2)")?.remove();
             wrap.querySelector(".lsep:lt(2)")?.remove();
@@ -1193,6 +1191,7 @@ StackExchange.ready(() => {
 
                     insertComment(input, descr.innerHTML, op);
                     fadeOut(p);
+                    hide(p);
                 },
             };
 
@@ -1800,8 +1799,8 @@ StackExchange.ready(() => {
     const loadComments = (numComments: number) => {
         const comments: { name: string; desc: string }[] = [];
         for (var i = 0; i < numComments; i++) {
-            const name = Store.load("name-" + i);
-            const desc = Store.load("desc-" + i);
+            const name = Store.load<string>("name-" + i);
+            const desc = Store.load<string>("desc-" + i);
             comments.push({ name, desc });
         }
         return comments;
@@ -1908,7 +1907,7 @@ StackExchange.ready(() => {
      * @returns {void}
      */
     const updateComments = (popup: HTMLElement, postType: PostType) => {
-        const numComments = Store.load("commentcount");
+        const numComments = Store.load<number>("commentcount");
 
         if (!numComments) resetComments();
 
@@ -1918,31 +1917,37 @@ StackExchange.ready(() => {
 
         const comments = loadComments(numComments);
 
-        debugLogger.log({ comments, postType });
+        const greet = Store.load("ShowGreeting", false);
+        const welcome = Store.load("WelcomeMessage", "");
+        const greeting = greet ? welcome : "";
+
+        const userId = getLoggedInUserId();
+
+        debugLogger.log({
+            comments,
+            postType,
+            greet,
+            welcome,
+            greeting,
+            userId,
+        });
 
         const listItems = comments
             .filter(({ name }) => isCommentValidForType(name, postType))
             .map(({ name, desc }, i) => {
                 const cname = name.replace(allTgtMatcher, "");
 
-                var descr = desc
+                const description = desc
                     .replace(/\$SITENAME\$/g, sitename)
                     .replace(/\$SITEURL\$/g, site)
-                    .replace(/\$MYUSERID\$/g, getLoggedInUserId())
+                    .replace(/\$MYUSERID\$/g, userId)
                     .replace(/\$/g, "$$$");
 
-                const optionElement = makeOption(
+                return makeOption(
                     i.toString(),
                     cname.replace(/\$/g, "$$$"),
-                    ((Store.load("showGreeting") &&
-                        Store.load("WelcomeMessage")) ||
-                        "") + descr
+                    greeting + description
                 );
-
-                const descrEl = optionElement.querySelector(".action-desc")!;
-                descrEl.innerHTML = descr;
-
-                return optionElement;
             });
 
         ul.append(...listItems);
@@ -2007,7 +2012,7 @@ StackExchange.ready(() => {
         const storageKey = "showFilter";
 
         const showHideFilter = () => {
-            const shown = Store.load(storageKey);
+            const shown = Store.load(storageKey, false);
 
             if (shown) {
                 show(sbox);
