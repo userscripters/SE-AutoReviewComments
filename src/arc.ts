@@ -101,6 +101,18 @@ type UserInfo = {
     badge_counts: BadgeCounts;
 };
 
+type opGetter = {
+    op?: string;
+    (refresh?: boolean): string;
+};
+
+type StackAPIBatchResponse<T> = {
+    has_more: boolean;
+    items: T[];
+    quota_max: number;
+    quota_remaining: number;
+};
+
 StackExchange.ready(() => {
     /**
      * @summary centers the element
@@ -285,6 +297,9 @@ StackExchange.ready(() => {
 
     // A regular expression to match the possible targets in a string.
     const allTgtMatcher = new RegExp("\\[(E?[AQ]|C)(?:,(E?[AQ]|C))*\\]");
+
+    //itemprop distinguishes between the author and editor
+    const userLinkSel = ".post-signature .user-details[itemprop=author] a";
 
     /**
      * All the different "targets" a comment can be placed on.
@@ -1407,18 +1422,15 @@ StackExchange.ready(() => {
 
     /**
      * @summary gets user Id
+     * @param {HTMLInputElement} tgt element to insert comment in
      * @returns {string}
      */
-    const getUserId = () => {
-        const { href } = document.querySelector<HTMLAnchorElement>(
-            ".post-signature .user-info a"
-        )!;
-        const [, uid] = href.match(/posts\/(\d+)\//) || [];
+    const getUserId = (tgt: HTMLInputElement) => {
+        const parent = tgt.closest(".answer") || tgt.closest(".question");
+        if (!parent) return "";
+        const { href } = parent.querySelector<HTMLAnchorElement>(userLinkSel)!;
+        const [, uid] = href.match(/users\/(\d+)\//) || [];
         return uid || "";
-    };
-
-    const getOwnerUserData = () => {
-        document.querySelector(".owner .user-info");
     };
 
     /**
@@ -1427,11 +1439,6 @@ StackExchange.ready(() => {
      * @returns {boolean}
      */
     const isNewUser = (date: number) => Date.now() / 1000 - date < week;
-
-    type opGetter = {
-        op?: string;
-        (refresh?: boolean): string;
-    };
 
     /**
      * @summary get original poster username
@@ -1444,21 +1451,12 @@ StackExchange.ready(() => {
 
         const question = document.getElementById("question")!;
 
-        const userlink = question.querySelector(
-            ".owner .user-details > a:not([id])"
-        );
+        const userlink = question.querySelector(userLinkSel);
 
         if (userlink) return userlink.innerHTML || "";
 
         const deleted = question.querySelector(".owner .user-details");
         return (getOP.op = (deleted && deleted.innerHTML) || "OP");
-    };
-
-    type StackAPIBatchResponse<T> = {
-        has_more: boolean;
-        items: T[];
-        quota_max: number;
-        quota_remaining: number;
     };
 
     /**
@@ -2175,7 +2173,7 @@ StackExchange.ready(() => {
         StackExchange.helpers.bindMovablePopups();
 
         //Get user info and inject
-        const userid = getUserId();
+        const userid = getUserId(target);
 
         const userInfoEl = document.getElementById("userinfo")!;
 
