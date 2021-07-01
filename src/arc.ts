@@ -1727,9 +1727,8 @@ StackExchange.ready(() => {
     const openEditMode = (el: HTMLElement, popup: HTMLElement) => {
         const { innerHTML: backup } = el;
 
-        const html = tag(
-            backup.replace(Store.load("WelcomeMessage") || "", "")
-        ); //remove greeting before editing..
+        //remove greeting before editing
+        const html = tag(backup.replace(Store.load("WelcomeMessage", ""), ""));
 
         debugLogger.log({ backup, html });
 
@@ -1757,11 +1756,7 @@ StackExchange.ready(() => {
         const cancel = makeButton("cancel", "cancel edit");
         cancel.addEventListener("click", () => {
             popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(show);
-
-            enable(`#${Store.prefix}-submit`);
-
             el.innerHTML = backup;
-
             area.remove();
             actions.remove();
         });
