@@ -2154,9 +2154,6 @@ StackExchange.ready(() => {
 
         showPopup(popup);
 
-        //Reset this, otherwise we get the greeting twice...
-        Store.save("ShowGreeting", false);
-
         //TODO: if popup is created only once, listeners should be setup only once
         [updateComments].forEach((initiator) => initiator(popup, postType));
 
