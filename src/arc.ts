@@ -1727,9 +1727,10 @@ StackExchange.ready(() => {
     /**
      * @summary Replace contents of element with a textarea (containing markdown of contents), and save/cancel buttons
      * @param {HTMLElement} el
+     * @param {HTMLElement} popup
      * @returns {void}
      */
-    const openEditMode = (el: HTMLElement) => {
+    const openEditMode = (el: HTMLElement, popup: HTMLElement) => {
         const { innerHTML: backup } = el;
 
         const html = tag(
@@ -1744,7 +1745,7 @@ StackExchange.ready(() => {
         area.value = HTMLtoMarkdown(html);
 
         // Disable quick-insert while editing.
-        siblings<HTMLElement[]>(el, ".quick-insert").forEach(hide);
+        popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(hide);
 
         // Disable insert while editing.
         disable(`#${Store.prefix}-submit`);
@@ -1761,7 +1762,7 @@ StackExchange.ready(() => {
 
         const cancel = makeButton("cancel", "cancel edit");
         cancel.addEventListener("click", () => {
-            siblings<HTMLElement[]>(el, ".quick-insert").forEach(show);
+            popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(show);
 
             enable(`#${Store.prefix}-submit`);
 
@@ -1880,7 +1881,7 @@ StackExchange.ready(() => {
         popup.addEventListener("dblclick", ({ target }) => {
             const el = <HTMLElement>target;
             if (!el.matches(".action-desc")) return;
-            openEditMode(el);
+            openEditMode(el, popup);
         });
 
         const insertHandler = makeQuickInsertHandler(popup);
