@@ -5,7 +5,8 @@
   "scripts": {
     "test": "mocha -r ts-node/register",
     "replace": "ts-node utils/replace.ts",
-    "build": "tsc && npm run replace"
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc && npm run replace"
   },
   "repository": {
     "type": "git",
