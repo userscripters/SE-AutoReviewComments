@@ -1665,7 +1665,7 @@ type UserInfo = {
             return text
                 .replace(/\$SITENAME\$/g, sitename)
                 .replace(/\$SITEURL\$/g, site)
-                .replace(/\$MYUSERID\$/g,  getLoggedInUserId() );
+                .replace(/\$MYUSERID\$/g, getLoggedInUserId());
         }
 
         function tag(html: string) {
@@ -1896,10 +1896,10 @@ type UserInfo = {
         /**
          * @summary updates comments in the UI
          * @param {HTMLElement} popup wrapper popup
-         * @param {string} postType parent post type
+         * @param {PostType} postType parent post type
          * @returns {void}
          */
-        const updateComments = (popup: HTMLElement, postType: string) => {
+        const updateComments = (popup: HTMLElement, postType: PostType) => {
             const numComments = Store.load("commentcount");
 
             if (!numComments) resetComments();
@@ -1911,7 +1911,7 @@ type UserInfo = {
             const comments = loadComments(numComments);
 
             const listItems = comments
-                .filter(({ name }) => IsCommentValidForPostType(name, postType))
+                .filter(({ name }) => isCommentValidForType(name, postType))
                 .map(({ name, desc }, i) => {
                     const cname = name.replace(Target.MATCH_ALL, "");
 
@@ -1943,14 +1943,14 @@ type UserInfo = {
 
         /**
          * @summary Checks if a given comment could be used together with a given post type.
-         * @param {string} comment The comment itself.
-         * @param {Target} postType The type of post the comment could be placed on.
+         * @param {string} text The comment content itself.
+         * @param {PostType} postType The type of post the comment could be placed on.
          * @return {boolean} true if the comment is valid for the type of post; false otherwise.
          */
-        function IsCommentValidForPostType(comment: string, postType: string) {
-            const designator = comment.match(Target.MATCH_ALL);
-            return designator ? -1 < designator.indexOf(postType) : true;
-        }
+        const isCommentValidForType = (text: string, postType: PostType) => {
+            const designator = text.match(Target.MATCH_ALL);
+            return designator?.includes(postType) || true;
+        };
 
         /**
          * @summary filters comments based on text
