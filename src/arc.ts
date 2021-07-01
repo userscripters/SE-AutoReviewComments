@@ -195,7 +195,14 @@ StackExchange.ready(() => {
      *
      * @returns {Promise<HTMLElement>}
      */
-    const fadeTo = async (element: HTMLElement, min: number, speed = 200) => {
+    const fadeTo = async (
+        element: HTMLElement & { fades?: boolean },
+        min: number,
+        speed = 200
+    ) => {
+        if (element.fades) return element;
+        element.fades = true;
+
         const { style } = element;
         style.opacity = style.opacity || "1";
         const steps = Math.ceil(speed / 16);
@@ -210,6 +217,7 @@ StackExchange.ready(() => {
             await delay(16);
         }
 
+        delete element.fades;
         return element;
     };
 
