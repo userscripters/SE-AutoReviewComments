@@ -301,6 +301,9 @@ StackExchange.ready(() => {
     //itemprop distinguishes between the author and editor
     const userLinkSel = ".post-signature .user-details[itemprop=author] a";
 
+    //selects all views except actions
+    const viewsSel = ".main .view:not(:last-child)";
+
     /**
      * All the different "targets" a comment can be placed on.
      * The given values are used as prefixes in the comment titles, to make it easy for the user to change the targets,
@@ -510,7 +513,6 @@ StackExchange.ready(() => {
             `.${arc}.popup .main .userinfo{
                     padding:5px;
                     margin-bottom:7px;
-                    background:#eaefef;
                 }`,
             `.${arc}.popup .main .remoteurl, .${arc}.popup .main .customwelcome {
                     display: block;
@@ -696,9 +698,7 @@ StackExchange.ready(() => {
      * @returns {HTMLElement}
      */
     const switchToView = (view: HTMLElement) => {
-        document
-            .querySelectorAll<HTMLElement>(`.main .view:not(:last-child)`)
-            .forEach(hide);
+        document.querySelectorAll<HTMLElement>(viewsSel).forEach(hide);
         show(view);
         Store.save("CurrentView", view.id);
         return view;
@@ -1223,7 +1223,7 @@ StackExchange.ready(() => {
         popup.append(close, main);
 
         setupCommentHandlers(popup, commentViewId);
-        setupSearchHandlers(popup);
+        setupSearchHandlers(popup, ".popup-actions-filter");
 
         return (makePopup.popup = popup);
     };
@@ -1997,12 +1997,13 @@ StackExchange.ready(() => {
     /**
      * @summary sets up search event handlers
      * @param {HTMLElement} popup wrapper popup
+     * @param {string} filterSel filter button selector
      * @returns {void}
      */
-    const setupSearchHandlers = (popup: HTMLElement) => {
+    const setupSearchHandlers = (popup: HTMLElement, filterSel: string) => {
         const sbox = popup.querySelector<HTMLElement>(".searchbox")!;
         const stext = sbox.querySelector<HTMLInputElement>(".searchfilter")!;
-        const kicker = popup.querySelector(".popup-actions-filter")!;
+        const kicker = popup.querySelector(filterSel)!;
         const storageKey = "showFilter";
 
         const showHideFilter = () => {
@@ -2020,11 +2021,6 @@ StackExchange.ready(() => {
             Store.save(storageKey, shown);
         };
 
-        const filterOnText = () => {
-            const { value } = stext;
-            filterOn(popup, value);
-        };
-
         showHideFilter();
 
         kicker.addEventListener("click", () => {
@@ -2033,7 +2029,11 @@ StackExchange.ready(() => {
             return false;
         });
 
-        const callback = () => setTimeout(filterOnText, 100);
+        const callback: EventListener = ({ target }) =>
+            setTimeout(() => {
+                const { value } = <HTMLInputElement>target;
+                filterOn(popup, value);
+            }, 100);
 
         stext.addEventListener("keydown", callback);
         stext.addEventListener("change", callback);
