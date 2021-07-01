@@ -2240,9 +2240,8 @@ StackExchange.ready(() => {
      * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the
      *                     comment should be placed.
      */
-    function findCommentElements(where: HTMLElement): Placement {
-        const { parentElement } = where;
-        var { id } = parentElement!;
+    const findCommentElements = ({ parentElement }: HTMLElement): Placement => {
+        const { id } = parentElement!;
 
         const divId = id.replace("-link", "");
 
@@ -2253,14 +2252,14 @@ StackExchange.ready(() => {
         )!;
         const placeCommentIn = div.querySelector("textarea")!;
         return [injectNextTo, placeCommentIn];
-    }
+    };
 
     /**
      * @summary A locator for the edit summary input box under a post while it is being edited.
      * @param {HTMLAnchorElement} where A DOM element, near which we're looking for the location where to inject our link.
      * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the comment should be placed.
      */
-    function findEditSummaryElements({ href }: HTMLAnchorElement): Placement {
+    const findEditSummaryElements = ({ href }: HTMLAnchorElement): Placement => {
         const [, divid] = href.match(/posts\/(\d+)\/edit/) || [];
 
         const { nextElementSibling } = document.getElementById(
@@ -2293,7 +2292,7 @@ StackExchange.ready(() => {
      * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the
      *                     comment should be placed.
      */
-    function findReviewQueueElements(_where: HTMLElement): Placement {
+    const findReviewQueueElements = (_where: HTMLElement): Placement => {
         const injectTo = document.querySelector<HTMLElement>(".text-counter")!;
         const placeIn = document.querySelector<HTMLElement>(".edit-comment")!;
         return [injectTo, placeIn];
