@@ -2137,6 +2137,8 @@ StackExchange.ready(() => {
         target: HTMLInputElement,
         postType: PostType
     ) => {
+        debugLogger.log({ target, postType });
+
         const popup = makePopup(target, postType);
 
         if (!popup.isConnected) document.body.append(popup);
@@ -2206,6 +2208,8 @@ StackExchange.ready(() => {
         injector: Injector,
         actor: Actor
     ) {
+        const maxTries = 20;
+
         /**
          * @summary The internal injector invokes the locator to find an element in relation to the trigger element and then invokes the injector on it.
          * @param {HTMLElement} trigger The element that triggered the mechanism.
@@ -2213,18 +2217,16 @@ StackExchange.ready(() => {
          * @private
          */
         const _injector = (trigger: T, retry: number) => {
-            // If we didn't find the element after 20 retries, give up.
-            if (20 <= retry) return;
+            if (maxTries <= retry) return;
 
-            const [injectNextTo, placeCommentIn] = locator(trigger);
+            const [injectNextTo, placeIn] = locator(trigger);
+
+            debugLogger.log({ injectNextTo, placeIn, injector });
+
+            if (injectNextTo) return injector(injectNextTo, placeIn, actor);
 
             // We didn't find it? Try again in 50ms.
-            if (!injectNextTo) {
-                setTimeout(() => _injector(trigger, retry + 1), 50);
-            } else {
-                // Call our injector on the found element.
-                injector(injectNextTo, placeCommentIn, actor);
-            }
+            setTimeout(() => _injector(trigger, retry + 1), 50);
         };
 
         const content = document.getElementById("content")!;
@@ -2259,7 +2261,9 @@ StackExchange.ready(() => {
      * @param {HTMLAnchorElement} where A DOM element, near which we're looking for the location where to inject our link.
      * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the comment should be placed.
      */
-    const findEditSummaryElements = ({ href }: HTMLAnchorElement): Placement => {
+    const findEditSummaryElements = ({
+        href,
+    }: HTMLAnchorElement): Placement => {
         const [, divid] = href.match(/posts\/(\d+)\/edit/) || [];
 
         const { nextElementSibling } = document.getElementById(
@@ -2270,7 +2274,7 @@ StackExchange.ready(() => {
             nextElementSibling!.querySelector<HTMLElement>(".edit-comment")!;
 
         return [placeIn, placeIn];
-    }
+    };
 
     /**
      * @summary A locator for the text area in which to put a custom off-topic closure reason in the closure dialog.
@@ -2296,7 +2300,7 @@ StackExchange.ready(() => {
         const injectTo = document.querySelector<HTMLElement>(".text-counter")!;
         const placeIn = document.querySelector<HTMLElement>(".edit-comment")!;
         return [injectTo, placeIn];
-    }
+    };
 
     /**
      * @summary makes the "auto" button
@@ -2345,15 +2349,14 @@ StackExchange.ready(() => {
      * @summary Inject the auto link next to the given DOM element.
      * @param {HTMLElement} where The DOM element next to which we'll place the link.
      * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
-     * @param {Actor} what The function that will be called when the link is clicked.
+     * @param {Actor} actor The function that will be called when the link is clicked.
      * @returns {void}
      */
     const injectAutoLink = (
         where: HTMLElement,
         placeCommentIn: HTMLElement,
-        what: Actor
+        actor: Actor
     ) => {
-        // Don't add auto links if one already exists
         const existingAutoLinks = siblings(where, ".comment-auto-link");
         if (existingAutoLinks.length) return;
 
@@ -2364,7 +2367,7 @@ StackExchange.ready(() => {
         const tgt = getTargetType(where, clsMap);
 
         const lsep = makeSeparator();
-        const alink = makePopupOpenButton(what, placeCommentIn, tgt);
+        const alink = makePopupOpenButton(actor, placeCommentIn, tgt);
         where.after(lsep, alink);
     };
 
@@ -2372,20 +2375,19 @@ StackExchange.ready(() => {
      * @summary Inject the auto link next to the given DOM element.
      * @param {HTMLElement} where The DOM element next to which we'll place the link.
      * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
-     * @param {Actor} what The function that will be called when the link is clicked.
+     * @param {Actor} actor The function that will be called when the link is clicked.
      * @returns {void}
      */
     const injectAutoLinkClosure = (
         where: HTMLElement,
         placeCommentIn: HTMLElement,
-        what: Actor
+        actor: Actor
     ) => {
-        // Don't add auto links if one already exists
         const existingAutoLinks = siblings(where, ".comment-auto-link");
         if (existingAutoLinks.length) return;
 
         const lsep = makeSeparator();
-        const alink = makePopupOpenButton(what, placeCommentIn, Target.Closure);
+        const alink = makePopupOpenButton(actor, placeCommentIn, Target.Closure);
         where.after(lsep, alink);
     };
 
@@ -2393,21 +2395,20 @@ StackExchange.ready(() => {
      * @summary Inject hte auto link next to the "characters left" counter below the edit summary in the review queue.
      * @param {HTMLElement} where The DOM element next to which we'll place the link.
      * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
-     * @param {Actor} what The function that will be called when the link is clicked.
+     * @param {Actor} actor The function that will be called when the link is clicked.
      * @returns {void}
      */
     const injectAutoLinkReviewQueue = (
         where: HTMLElement,
         placeCommentIn: HTMLElement,
-        what: Actor
+        actor: Actor
     ) => {
-        // Don't add auto links if one already exists
         const existingAutoLinks = siblings(where, ".comment-auto-link");
         if (existingAutoLinks.length) return;
 
         const lsep = makeSeparator();
         const alink = makePopupOpenButton(
-            what,
+            actor,
             placeCommentIn,
             Target.EditSummaryQuestion
         );
@@ -2420,16 +2421,15 @@ StackExchange.ready(() => {
      * Inject the auto link next to the edit summary input box.
      * This will also slightly shrink the input box, so that the link will fit next to it.
      * @param {HTMLElement} where The DOM element next to which we'll place the link.
-     * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
-     * @param {Actor} what The function that will be called when the link is clicked.
+     * @param {HTMLElement} placeIn The DOM element into which the comment should be placed.
+     * @param {Actor} actor The function that will be called when the link is clicked.
      * @returns {void}
      */
     const injectAutoLinkEdit = (
         where: HTMLElement,
-        placeCommentIn: HTMLElement,
-        what: Actor
+        placeIn: HTMLElement,
+        actor: Actor
     ) => {
-        // Don't add auto links if one already exists
         const existingAutoLinks = siblings(where, ".comment-auto-link");
         if (existingAutoLinks.length) return;
 
@@ -2446,7 +2446,7 @@ StackExchange.ready(() => {
         const tgt = getTargetType(where, clsMap);
 
         const lsep = makeSeparator();
-        const alink = makePopupOpenButton(what, placeCommentIn, tgt);
+        const alink = makePopupOpenButton(actor, placeIn, tgt);
         where.after(lsep, alink);
     };
 
