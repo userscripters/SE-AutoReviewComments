@@ -108,7 +108,7 @@ type UserInfo = {
     const center = (element: HTMLElement) => {
         const { style } = element;
         const update: Partial<CSSStyleDeclaration> = {
-            position: "absolute",
+            position: "fixed",
             left: "50%",
             top: "50%",
             transform: "translate(-50%, -50%)",
@@ -282,6 +282,103 @@ type UserInfo = {
         ); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
 
         const myuserid = getLoggedInUserId();
+
+        /**
+         * All the different "targets" a comment can be placed on.
+         * The given values are used as prefixes in the comment titles, to make it easy for the user to change the targets,
+         * by simply adding the prefix to their comment title.
+         */
+        const Target = {
+            // A regular expression to match the possible targets in a string.
+            MATCH_ALL: new RegExp("\\[(E?[AQ]|C)(?:,(E?[AQ]|C))*\\]"),
+            Closure: "C",
+            CommentQuestion: "Q",
+            CommentAnswer: "A",
+            EditSummaryAnswer: "EA",
+            EditSummaryQuestion: "EQ",
+        };
+
+        //default comments
+        const defaultcomments = [
+            {
+                Target: [Target.CommentQuestion],
+                Name: "More than one question asked",
+                Description:
+                    "It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!",
+            },
+            {
+                Target: [Target.CommentQuestion],
+                Name: "Duplicate Closure",
+                Description:
+                    "This question will probably be closed as a duplicate soon. If the answers from the duplicates don't fully address your question please edit it to include why and flag this for re-opening. Thanks!",
+            },
+            {
+                Target: [Target.CommentAnswer],
+                Name: "Answers just to say Thanks!",
+                Description:
+                    'Please don\'t add "thanks" as answers. Invest some time in the site and you will gain sufficient <a href="//$SITEURL$/privileges">privileges</a> to upvote answers you like, which is the $SITENAME$ way of saying thank you.',
+            },
+            {
+                Target: [Target.CommentAnswer],
+                Name: "Nothing but a URL (and isn't spam)",
+                Description:
+                    'Whilst this may theoretically answer the question, <a href="//meta.stackexchange.com/q/8259">it would be preferable</a> to include the essential parts of the answer here, and provide the link for reference.',
+            },
+            {
+                Target: [Target.CommentAnswer],
+                Name: "Requests to OP for further information",
+                Description:
+                    "This is really a comment, not an answer. With a bit more rep, <a href=\"//$SITEURL$/privileges/comment\">you will be able to post comments</a>. For the moment I've added the comment for you, and I'm flagging this post for deletion.",
+            },
+            {
+                Target: [Target.CommentAnswer],
+                Name: "OP using an answer for further information",
+                Description:
+                    "Please use the <em>Post answer</em> button only for actual answers. You should modify your original question to add additional information.",
+            },
+            {
+                Target: [Target.CommentAnswer],
+                Name: "OP adding a new question as an answer",
+                Description:
+                    'If you have another question, please ask it by clicking the <a href="//$SITEURL$/questions/ask">Ask Question</a> button.',
+            },
+            {
+                Target: [Target.CommentAnswer],
+                Name: 'Another user adding a "Me too!"',
+                Description:
+                    'If you have a NEW question, please ask it by clicking the <a href="//$SITEURL$/questions/ask">Ask Question</a> button. If you have sufficient reputation, <a href="//$SITEURL$/privileges/vote-up">you may upvote</a> the question. Alternatively, "star" it as a favorite and you will be notified of any new answers.',
+            },
+            {
+                Target: [Target.Closure],
+                Name: "Too localized",
+                Description:
+                    "This question appears to be off-topic because it is too localized.",
+            },
+            {
+                Target: [Target.EditSummaryQuestion],
+                Name: "Improper tagging",
+                Description:
+                    'The tags you were using are not appropriate for this question. Please review <a href="//$SITEURL$/help/tagging">What are tags, and how should I use them?</a>',
+            },
+        ];
+
+        const weekday_name = [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+        ];
+
+        const minute = 60;
+        const hour = 3600;
+        const day = 86400;
+        const sixdays = 518400;
+        const week = 604800;
+        const month = 2592000;
+        const year = 31536000;
 
         // Self Updating Userscript, see https://gist.github.com/Benjol/874058
         if (typeof window.ARC_AutoUpdate === "function")
@@ -592,6 +689,7 @@ type UserInfo = {
                 .querySelectorAll<HTMLElement>(`.main .view:not(:last-child)`)
                 .forEach(hide);
             show(view);
+            Store.save("CurrentView", view.id);
             return view;
         };
 
@@ -998,6 +1096,30 @@ type UserInfo = {
         };
 
         /**
+         * @param {HTMLInputElement} input comment input
+         * @param {string} html comment HTML
+         * @param {string} op original poster info
+         * @returns {void}
+         */
+        const insertComment = (
+            input: HTMLInputElement,
+            html: string,
+            op: string
+        ) => {
+            const md = HTMLtoMarkdown(html)
+                .replace(/\[username\]/g, "") //TODO: get user info
+                .replace(/\[OP\]/g, op);
+
+            input.value = md;
+            input.focus(); //focus provokes character count test
+
+            const hereTxt = "[type here]";
+            const caret = md.indexOf(hereTxt);
+            if (caret >= 0)
+                input.setSelectionRange(caret, caret + hereTxt.length);
+        };
+
+        /**
          * @summary creates the popup markup
          * @description memoizable popup maker
          * @param {HTMLInputElement} input target comment input
@@ -1045,12 +1167,12 @@ type UserInfo = {
                     },
 
                     ".popup-submit": (p) => {
-                        const selected = p.querySelector("input:checked")!;
-                        const descr = selected.closest(".action-desc");
+                        const selected = p.querySelector(".action-selected");
+                        const descr = selected?.querySelector(".action-desc");
 
                         debugLogger.log({ selected, descr });
 
-                        if (!descr)
+                        if (!descr || !selected)
                             return notify(
                                 p,
                                 "Nothing selected",
@@ -1061,22 +1183,7 @@ type UserInfo = {
 
                         debugLogger.log({ op });
 
-                        const md = HTMLtoMarkdown(descr.innerHTML)
-                            .replace(/\[username\]/g, "") //TODO: get user info
-                            .replace(/\[OP\]/g, op);
-
-                        input.value = md;
-                        input.focus(); //focus provokes character count test
-
-                        const hereTxt = "[type here]";
-
-                        var caret = md.indexOf(hereTxt);
-                        if (caret >= 0)
-                            input.setSelectionRange(
-                                caret,
-                                caret + hereTxt.length
-                            );
-
+                        insertComment(input, descr.innerHTML, op);
                         fadeOut(p);
                     },
                 };
@@ -1091,8 +1198,10 @@ type UserInfo = {
                 action(popup, postType);
             });
 
+            const commentViewId = "search-popup";
+
             const views: HTMLElement[] = [
-                makeSearchView("search-popup"),
+                makeSearchView(commentViewId),
                 makeRemoteView(popup, "remote-popup", postType),
                 makeWelcomeView(popup, "welcome-popup", postType),
                 makeImpExpView(popup, "impexp-popup", postType),
@@ -1103,8 +1212,10 @@ type UserInfo = {
             hidden.forEach(hide);
 
             main.append(...views);
-
             popup.append(close, main);
+
+            setupCommentHandlers(popup, commentViewId);
+            setupSearchHandlers(popup);
 
             return (makePopup.popup = popup);
         };
@@ -1189,103 +1300,6 @@ type UserInfo = {
 
             return li;
         };
-
-        /**
-         * All the different "targets" a comment can be placed on.
-         * The given values are used as prefixes in the comment titles, to make it easy for the user to change the targets,
-         * by simply adding the prefix to their comment title.
-         */
-        var Target = {
-            // A regular expression to match the possible targets in a string.
-            MATCH_ALL: new RegExp("\\[(E?[AQ]|C)(?:,(E?[AQ]|C))*\\]"),
-            Closure: "C",
-            CommentQuestion: "Q",
-            CommentAnswer: "A",
-            EditSummaryAnswer: "EA",
-            EditSummaryQuestion: "EQ",
-        };
-
-        //default comments
-        var defaultcomments = [
-            {
-                Target: [Target.CommentQuestion],
-                Name: "More than one question asked",
-                Description:
-                    "It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!",
-            },
-            {
-                Target: [Target.CommentQuestion],
-                Name: "Duplicate Closure",
-                Description:
-                    "This question will probably be closed as a duplicate soon. If the answers from the duplicates don't fully address your question please edit it to include why and flag this for re-opening. Thanks!",
-            },
-            {
-                Target: [Target.CommentAnswer],
-                Name: "Answers just to say Thanks!",
-                Description:
-                    'Please don\'t add "thanks" as answers. Invest some time in the site and you will gain sufficient <a href="//$SITEURL$/privileges">privileges</a> to upvote answers you like, which is the $SITENAME$ way of saying thank you.',
-            },
-            {
-                Target: [Target.CommentAnswer],
-                Name: "Nothing but a URL (and isn't spam)",
-                Description:
-                    'Whilst this may theoretically answer the question, <a href="//meta.stackexchange.com/q/8259">it would be preferable</a> to include the essential parts of the answer here, and provide the link for reference.',
-            },
-            {
-                Target: [Target.CommentAnswer],
-                Name: "Requests to OP for further information",
-                Description:
-                    "This is really a comment, not an answer. With a bit more rep, <a href=\"//$SITEURL$/privileges/comment\">you will be able to post comments</a>. For the moment I've added the comment for you, and I'm flagging this post for deletion.",
-            },
-            {
-                Target: [Target.CommentAnswer],
-                Name: "OP using an answer for further information",
-                Description:
-                    "Please use the <em>Post answer</em> button only for actual answers. You should modify your original question to add additional information.",
-            },
-            {
-                Target: [Target.CommentAnswer],
-                Name: "OP adding a new question as an answer",
-                Description:
-                    'If you have another question, please ask it by clicking the <a href="//$SITEURL$/questions/ask">Ask Question</a> button.',
-            },
-            {
-                Target: [Target.CommentAnswer],
-                Name: 'Another user adding a "Me too!"',
-                Description:
-                    'If you have a NEW question, please ask it by clicking the <a href="//$SITEURL$/questions/ask">Ask Question</a> button. If you have sufficient reputation, <a href="//$SITEURL$/privileges/vote-up">you may upvote</a> the question. Alternatively, "star" it as a favorite and you will be notified of any new answers.',
-            },
-            {
-                Target: [Target.Closure],
-                Name: "Too localized",
-                Description:
-                    "This question appears to be off-topic because it is too localized.",
-            },
-            {
-                Target: [Target.EditSummaryQuestion],
-                Name: "Improper tagging",
-                Description:
-                    'The tags you were using are not appropriate for this question. Please review <a href="//$SITEURL$/help/tagging">What are tags, and how should I use them?</a>',
-            },
-        ];
-
-        const weekday_name = [
-            "Sunday",
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
-        ];
-
-        const minute = 60,
-            hour = 3600,
-            day = 86400,
-            sixdays = 518400,
-            week = 604800,
-            month = 2592000,
-            year = 31536000;
 
         /**
          * TODO: do something with this Cthulhu
@@ -1762,14 +1776,10 @@ type UserInfo = {
         const resetComments = () => {
             Store.clear("name-");
             Store.clear("desc-");
-            defaultcomments.forEach((value, index) => {
-                var targetsPrefix = "";
-                if (value.Target) {
-                    var targets = value.Target.join(",");
-                    targetsPrefix = "[" + targets + "] ";
-                }
-                Store.save("name-" + index, targetsPrefix + value["Name"]);
-                Store.save("desc-" + index, value["Description"]);
+            defaultcomments.forEach(({ Description, Name, Target }, index) => {
+                const prefix = Target ? `[${Target.join(",")}] ` : "";
+                Store.save("name-" + index, prefix + Name);
+                Store.save("desc-" + index, Description);
             });
             Store.save("commentcount", defaultcomments.length);
         };
@@ -1823,7 +1833,7 @@ type UserInfo = {
                 debugLogger.log({ acts, action, descr });
 
                 show(descr);
-                enable(`${Store.prefix}-submit`);
+                enable(`#${Store.prefix}-submit`);
             };
 
         /**
@@ -1856,8 +1866,12 @@ type UserInfo = {
         /**
          * @summary sets up comment event listeners
          * @param {HTMLElement} popup wrapper popup
+         * @param {string} viewId comment view id
+         * @returns {void}
          */
-        function setupCommentHandlers(popup: HTMLElement) {
+        const setupCommentHandlers = (popup: HTMLElement, viewId: string) => {
+            const currView = Store.load("CurrentView");
+
             popup.addEventListener("dblclick", ({ target }) => {
                 const el = <HTMLElement>target;
                 if (!el.matches(".action-desc")) return;
@@ -1868,17 +1882,18 @@ type UserInfo = {
             const selectHandler = makeCommentClickHandler(popup);
 
             popup.addEventListener("click", (event) => {
+                if (currView !== viewId) return;
+
                 insertHandler(event);
                 selectHandler(event);
             });
 
             popup.addEventListener("keyup", (event) => {
-                if (event.code == "Enter") {
-                    event.preventDefault();
-                    document.getElementById(`${Store.prefix}-submit`)?.click();
-                }
+                if (event.code !== "Enter" || currView !== viewId) return;
+                event.preventDefault();
+                document.getElementById(`${Store.prefix}-submit`)?.click();
             });
-        }
+        };
 
         /**
          * @summary updates comments in the UI
@@ -1886,7 +1901,7 @@ type UserInfo = {
          * @param {string} postType parent post type
          * @returns {void}
          */
-        function updateComments(popup: HTMLElement, postType: string) {
+        const updateComments = (popup: HTMLElement, postType: string) => {
             const numComments = Store.load("commentcount");
 
             if (!numComments) resetComments();
@@ -1926,9 +1941,7 @@ type UserInfo = {
             ul.append(...listItems);
 
             toggleDescriptionVisibility(popup);
-            setupCommentHandlers(popup);
-            setupSearchEventHandlers(popup);
-        }
+        };
 
         /**
          * @summary Checks if a given comment could be used together with a given post type.
@@ -1941,17 +1954,24 @@ type UserInfo = {
             return designator ? -1 < designator.indexOf(postType) : true;
         }
 
-        function filterOn(popup: HTMLElement, text: string) {
-            var words = text
+        /**
+         * @summary filters comments based on text
+         * @param {HTMLElement} popup wrapper popup
+         * @param {string} text text to match
+         * @returns {void}
+         */
+        const filterOn = (popup: HTMLElement, text: string) => {
+            const words = text
                 .toLowerCase()
                 .split(/\s+/)
-                .filter(function (word) {
-                    return word.length > 0;
-                });
+                .filter(({ length }) => length);
 
-            [
-                ...popup.querySelectorAll<HTMLLIElement>(".action-list > li"),
-            ].forEach((item) => {
+            const items =
+                popup.querySelectorAll<HTMLLIElement>(".action-list > li");
+
+            if (!text) return items.forEach(show);
+
+            items.forEach((item) => {
                 const name = item
                     .querySelector(".action-name")!
                     .innerHTML!.toLowerCase();
@@ -1959,25 +1979,20 @@ type UserInfo = {
                     .querySelector(".action-desc")!
                     .innerHTML!.toLowerCase();
 
-                var isShow = true;
+                const shown = words.some(
+                    (w) => name.includes(w) || desc.includes(w)
+                );
 
-                //TODO: only last one counts??
-                words.forEach((word) => {
-                    isShow =
-                        isShow &&
-                        (name.indexOf(word) >= 0 || desc.indexOf(word) >= 0);
-                });
-
-                isShow ? show(item) : hide(item);
+                shown ? show(item) : hide(item);
             });
-        }
+        };
 
         /**
          * @summary sets up search event handlers
-         * @param {HTMLElement} popup
+         * @param {HTMLElement} popup wrapper popup
          * @returns {void}
          */
-        const setupSearchEventHandlers = (popup: HTMLElement) => {
+        const setupSearchHandlers = (popup: HTMLElement) => {
             const sbox = popup.querySelector<HTMLElement>(".searchbox")!;
             const stext =
                 sbox.querySelector<HTMLInputElement>(".searchfilter")!;
@@ -1985,9 +2000,9 @@ type UserInfo = {
             const storageKey = "showFilter";
 
             const showHideFilter = () => {
-                const show = Store.load(storageKey);
+                const shown = Store.load(storageKey);
 
-                if (show) {
+                if (shown) {
                     show(sbox);
                     stext.focus();
                 } else {
@@ -1996,7 +2011,7 @@ type UserInfo = {
                     filterOn(popup, "");
                 }
 
-                Store.save(storageKey, show);
+                Store.save(storageKey, shown);
             };
 
             const filterOnText = () => {
@@ -2069,6 +2084,8 @@ type UserInfo = {
                 document.body.append(script);
             });
 
+        type CommentInfo = { name: string; description: string };
+
         //TODO: test out the change
         //customise welcome
         //reverse compatible!
@@ -2078,9 +2095,9 @@ type UserInfo = {
             error: (err: Error) => unknown
         ) => {
             try {
-                const data = await getJSONP<
-                    { name: string; description: string }[]
-                >(url);
+                const data = await getJSONP<CommentInfo[]>(url);
+
+                debugLogger.log({ data });
 
                 Store.save("commentcount", data.length);
                 Store.clear("name-");
