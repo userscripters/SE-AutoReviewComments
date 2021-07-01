@@ -1919,6 +1919,8 @@ StackExchange.ready(() => {
 
         const comments = loadComments(numComments);
 
+        debugLogger.log({ comments, postType });
+
         const listItems = comments
             .filter(({ name }) => isCommentValidForType(name, postType))
             .map(({ name, desc }, i) => {
@@ -1956,8 +1958,8 @@ StackExchange.ready(() => {
      * @return {boolean} true if the comment is valid for the type of post; false otherwise.
      */
     const isCommentValidForType = (text: string, postType: PostType) => {
-        const designator = text.match(allTgtMatcher);
-        return designator?.includes(postType) || true;
+        const [, matched] = text.match(allTgtMatcher) || [];
+        return matched === postType;
     };
 
     /**
