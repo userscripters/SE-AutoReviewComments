@@ -58,6 +58,7 @@ const getPackage = async (path: string): Promise<PackageInfo | null> => {
         GITHUB_URL: homepage,
         STACKAPPS_URL: "http://stackapps.com/q/2116", //TODO: change?
         API_VER: "2.2",
+        API_KEY: "5J)5cHN9KbyhE9Yf9S*G)g((",
         FILTER_UNSAFE: ")7tZ5Od",
     };
 

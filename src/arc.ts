@@ -269,6 +269,7 @@ StackExchange.ready(() => {
     const GITHUB_URL = "{{GITHUB_URL}}";
     const STACKAPPS_URL = "{{STACKAPPS_URL}}";
     const API_VER = "{{API_VER}}";
+    const API_KEY = "{{API_KEY}}";
     const FILTER_UNSAFE = "{{FILTER_UNSAFE}}";
 
     const debugLogger = new Debugger(Store.load("debug"));
@@ -1542,9 +1543,7 @@ StackExchange.ready(() => {
      * @param {string} userid
      * @returns {Promise<UserInfo|null>}
      */
-    async function getUserInfo(userid: string) {
-        const API_KEY = "5J)5cHN9KbyhE9Yf9S*G)g((";
-
+    const getUserInfo = async (userid: string) => {
         const url = new URL(
             `https://api.stackexchange.com/${API_VER}/users/${userid}`
         );
@@ -1555,7 +1554,6 @@ StackExchange.ready(() => {
         }).toString();
 
         const res = await fetch(url.toString());
-
         if (!res.ok) return null;
 
         const {
@@ -1563,7 +1561,7 @@ StackExchange.ready(() => {
         }: StackAPIBatchResponse<UserInfo> = await res.json();
 
         return userInfo;
-    }
+    };
 
     /**
      * @summary makes a separator <span>
