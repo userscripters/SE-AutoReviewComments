@@ -281,8 +281,6 @@ type UserInfo = {
             ""
         ); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
 
-        const myuserid = getLoggedInUserId();
-
         /**
          * All the different "targets" a comment can be placed on.
          * The given values are used as prefixes in the comment titles, to make it easy for the user to change the targets,
@@ -1382,10 +1380,10 @@ type UserInfo = {
          * @summary Get the Id of the logged-in user
          * @returns {string}
          */
-        function getLoggedInUserId() {
+        const getLoggedInUserId = () => {
             const { options: { user: { userId } = {} } = {} } = StackExchange;
             return userId || "";
-        }
+        };
 
         /**
          * @summary shows a message
@@ -1667,14 +1665,14 @@ type UserInfo = {
             return text
                 .replace(/\$SITENAME\$/g, sitename)
                 .replace(/\$SITEURL\$/g, site)
-                .replace(/\$MYUSERID\$/g, myuserid);
+                .replace(/\$MYUSERID\$/g,  getLoggedInUserId() );
         }
 
         function tag(html: string) {
             //put tags back in
             var regname = new RegExp(sitename, "g"),
                 regurl = new RegExp("//" + site, "g"),
-                reguid = new RegExp("/" + myuserid + "[)]", "g");
+                reguid = new RegExp("/" + getLoggedInUserId() + "[)]", "g");
             return html
                 .replace(regname, "$SITENAME$")
                 .replace(regurl, "//$SITEURL$")
@@ -1920,7 +1918,7 @@ type UserInfo = {
                     var descr = desc
                         .replace(/\$SITENAME\$/g, sitename)
                         .replace(/\$SITEURL\$/g, site)
-                        .replace(/\$MYUSERID\$/g, myuserid)
+                        .replace(/\$MYUSERID\$/g, getLoggedInUserId())
                         .replace(/\$/g, "$$$");
 
                     const optionElement = makeOption(
