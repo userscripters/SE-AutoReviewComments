@@ -960,7 +960,9 @@ StackExchange.ready(() => {
             "cancel"
         );
 
-        cancelBtn.addEventListener("click", () => hide(wrap));
+        cancelBtn.addEventListener("click", () =>
+            switchToView(makeSearchView("search-popup"))
+        );
 
         actionWrap.append(jsonpBtn, makeSeparator(), cancelBtn);
 
@@ -981,19 +983,12 @@ StackExchange.ready(() => {
 
             const loaded = loadComments(numComments);
             const content = loaded
-                .map(
-                    ({ name, desc }) =>
-                        `{ "name": "${name}", "description": "${desc.replace(
-                            /"/g,
-                            '\\"'
-                        )}"},'`
-                )
-                .join("\n\n");
+                .map((comment) => JSON.stringify(comment))
+                .join(",\n");
 
-            txtArea.value = cbk + "([\n" + content + "\n])";
+            txtArea.value = `${cbk}([\n${content}\n])`;
 
-            wrap.querySelector("a:lt(2)")?.remove();
-            wrap.querySelector(".lsep:lt(2)")?.remove();
+            wrap.querySelector(".actions")?.remove();
         });
 
         return (makeImpExpView.view = wrap);
@@ -1798,7 +1793,7 @@ StackExchange.ready(() => {
      */
     const loadComments = (numComments: number) => {
         const comments: { name: string; desc: string }[] = [];
-        for (var i = 0; i < numComments; i++) {
+        for (let i = 0; i < numComments; i++) {
             const name = Store.load<string>("name-" + i);
             const desc = Store.load<string>("desc-" + i);
             comments.push({ name, desc });
