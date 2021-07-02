@@ -264,7 +264,7 @@ StackExchange.ready(() => {
 
         static save(key: string, val: string | number | boolean): void {
             const { prefix, storage } = this;
-            return void (storage[prefix + key] = JSON.stringify(val));
+            storage[prefix + key] = JSON.stringify(val);
         }
 
         static toggle(key: string) {
