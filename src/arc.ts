@@ -2136,8 +2136,7 @@ StackExchange.ready(() => {
         fadeTo(popup, 1);
         const { style, classList } = popup;
         style.display = "";
-        classList.remove("popup-closing");
-        classList.remove("popup-closed");
+        classList.remove("popup-closing", "popup-closed");
     };
 
     /**
