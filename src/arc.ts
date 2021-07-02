@@ -278,11 +278,18 @@ StackExchange.ready(() => {
     }
 
     class Debugger {
+        static prefix = "{{PREFIX}}";
+
         constructor(public on: boolean) {}
 
-        log(msg: unknown, ...params: unknown[]) {
+        log(msg: string | object, ...params: unknown[]) {
             const { on } = this;
-            on && console.debug(msg, ...params);
+            const pfx = Debugger.prefix.replace("-", "");
+            on &&
+                console.debug(
+                    `${pfx}:\n\n${JSON.stringify(msg, null, 2)}`,
+                    ...params
+                );
         }
     }
 
