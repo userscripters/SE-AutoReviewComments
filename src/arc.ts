@@ -332,67 +332,93 @@ StackExchange.ready(() => {
         EditSummaryQuestion: "EQ",
     };
 
+    /**
+     * @summary template for the anchor HTML
+     */
+    const htmllink = (url: string, label = url) =>
+        `<a href="${url}" target="_blank">${label}</a>`;
+
+    /**
+     * @summary template for the <em> HTML
+     */
+    const htmlem = (text: string) => `<em>${text}</em>`;
+
     //default comments
-    const defaultcomments = [
+    const commentDefaults = [
         {
             Target: [Target.CommentQuestion],
             Name: "More than one question asked",
-            Description:
-                "It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!",
+            Description: `It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!`,
         },
         {
             Target: [Target.CommentQuestion],
             Name: "Duplicate Closure",
-            Description:
-                "This question will probably be closed as a duplicate soon. If the answers from the duplicates don't fully address your question please edit it to include why and flag this for re-opening. Thanks!",
+            Description: `This question will likely be closed as a duplicate soon. If the answers from the duplicates do not fully address your question, please edit it to include why and flag this for re-opening. Thanks!`,
         },
         {
             Target: [Target.CommentAnswer],
             Name: "Answers just to say Thanks!",
-            Description:
-                'Please don\'t add "thanks" as answers. Invest some time in the site and you will gain sufficient <a href="//$SITEURL$/privileges">privileges</a> to upvote answers you like, which is the $SITENAME$ way of saying thank you.',
+            Description: `Please do not add "thanks" as answers. Invest some time in the site and you will gain sufficient ${htmllink(
+                "/privileges",
+                "privileges"
+            )} to upvote answers you like, which is our way of saying thank you.`,
         },
         {
             Target: [Target.CommentAnswer],
             Name: "Nothing but a URL (and isn't spam)",
-            Description:
-                'Whilst this may theoretically answer the question, <a href="//meta.stackexchange.com/q/8259">it would be preferable</a> to include the essential parts of the answer here, and provide the link for reference.',
+            Description: `Whilst this may theoretically answer the question, ${htmllink(
+                "https://meta.stackexchange.com/q/8259",
+                "it would be preferable"
+            )} to include the essential parts of the answer here, and provide the link for reference.`,
         },
         {
             Target: [Target.CommentAnswer],
             Name: "Requests to OP for further information",
-            Description:
-                "This is really a comment, not an answer. With a bit more rep, <a href=\"//$SITEURL$/privileges/comment\">you will be able to post comments</a>. For the moment I've added the comment for you, and I'm flagging this post for deletion.",
+            Description: `This is really a comment, not an answer. With a bit more rep, ${htmllink(
+                "/privileges/comment",
+                "you will be able to post comments"
+            )}. For the moment, I have added the comment for you and flagging the post for deletion.`,
         },
         {
             Target: [Target.CommentAnswer],
             Name: "OP using an answer for further information",
-            Description:
-                "Please use the <em>Post answer</em> button only for actual answers. You should modify your original question to add additional information.",
+            Description: `Please use the ${htmlem(
+                "Post answer"
+            )} button only for actual answers. You should modify your original question to add additional information.`,
         },
         {
             Target: [Target.CommentAnswer],
             Name: "OP adding a new question as an answer",
-            Description:
-                'If you have another question, please ask it by clicking the <a href="//$SITEURL$/questions/ask">Ask Question</a> button.',
+            Description: `If you have another question, please ask it by clicking the ${htmllink(
+                "/questions/ask",
+                "Ask Question"
+            )} button.`,
         },
         {
             Target: [Target.CommentAnswer],
             Name: 'Another user adding a "Me too!"',
-            Description:
-                'If you have a NEW question, please ask it by clicking the <a href="//$SITEURL$/questions/ask">Ask Question</a> button. If you have sufficient reputation, <a href="//$SITEURL$/privileges/vote-up">you may upvote</a> the question. Alternatively, "star" it as a favorite and you will be notified of any new answers.',
+            Description: `If you have a ${htmlem(
+                "new"
+            )} question, please ask it by clicking the ${htmllink(
+                "/questions/ask",
+                "Ask Question"
+            )} button. If you have sufficient reputation, ${htmllink(
+                "/privileges/vote-up",
+                "you may upvot"
+            )} the question. Alternatively, "star" it as a favorite, and you will be notified of any new answers.`,
         },
         {
             Target: [Target.Closure],
             Name: "Too localized",
-            Description:
-                "This question appears to be off-topic because it is too localized.",
+            Description: `This question appears to be off-topic because it is too localized.`,
         },
         {
             Target: [Target.EditSummaryQuestion],
             Name: "Improper tagging",
-            Description:
-                'The tags you were using are not appropriate for this question. Please review <a href="//$SITEURL$/help/tagging">What are tags, and how should I use them?</a>',
+            Description: `The tags you used are not appropriate for the question. Please review ${htmllink(
+                "/help/tagging",
+                "What are tags, and how should I use them?"
+            )}`,
         },
     ];
 
@@ -1786,12 +1812,12 @@ StackExchange.ready(() => {
     const resetComments = () => {
         Store.clear("name-");
         Store.clear("desc-");
-        defaultcomments.forEach(({ Description, Name, Target }, index) => {
+        commentDefaults.forEach(({ Description, Name, Target }, index) => {
             const prefix = Target ? `[${Target.join(",")}] ` : "";
             Store.save("name-" + index, prefix + Name);
             Store.save("desc-" + index, Description);
         });
-        Store.save("commentcount", defaultcomments.length);
+        Store.save("commentcount", commentDefaults.length);
     };
 
     /**
