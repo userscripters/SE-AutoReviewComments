@@ -1419,12 +1419,11 @@ StackExchange.ready(() => {
 
     /**
      * @summary Get the Id of the logged-in user
+     * @param {typeof StackExchage} se
      * @returns {string}
      */
-    const getLoggedInUserId = () => {
-        const { options: { user: { userId } = {} } = {} } = StackExchange;
-        return userId || "";
-    };
+    const getLoggedInUserId = (se: typeof StackExchange) =>
+        se.options.user.userId || "";
 
     /**
      * @summary shows a message
@@ -1703,7 +1702,7 @@ StackExchange.ready(() => {
         text
             .replace(/\$SITENAME\$/g, sitename)
             .replace(/\$SITEURL\$/g, site)
-            .replace(/\$MYUSERID\$/g, getLoggedInUserId());
+            .replace(/\$MYUSERID\$/g, getLoggedInUserId(StackExchange));
 
     /**
      * @summary tags the comment text
@@ -1713,7 +1712,10 @@ StackExchange.ready(() => {
     const tag = (html: string) => {
         const regname = new RegExp(sitename, "g");
         const regurl = new RegExp(`//${site}`, "g");
-        const reguid = new RegExp(`/${getLoggedInUserId()}[)]`, "g");
+        const reguid = new RegExp(
+            `/${getLoggedInUserId(StackExchange)}[)]`,
+            "g"
+        );
         return html
             .replace(regname, "$SITENAME$")
             .replace(regurl, "//$SITEURL$")
@@ -1950,7 +1952,7 @@ StackExchange.ready(() => {
         const welcome = Store.load("WelcomeMessage", "");
         const greeting = greet ? welcome : "";
 
-        const userId = getLoggedInUserId();
+        const userId = getLoggedInUserId(StackExchange);
 
         debugLogger.log({
             comments,
