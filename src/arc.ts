@@ -2183,7 +2183,7 @@ StackExchange.ready(() => {
         showPopup(popup);
 
         //TODO: if popup is created only once, listeners should be setup only once
-        [updateComments].forEach((initiator) => initiator(popup, postType));
+        updateComments(popup, postType);
 
         //Auto-load from remote if required
         if (!window.VersionChecked && Store.load("AutoRemote") == "true") {
