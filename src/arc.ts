@@ -19,8 +19,6 @@ interface Window {
 
 declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
 
-type Target = "Q" | "A" | "C" | "EA" | "EQ";
-
 type PostType = "answer" | "question";
 
 type Placement = readonly [insert: HTMLElement | null, place: HTMLElement];
@@ -321,16 +319,17 @@ StackExchange.ready(() => {
 
     /**
      * All the different "targets" a comment can be placed on.
-     * The given values are used as prefixes in the comment titles, to make it easy for the user to change the targets,
+     * The values are used as comment title prefixes to make it easy for the user to change them
      * by simply adding the prefix to their comment title.
+     * @enum
      */
-    const Target: { [x: string]: Target } = {
-        Closure: "C",
-        CommentQuestion: "Q",
-        CommentAnswer: "A",
-        EditSummaryAnswer: "EA",
-        EditSummaryQuestion: "EQ",
-    };
+    enum Target {
+        Closure = "C",
+        CommentQuestion = "Q",
+        CommentAnswer = "A",
+        EditSummaryAnswer = "EA",
+        EditSummaryQuestion = "EQ",
+    }
 
     /**
      * @summary template for the anchor HTML
