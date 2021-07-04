@@ -209,7 +209,7 @@ StackExchange.ready(function () {
         };
         Store.save = function (key, val) {
             var _a = this, prefix = _a.prefix, storage = _a.storage;
-            return void (storage[prefix + key] = JSON.stringify(val));
+            storage.setItem(prefix + key, JSON.stringify(val));
         };
         Store.toggle = function (key) {
             return Store.save(key, !Store.load(key));
@@ -232,8 +232,10 @@ StackExchange.ready(function () {
                 params[_i - 1] = arguments[_i];
             }
             var on = this.on;
-            on && console.debug.apply(console, __spreadArray([msg], __read(params)));
+            var pfx = Debugger.prefix.replace("-", "");
+            on && console.debug.apply(console, __spreadArray([pfx + ":\n\n" + JSON.stringify(msg, null, 2)], __read(params)));
         };
+        Debugger.prefix = "AutoReviewComments-";
         return Debugger;
     }());
     var VERSION = "1.4.7";
@@ -254,18 +256,31 @@ StackExchange.ready(function () {
     var viewsSel = ".main .view:not(:last-child)";
     /**
      * All the different "targets" a comment can be placed on.
-     * The given values are used as prefixes in the comment titles, to make it easy for the user to change the targets,
+     * The values are used as comment title prefixes to make it easy for the user to change them
      * by simply adding the prefix to their comment title.
+     * @enum
      */
-    var Target = {
-        Closure: "C",
-        CommentQuestion: "Q",
-        CommentAnswer: "A",
-        EditSummaryAnswer: "EA",
-        EditSummaryQuestion: "EQ",
+    var Target;
+    (function (Target) {
+        Target["Closure"] = "C";
+        Target["CommentQuestion"] = "Q";
+        Target["CommentAnswer"] = "A";
+        Target["EditSummaryAnswer"] = "EA";
+        Target["EditSummaryQuestion"] = "EQ";
+    })(Target || (Target = {}));
+    /**
+     * @summary template for the anchor HTML
+     */
+    var htmllink = function (url, label) {
+        if (label === void 0) { label = url; }
+        return "<a href=\"" + url + "\" target=\"_blank\">" + label + "</a>";
     };
+    /**
+     * @summary template for the <em> HTML
+     */
+    var htmlem = function (text) { return "<em>" + text + "</em>"; };
     //default comments
-    var defaultcomments = [
+    var commentDefaults = [
         {
             Target: [Target.CommentQuestion],
             Name: "More than one question asked",
@@ -274,37 +289,37 @@ StackExchange.ready(function () {
         {
             Target: [Target.CommentQuestion],
             Name: "Duplicate Closure",
-            Description: "This question will probably be closed as a duplicate soon. If the answers from the duplicates don't fully address your question please edit it to include why and flag this for re-opening. Thanks!",
+            Description: "This question will likely be closed as a duplicate soon. If the answers from the duplicates do not fully address your question, please edit it to include why and flag this for re-opening. Thanks!",
         },
         {
             Target: [Target.CommentAnswer],
             Name: "Answers just to say Thanks!",
-            Description: 'Please don\'t add "thanks" as answers. Invest some time in the site and you will gain sufficient <a href="//$SITEURL$/privileges">privileges</a> to upvote answers you like, which is the $SITENAME$ way of saying thank you.',
+            Description: "Please do not add \"thanks\" as answers. Invest some time in the site and you will gain sufficient " + htmllink("/privileges", "privileges") + " to upvote answers you like, which is our way of saying thank you.",
         },
         {
             Target: [Target.CommentAnswer],
             Name: "Nothing but a URL (and isn't spam)",
-            Description: 'Whilst this may theoretically answer the question, <a href="//meta.stackexchange.com/q/8259">it would be preferable</a> to include the essential parts of the answer here, and provide the link for reference.',
+            Description: "Whilst this may theoretically answer the question, " + htmllink("https://meta.stackexchange.com/q/8259", "it would be preferable") + " to include the essential parts of the answer here, and provide the link for reference.",
         },
         {
             Target: [Target.CommentAnswer],
             Name: "Requests to OP for further information",
-            Description: "This is really a comment, not an answer. With a bit more rep, <a href=\"//$SITEURL$/privileges/comment\">you will be able to post comments</a>. For the moment I've added the comment for you, and I'm flagging this post for deletion.",
+            Description: "This is really a comment, not an answer. With a bit more rep, " + htmllink("/privileges/comment", "you will be able to post comments") + ". For the moment, I have added the comment for you and flagging the post for deletion.",
         },
         {
             Target: [Target.CommentAnswer],
             Name: "OP using an answer for further information",
-            Description: "Please use the <em>Post answer</em> button only for actual answers. You should modify your original question to add additional information.",
+            Description: "Please use the " + htmlem("Post answer") + " button only for actual answers. You should modify your original question to add additional information.",
         },
         {
             Target: [Target.CommentAnswer],
             Name: "OP adding a new question as an answer",
-            Description: 'If you have another question, please ask it by clicking the <a href="//$SITEURL$/questions/ask">Ask Question</a> button.',
+            Description: "If you have another question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button.",
         },
         {
             Target: [Target.CommentAnswer],
             Name: 'Another user adding a "Me too!"',
-            Description: 'If you have a NEW question, please ask it by clicking the <a href="//$SITEURL$/questions/ask">Ask Question</a> button. If you have sufficient reputation, <a href="//$SITEURL$/privileges/vote-up">you may upvote</a> the question. Alternatively, "star" it as a favorite and you will be notified of any new answers.',
+            Description: "If you have a " + htmlem("new") + " question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button. If you have sufficient reputation, " + htmllink("/privileges/vote-up", "you may upvot") + " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers.",
         },
         {
             Target: [Target.Closure],
@@ -314,7 +329,7 @@ StackExchange.ready(function () {
         {
             Target: [Target.EditSummaryQuestion],
             Name: "Improper tagging",
-            Description: 'The tags you were using are not appropriate for this question. Please review <a href="//$SITEURL$/help/tagging">What are tags, and how should I use them?</a>',
+            Description: "The tags you used are not appropriate for the question. Please review " + htmllink("/help/tagging", "What are tags, and how should I use them?"),
         },
     ];
     var weekday_name = [
@@ -1043,11 +1058,11 @@ StackExchange.ready(function () {
     }
     /**
      * @summary Get the Id of the logged-in user
+     * @param {typeof StackExchage} se
      * @returns {string}
      */
-    var getLoggedInUserId = function () {
-        var _a = StackExchange.options, _b = _a === void 0 ? {} : _a, _c = _b.user, _d = _c === void 0 ? {} : _c, userId = _d.userId;
-        return userId || "";
+    var getLoggedInUserId = function (se) {
+        return se.options.user.userId || "";
     };
     /**
      * @summary shows a message
@@ -1286,7 +1301,7 @@ StackExchange.ready(function () {
         return text
             .replace(/\$SITENAME\$/g, sitename)
             .replace(/\$SITEURL\$/g, site)
-            .replace(/\$MYUSERID\$/g, getLoggedInUserId());
+            .replace(/\$MYUSERID\$/g, getLoggedInUserId(StackExchange));
     };
     /**
      * @summary tags the comment text
@@ -1296,7 +1311,7 @@ StackExchange.ready(function () {
     var tag = function (html) {
         var regname = new RegExp(sitename, "g");
         var regurl = new RegExp("//" + site, "g");
-        var reguid = new RegExp("/" + getLoggedInUserId() + "[)]", "g");
+        var reguid = new RegExp("/" + getLoggedInUserId(StackExchange) + "[)]", "g");
         return html
             .replace(regname, "$SITENAME$")
             .replace(regurl, "//$SITEURL$")
@@ -1377,13 +1392,13 @@ StackExchange.ready(function () {
     var resetComments = function () {
         Store.clear("name-");
         Store.clear("desc-");
-        defaultcomments.forEach(function (_a, index) {
+        commentDefaults.forEach(function (_a, index) {
             var Description = _a.Description, Name = _a.Name, Target = _a.Target;
             var prefix = Target ? "[" + Target.join(",") + "] " : "";
             Store.save("name-" + index, prefix + Name);
             Store.save("desc-" + index, Description);
         });
-        Store.save("commentcount", defaultcomments.length);
+        Store.save("commentcount", commentDefaults.length);
     };
     /**
      * TODO: rework once moved to config object
@@ -1500,7 +1515,7 @@ StackExchange.ready(function () {
         var greet = Store.load("ShowGreeting", false);
         var welcome = Store.load("WelcomeMessage", "");
         var greeting = greet ? welcome : "";
-        var userId = getLoggedInUserId();
+        var userId = getLoggedInUserId(StackExchange);
         debugLogger.log({
             comments: comments,
             postType: postType,
@@ -1687,8 +1702,7 @@ StackExchange.ready(function () {
         fadeTo(popup, 1);
         var style = popup.style, classList = popup.classList;
         style.display = "";
-        classList.remove("popup-closing");
-        classList.remove("popup-closed");
+        classList.remove("popup-closing", "popup-closed");
     };
     /**
      * @summary creates ARC modal and wires functionality
@@ -1707,7 +1721,7 @@ StackExchange.ready(function () {
                         document.body.append(popup);
                     showPopup(popup);
                     //TODO: if popup is created only once, listeners should be setup only once
-                    [updateComments].forEach(function (initiator) { return initiator(popup, postType); });
+                    updateComments(popup, postType);
                     //Auto-load from remote if required
                     if (!window.VersionChecked && Store.load("AutoRemote") == "true") {
                         throbber = document.getElementById("throbber2");
