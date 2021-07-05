@@ -90,45 +90,14 @@ StackExchange.ready(function () {
             found.push(current);
         return selector ? found.filter(function (sib) { return sib.matches(selector); }) : found;
     };
-    var delay = function (delay) { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
-        return [2, new Promise(function (res) { return setTimeout(res, delay); })];
-    }); }); };
     var fadeTo = function (element, min, speed) {
         if (speed === void 0) { speed = 200; }
-        return __awaiter(void 0, void 0, void 0, function () {
-            var style, steps, step, up, i, newOpacity;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (element.fades)
-                            return [2, element];
-                        element.fades = true;
-                        style = element.style;
-                        style.opacity = style.opacity || "1";
-                        steps = Math.ceil(speed / 16);
-                        step = (+style.opacity - min) / steps;
-                        up = step < 0;
-                        i = 0;
-                        _a.label = 1;
-                    case 1:
-                        if (!(i < steps)) return [3, 4];
-                        newOpacity = +style.opacity - step;
-                        style.opacity = newOpacity.toFixed(4);
-                        if (up ? newOpacity >= min : newOpacity <= min)
-                            return [3, 4];
-                        return [4, delay(16)];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        i++;
-                        return [3, 1];
-                    case 4:
-                        delete element.fades;
-                        return [2, element];
-                }
-            });
-        });
+        var style = element.style;
+        style.transitionProperty = "opacity";
+        style.transitionDuration = speed.toFixed(0) + "ms";
+        style.transitionTimingFunction = "linear";
+        style.opacity = min.toFixed(2);
+        return element;
     };
     var fadeOut = function (el, speed) {
         if (speed === void 0) { speed = 200; }

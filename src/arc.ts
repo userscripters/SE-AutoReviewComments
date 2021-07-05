@@ -172,44 +172,18 @@ StackExchange.ready(() => {
     };
 
     /**
-     * @summary promise-based delay
-     * @param {number} delay
-     * @returns {Promise<void>}
-     */
-    const delay = async (delay: number) =>
-        new Promise((res) => setTimeout(res, delay));
-
-    /**
      * @summary fades element to provided opacity
      * @param {HTMLElement} element
      * @param {number} min
      * @param {number} [speed]
-     *
-     * @returns {Promise<HTMLElement>}
+     * @returns {HTMLElement}
      */
-    const fadeTo = async (
-        element: HTMLElement & { fades?: boolean },
-        min: number,
-        speed = 200
-    ) => {
-        if (element.fades) return element;
-        element.fades = true;
-
+    const fadeTo = (element: HTMLElement, min: number, speed = 200) => {
         const { style } = element;
-        style.opacity = style.opacity || "1";
-        const steps = Math.ceil(speed / 16);
-
-        const step = (+style.opacity - min) / steps;
-        const up = step < 0;
-
-        for (let i = 0; i < steps; i++) {
-            const newOpacity = +style.opacity - step;
-            style.opacity = newOpacity.toFixed(4);
-            if (up ? newOpacity >= min : newOpacity <= min) break;
-            await delay(16);
-        }
-
-        delete element.fades;
+        style.transitionProperty = "opacity";
+        style.transitionDuration = `${speed.toFixed(0)}ms`;
+        style.transitionTimingFunction = "linear";
+        style.opacity = min.toFixed(2);
         return element;
     };
 
@@ -217,6 +191,7 @@ StackExchange.ready(() => {
      * @summary fades out an element
      * @param {HTMLElement} el
      * @param {number} [speed]
+     * @returns {HTMLElement}
      */
     const fadeOut = (el: HTMLElement, speed = 200) => fadeTo(el, 0, speed);
 
