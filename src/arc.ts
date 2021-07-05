@@ -397,7 +397,7 @@ StackExchange.ready(() => {
                 "Ask Question"
             )} button. If you have sufficient reputation, ${htmllink(
                 "/privileges/vote-up",
-                "you may upvot"
+                "you may upvote"
             )} the question. Alternatively, "star" it as a favorite, and you will be notified of any new answers.`,
         },
         {
@@ -1740,8 +1740,7 @@ StackExchange.ready(() => {
 
         area.addEventListener("change", ({ target }) => {
             const { id, value } = <HTMLTextAreaElement>target;
-            saveComment(id, value);
-            closeEditMode(commentElem, value);
+            closeEditMode(commentElem, saveComment(id, value));
         });
 
         // save/cancel links to add to textarea

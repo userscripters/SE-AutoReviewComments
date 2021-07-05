@@ -254,7 +254,7 @@ StackExchange.ready(function () {
         {
             Target: [Target.CommentAnswer],
             Name: 'Another user adding a "Me too!"',
-            Description: "If you have a " + htmlem("new") + " question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button. If you have sufficient reputation, " + htmllink("/privileges/vote-up", "you may upvot") + " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers.",
+            Description: "If you have a " + htmlem("new") + " question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button. If you have sufficient reputation, " + htmllink("/privileges/vote-up", "you may upvote") + " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers.",
         },
         {
             Target: [Target.Closure],
@@ -1022,8 +1022,7 @@ StackExchange.ready(function () {
         area.addEventListener("change", function (_a) {
             var target = _a.target;
             var _b = target, id = _b.id, value = _b.value;
-            saveComment(id, value);
-            closeEditMode(commentElem, value);
+            closeEditMode(commentElem, saveComment(id, value));
         });
         var actions = document.createElement("div");
         actions.classList.add("actions");
