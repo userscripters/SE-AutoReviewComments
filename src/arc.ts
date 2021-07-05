@@ -13,19 +13,13 @@ declare var StackExchange: {
 
 interface Window {
     [x: string]: unknown;
-    VersionChecked: boolean;
-    ARC_AutoUpdate: Function;
 }
-
-declare var CheckForNewVersion: ((...args: any[]) => any) | undefined;
 
 type PostType = "answer" | "question";
 
 type Placement = readonly [insert: HTMLElement | null, place: HTMLElement];
 
 type Locator<T extends HTMLElement = HTMLElement> = (where: T) => Placement;
-
-type Notifier = (newVersion: string, oldVersion: string) => void;
 
 type Actor = (...args: any[]) => any;
 
@@ -439,80 +433,8 @@ StackExchange.ready(() => {
     const month = 2592000;
     const year = 31536000;
 
-    // Self Updating Userscript, see https://gist.github.com/Benjol/874058
-    if (typeof window.ARC_AutoUpdate === "function")
-        return window.ARC_AutoUpdate(VERSION);
-
     if (!Store.load("WelcomeMessage"))
         Store.save("WelcomeMessage", `Welcome to ${sitename}! `);
-
-    /**
-     * @summary checks if a given version is newer
-     * @param {string} newVer new semantic version
-     * @param {string} curVer current semantic version
-     * @returns {boolean}
-     */
-    const isNewer = (newVer: string, curVer: string) => {
-        const np = newVer.split(".").map(Number);
-        const cp = curVer.split(".").map(Number);
-        return np.some(
-            (v, idx) =>
-                v > cp[idx] &&
-                np.slice(0, idx).every((v, i) => i === idx || v >= cp[i])
-        );
-    };
-
-    /**
-     * @summary if has never version, download
-     * @param {Notifier} notifier
-     * @returns {void}
-     */
-    const updateCheck = (notifier: Notifier) => {
-        window.ARC_AutoUpdate = (newver: string) => {
-            if (isNewer(newver, VERSION)) notifier(newver, RAW_URL);
-        };
-
-        const script = document.createElement("script");
-        script.src = RAW_URL;
-
-        document.head.append(script);
-    };
-
-    /**
-     * @description Check to see if a new version has become available since last check
-     * - only checks once a day
-     * - does not check for first time visitors, shows them a welcome message instead
-     * - called at the end of the main script if function exists
-     * @param {HTMLElement} popup
-     */
-    const checkForNewVersion = (popup: HTMLElement) => {
-        const today = new Date().setHours(0, 0, 0, 0);
-        const LastUpdateCheckDay = Store.load("LastUpdateCheckDay");
-
-        if (!LastUpdateCheckDay) {
-            //first time visitor
-            notify(
-                popup,
-                "Please read this!",
-                `Thank you for installing the userscript.
-                    Please note that you can edit the texts inline by double-clicking them.
-                    For other options, please see the README <a href="${GITHUB_URL}" target="_blank">here</a>.`
-            );
-        } else if (LastUpdateCheckDay != today) {
-            updateCheck((newVersion: string, installURL: string) => {
-                if (newVersion == Store.load("LastVersionAcknowledged")) return;
-
-                notify(
-                    popup,
-                    "New Version!",
-                    `A new version (${newVersion}) of the <a href="${STACKAPPS_URL}">AutoReviewComments</a> userscript is now available, see the <a href="${GITHUB_URL}/releases">release notes</a> for details or <a href="${installURL}">click here</a> to install now.`,
-                    () => Store.save("LastVersionAcknowledged", newVersion)
-                );
-            });
-        }
-
-        Store.save("LastUpdateCheckDay", today);
-    };
 
     /**
      * @summary injects ARC-specific CSS into the page
@@ -2188,7 +2110,7 @@ StackExchange.ready(() => {
         updateComments(popup, postType);
 
         //Auto-load from remote if required
-        if (!window.VersionChecked && Store.load("AutoRemote") == "true") {
+        if (Store.load("AutoRemote") == "true") {
             var throbber = document.getElementById("throbber2")!;
             show(throbber);
             loadFromRemote(
@@ -2217,13 +2139,6 @@ StackExchange.ready(() => {
         if (!uinfo) return fadeOut(userInfoEl);
 
         addUserInfo(userInfoEl, uinfo);
-
-        //We only actually perform the updates check when someone clicks, this should make it less costly, and more timely
-        //also wrap it so that it only gets called the *FIRST* time we open this dialog on any given page (not much of an optimisation).
-        if (typeof checkForNewVersion == "function" && !window.VersionChecked) {
-            checkForNewVersion(popup);
-            window.VersionChecked = true;
-        }
     };
 
     /**
