@@ -997,12 +997,17 @@ StackExchange.ready(function () {
             "") + untag(html));
     };
     var closeEditMode = function (commentElem, value) {
+        var dataset = commentElem.dataset;
         empty(commentElem);
         commentElem.innerHTML = value;
+        commentElem.closest("li").querySelector("input").disabled = false;
         enable("#" + Store.prefix + "-submit");
+        dataset.mode = "insert";
     };
     var openEditMode = function (commentElem, popup) {
-        var backup = commentElem.innerHTML;
+        var backup = commentElem.innerHTML, dataset = commentElem.dataset, _a = commentElem.dataset.mode, mode = _a === void 0 ? "insert" : _a;
+        if (mode === "edit")
+            return;
         var html = tag(backup.replace(Store.load("WelcomeMessage", ""), ""));
         debugLogger.log({ backup: backup, html: html });
         empty(commentElem);
@@ -1012,6 +1017,7 @@ StackExchange.ready(function () {
         var area = document.createElement("textarea");
         area.value = HTMLtoMarkdown(html);
         area.id = area.name = commentElem.id;
+        commentElem.closest("li").querySelector("input").disabled = true;
         popup.querySelectorAll(".quick-insert").forEach(hide);
         disable("#" + Store.prefix + "-submit");
         area.addEventListener("input", function (_a) {
@@ -1033,6 +1039,7 @@ StackExchange.ready(function () {
         });
         actions.append(cancel);
         commentElem.append(preview, area, actions);
+        dataset.mode = "edit";
     };
     var resetComments = function () {
         Store.clear("name-");
@@ -1116,7 +1123,7 @@ StackExchange.ready(function () {
         });
         popup.addEventListener("keyup", function (event) {
             var _a;
-            if (event.code !== "Enter" || currView !== viewId)
+            if (event.code !== "Enter")
                 return;
             event.preventDefault();
             (_a = document.getElementById(Store.prefix + "-submit")) === null || _a === void 0 ? void 0 : _a.click();

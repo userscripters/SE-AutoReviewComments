@@ -1698,9 +1698,12 @@ StackExchange.ready(() => {
      * @returns {void}
      */
     const closeEditMode = (commentElem: HTMLElement, value: string) => {
+        const { dataset } = commentElem;
         empty(commentElem);
         commentElem.innerHTML = value;
+        commentElem.closest("li")!.querySelector("input")!.disabled = false;
         enable(`#${Store.prefix}-submit`);
+        dataset.mode = "insert";
     };
 
     /**
@@ -1710,7 +1713,13 @@ StackExchange.ready(() => {
      * @returns {void}
      */
     const openEditMode = (commentElem: HTMLElement, popup: HTMLElement) => {
-        const { innerHTML: backup } = commentElem;
+        const {
+            innerHTML: backup,
+            dataset,
+            dataset: { mode = "insert" },
+        } = commentElem;
+
+        if (mode === "edit") return;
 
         // remove greeting before editing
         const html = tag(backup.replace(Store.load("WelcomeMessage", ""), ""));
@@ -1726,6 +1735,9 @@ StackExchange.ready(() => {
         const area = document.createElement("textarea");
         area.value = HTMLtoMarkdown(html);
         area.id = area.name = commentElem.id;
+
+        // Disable comment input while editing
+        commentElem.closest("li")!.querySelector("input")!.disabled = true;
 
         // Disable quick-insert while editing.
         popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(hide);
@@ -1755,6 +1767,8 @@ StackExchange.ready(() => {
 
         actions.append(cancel);
         commentElem.append(preview, area, actions);
+
+        dataset.mode = "edit";
     };
 
     /**
@@ -1876,7 +1890,7 @@ StackExchange.ready(() => {
         });
 
         popup.addEventListener("keyup", (event) => {
-            if (event.code !== "Enter" || currView !== viewId) return;
+            if (event.code !== "Enter") return;
             event.preventDefault();
             document.getElementById(`${Store.prefix}-submit`)?.click();
         });
