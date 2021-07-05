@@ -103,6 +103,33 @@ StackExchange.ready(function () {
         if (speed === void 0) { speed = 200; }
         return fadeTo(el, 0, speed);
     };
+    var storageMap = {
+        GM_setValue: {
+            get length() {
+                return GM_listValues().length;
+            },
+            clear: function () {
+                var keys = GM_listValues();
+                return keys.forEach(function (key) { return GM_deleteValue(key); });
+            },
+            key: function (index) {
+                return GM_listValues()[index];
+            },
+            getItem: function (key) {
+                return GM_getValue(key);
+            },
+            setItem: function (key, val) {
+                return GM_setValue(key, val);
+            },
+            removeItem: function (key) {
+                return GM_deleteValue(key);
+            },
+        },
+    };
+    var _a = __read(Object.entries(storageMap).find(function (_a) {
+        var _b = __read(_a, 1), key = _b[0];
+        return typeof window[key] === "function";
+    }) || [], 2), storage = _a[1];
     var Store = (function () {
         function Store() {
         }
@@ -124,7 +151,7 @@ StackExchange.ready(function () {
         };
         Store.load = function (key, def) {
             var _a = this, prefix = _a.prefix, storage = _a.storage;
-            var val = storage[prefix + key];
+            var val = storage.getItem(prefix + key);
             return val ? JSON.parse(val) : def;
         };
         Store.save = function (key, val) {
@@ -139,7 +166,7 @@ StackExchange.ready(function () {
             return storage.removeItem(prefix + key);
         };
         Store.prefix = "AutoReviewComments-";
-        Store.storage = localStorage;
+        Store.storage = storage || localStorage;
         return Store;
     }());
     var Debugger = (function () {
@@ -159,15 +186,18 @@ StackExchange.ready(function () {
         return Debugger;
     }());
     var VERSION = "1.4.7";
-    var RAW_URL = "https://raw.github.com/userscripters/SE-AutoReviewComments/master/dist/autoreviewcomments.user.js";
     var GITHUB_URL = "https://github.com/userscripters/SE-AutoReviewComments#readme";
-    var STACKAPPS_URL = "http://stackapps.com/q/2116";
     var API_VER = "2.2";
     var API_KEY = "5J)5cHN9KbyhE9Yf9S*G)g((";
     var FILTER_UNSAFE = ")7tZ5Od";
     var debugLogger = new Debugger(Store.load("debug"));
     var site = window.location.hostname;
     var sitename = (StackExchange.options.site.name || "").replace(/\s?Stack Exchange/, "");
+    debugLogger.log({
+        site: site,
+        sitename: sitename,
+        isScriptManager: !!storage,
+    });
     var allTgtMatcher = new RegExp("\\[(E?[AQ]|C)(?:,(E?[AQ]|C))*\\]");
     var userLinkSel = ".post-signature .user-details[itemprop=author] a";
     var viewsSel = ".main .view:not(:last-child)";

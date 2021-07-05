@@ -195,10 +195,40 @@ StackExchange.ready(() => {
      */
     const fadeOut = (el: HTMLElement, speed = 200) => fadeTo(el, 0, speed);
 
+    const storageMap: Record<string, Storage> = {
+        GM_setValue: {
+            get length() {
+                return GM_listValues().length;
+            },
+            clear() {
+                const keys = GM_listValues();
+                return keys.forEach((key) => GM_deleteValue(key));
+            },
+            key(index) {
+                return GM_listValues()[index];
+            },
+            getItem(key) {
+                return GM_getValue(key);
+            },
+            setItem(key, val) {
+                return GM_setValue(key, val);
+            },
+            removeItem(key) {
+                return GM_deleteValue(key);
+            },
+        },
+    };
+
+    //TODO: switch to configurable preference
+    const [, storage] =
+        Object.entries(storageMap).find(
+            ([key]) => typeof window[key] === "function"
+        ) || [];
+
     class Store {
         static prefix = "{{PREFIX}}";
 
-        static storage = localStorage;
+        static storage: Storage = storage || localStorage;
 
         static get numKeys() {
             const {
@@ -225,7 +255,7 @@ StackExchange.ready(() => {
 
         static load<T>(key: string, def?: T): T {
             const { prefix, storage } = this;
-            const val = storage[prefix + key];
+            const val = storage.getItem(prefix + key);
             return val ? JSON.parse(val) : def;
         }
 
@@ -261,9 +291,7 @@ StackExchange.ready(() => {
     }
 
     const VERSION = "{{VERSION}}";
-    const RAW_URL = "{{RAW_URL}}";
     const GITHUB_URL = "{{GITHUB_URL}}";
-    const STACKAPPS_URL = "{{STACKAPPS_URL}}";
     const API_VER = "{{API_VER}}";
     const API_KEY = "{{API_KEY}}";
     const FILTER_UNSAFE = "{{FILTER_UNSAFE}}";
@@ -276,6 +304,12 @@ StackExchange.ready(() => {
         /\s?Stack Exchange/,
         ""
     ); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
+
+    debugLogger.log({
+        site,
+        sitename,
+        isScriptManager: !!storage,
+    });
 
     // A regular expression to match the possible targets in a string.
     const allTgtMatcher = new RegExp("\\[(E?[AQ]|C)(?:,(E?[AQ]|C))*\\]");
