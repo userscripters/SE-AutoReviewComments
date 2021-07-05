@@ -1760,23 +1760,39 @@ StackExchange.ready(() => {
     };
 
     /**
-     * @summary Replace contents of element with a textarea (containing markdown of contents), and save/cancel buttons
-     * @param {HTMLElement} el
+     * @summary finalizes the edit mode (save or cancel)
+     * @param {HTMLElement} commentElem
+     * @returns {void}
+     */
+    const closeEditMode = (commentElem: HTMLElement, value: string) => {
+        empty(commentElem);
+        commentElem.innerHTML = value;
+        enable(`#${Store.prefix}-submit`);
+    };
+
+    /**
+     * @summary opens the comment edit mode
+     * @param {HTMLElement} commentElem
      * @param {HTMLElement} popup
      * @returns {void}
      */
-    const openEditMode = (el: HTMLElement, popup: HTMLElement) => {
-        const { innerHTML: backup } = el;
+    const openEditMode = (commentElem: HTMLElement, popup: HTMLElement) => {
+        const { innerHTML: backup } = commentElem;
 
-        //remove greeting before editing
+        // remove greeting before editing
         const html = tag(backup.replace(Store.load("WelcomeMessage", ""), ""));
 
         debugLogger.log({ backup, html });
 
-        if (html.indexOf("<textarea") > -1) return; //don't want to create a new textarea inside this one!
+        empty(commentElem);
+
+        const preview = document.createElement("span");
+        preview.classList.add("d-inline-block", "p8"); //TODO: config
+        preview.innerHTML = html;
 
         const area = document.createElement("textarea");
         area.value = HTMLtoMarkdown(html);
+        area.id = area.name = commentElem.id;
 
         // Disable quick-insert while editing.
         popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(hide);
@@ -1784,26 +1800,29 @@ StackExchange.ready(() => {
         // Disable insert while editing.
         disable(`#${Store.prefix}-submit`);
 
-        area.addEventListener("change", ({ target }) => {
-            const { id, value } = <HTMLTextAreaElement>target;
-            el.innerHTML = saveComment(id, value);
-            enable(`#${Store.prefix}-submit`);
+        area.addEventListener("input", ({ target }) => {
+            const { value } = <HTMLTextAreaElement>target;
+            preview.innerHTML = markdownToHTML(untag(value));
         });
 
-        //save/cancel links to add to textarea
+        area.addEventListener("change", ({ target }) => {
+            const { id, value } = <HTMLTextAreaElement>target;
+            saveComment(id, value);
+            closeEditMode(commentElem, value);
+        });
+
+        // save/cancel links to add to textarea
         const actions = document.createElement("div");
         actions.classList.add("actions");
 
         const cancel = makeButton("cancel", "cancel edit");
         cancel.addEventListener("click", () => {
             popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(show);
-            el.innerHTML = backup;
-            area.remove();
-            actions.remove();
+            closeEditMode(commentElem, backup);
         });
 
         actions.append(cancel);
-        el.append(area, actions);
+        commentElem.append(preview, area, actions);
     };
 
     /**
