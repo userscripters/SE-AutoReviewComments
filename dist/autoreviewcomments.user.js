@@ -503,12 +503,25 @@ StackExchange.ready(function () {
         wrap.append(text, welcomeWrap, actionsWrap);
         return (makeWelcomeView.view = wrap);
     };
+    var updateImpExpComments = function (view) {
+        var area = view.querySelector("textarea");
+        var numComments = Store.load("commentcount");
+        var loaded = loadComments(numComments);
+        var content = loaded
+            .map(function (_a) {
+            var name = _a.name, desc = _a.desc;
+            return "###" + name + "\n" + HTMLtoMarkdown(desc);
+        })
+            .join("\n\n");
+        area.value = content;
+        return view;
+    };
     var makeImpExpView = function (popup, id, postType) {
         if (makeImpExpView.view)
-            return makeImpExpView.view;
-        var wrap = document.createElement("div");
-        wrap.classList.add("view");
-        wrap.id = id;
+            return updateImpExpComments(makeImpExpView.view);
+        var view = document.createElement("div");
+        view.classList.add("view");
+        view.id = id;
         var actionWrap = document.createElement("div");
         actionWrap.classList.add("actions");
         var txtArea = document.createElement("textarea");
@@ -525,16 +538,7 @@ StackExchange.ready(function () {
             return switchToView(makeSearchView("search-popup"));
         });
         actionWrap.append(jsonpBtn, makeSeparator(), cancelBtn);
-        wrap.append(txtArea, actionWrap);
-        var numComments = Store.load("commentcount");
-        var loaded = loadComments(numComments);
-        var content = loaded
-            .map(function (_a) {
-            var name = _a.name, desc = _a.desc;
-            return "###" + name + "\n" + HTMLtoMarkdown(desc);
-        })
-            .join("\n\n");
-        txtArea.value = content;
+        view.append(txtArea, actionWrap);
         var cbk = "callback";
         jsonpBtn.addEventListener("click", function () {
             var _a;
@@ -544,9 +548,9 @@ StackExchange.ready(function () {
                 .map(function (comment) { return JSON.stringify(comment); })
                 .join(",\n");
             txtArea.value = cbk + "([\n" + content + "\n])";
-            (_a = wrap.querySelector(".actions")) === null || _a === void 0 ? void 0 : _a.remove();
+            (_a = view.querySelector(".actions")) === null || _a === void 0 ? void 0 : _a.remove();
         });
-        return (makeImpExpView.view = wrap);
+        return (makeImpExpView.view = updateImpExpComments(view));
     };
     var makeRemoteView = function (popup, id, postType) {
         if (makeRemoteView.view)

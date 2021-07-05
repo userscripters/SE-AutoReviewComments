@@ -891,6 +891,25 @@ StackExchange.ready(() => {
     };
 
     /**
+     * @summary updates import/export comment section
+     * @param {HTMLElement} view import/export view
+     * @returns {HTMLElement}
+     */
+    const updateImpExpComments = (view: HTMLElement) => {
+        const area = view.querySelector("textarea")!;
+
+        const numComments = Store.load<number>("commentcount");
+        const loaded = loadComments(numComments);
+
+        const content = loaded
+            .map(({ name, desc }) => `###${name}\n${HTMLtoMarkdown(desc)}`)
+            .join("\n\n");
+
+        area.value = content;
+        return view;
+    };
+
+    /**
      * @summary Show textarea in front of popup to import/export all comments (for other sites or for posting somewhere)
      * @param {HTMLElement} popup wrapper popup
      * @param {string} id view id
@@ -898,11 +917,12 @@ StackExchange.ready(() => {
      * @returns {HTMLElement}
      */
     const makeImpExpView: ImpExpViewMaker = (popup, id, postType) => {
-        if (makeImpExpView.view) return makeImpExpView.view;
+        if (makeImpExpView.view)
+            return updateImpExpComments(makeImpExpView.view);
 
-        const wrap = document.createElement("div");
-        wrap.classList.add("view");
-        wrap.id = id;
+        const view = document.createElement("div");
+        view.classList.add("view");
+        view.id = id;
 
         const actionWrap = document.createElement("div");
         actionWrap.classList.add("actions");
@@ -928,16 +948,7 @@ StackExchange.ready(() => {
 
         actionWrap.append(jsonpBtn, makeSeparator(), cancelBtn);
 
-        wrap.append(txtArea, actionWrap);
-
-        const numComments = Store.load<number>("commentcount");
-        const loaded = loadComments(numComments);
-
-        const content = loaded
-            .map(({ name, desc }) => `###${name}\n${HTMLtoMarkdown(desc)}`)
-            .join("\n\n");
-
-        txtArea.value = content;
+        view.append(txtArea, actionWrap);
 
         const cbk = "callback";
         jsonpBtn.addEventListener("click", () => {
@@ -950,10 +961,10 @@ StackExchange.ready(() => {
 
             txtArea.value = `${cbk}([\n${content}\n])`;
 
-            wrap.querySelector(".actions")?.remove();
+            view.querySelector(".actions")?.remove();
         });
 
-        return (makeImpExpView.view = wrap);
+        return (makeImpExpView.view = updateImpExpComments(view));
     };
 
     /**
