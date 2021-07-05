@@ -57,11 +57,6 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from) {
     return to;
 };
 StackExchange.ready(function () {
-    /**
-     * @summary centers the element
-     * @param {HTMLElement} element
-     * @returns {HTMLElement}
-     */
     var center = function (element) {
         var style = element.style;
         var update = {
@@ -73,42 +68,21 @@ StackExchange.ready(function () {
         Object.assign(style, update);
         return element;
     };
-    /**
-     * @summary hides an element
-     * @param {HTMLElement}
-     * @returns {HTMLElement}
-     */
     var hide = function (element) {
         var style = element.style;
         style.display = "none";
         return element;
     };
-    /**
-     * @summary shows an element
-     * @param {HTMLElement}
-     * @returns {HTMLElement}
-     */
     var show = function (element) {
         var style = element.style;
         style.display = "";
         return element;
     };
-    /**
-     * @summary empties a node
-     * @param {Node} node
-     * @returns {Node}
-     */
     var empty = function (node) {
         while (node.firstChild)
             node.firstChild.remove();
         return node;
     };
-    /**
-     * @summary gets an array of element siblings
-     * @param {HTMLElement} el
-     * @param {string} selector
-     * @returns {Element[]}
-     */
     var siblings = function (el, selector) {
         var found = [];
         var current = el;
@@ -116,22 +90,9 @@ StackExchange.ready(function () {
             found.push(current);
         return selector ? found.filter(function (sib) { return sib.matches(selector); }) : found;
     };
-    /**
-     * @summary promise-based delay
-     * @param {number} delay
-     * @returns {Promise<void>}
-     */
     var delay = function (delay) { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
-        return [2 /*return*/, new Promise(function (res) { return setTimeout(res, delay); })];
+        return [2, new Promise(function (res) { return setTimeout(res, delay); })];
     }); }); };
-    /**
-     * @summary fades element to provided opacity
-     * @param {HTMLElement} element
-     * @param {number} min
-     * @param {number} [speed]
-     *
-     * @returns {Promise<HTMLElement>}
-     */
     var fadeTo = function (element, min, speed) {
         if (speed === void 0) { speed = 200; }
         return __awaiter(void 0, void 0, void 0, function () {
@@ -140,7 +101,7 @@ StackExchange.ready(function () {
                 switch (_a.label) {
                     case 0:
                         if (element.fades)
-                            return [2 /*return*/, element];
+                            return [2, element];
                         element.fades = true;
                         style = element.style;
                         style.opacity = style.opacity || "1";
@@ -150,35 +111,30 @@ StackExchange.ready(function () {
                         i = 0;
                         _a.label = 1;
                     case 1:
-                        if (!(i < steps)) return [3 /*break*/, 4];
+                        if (!(i < steps)) return [3, 4];
                         newOpacity = +style.opacity - step;
                         style.opacity = newOpacity.toFixed(4);
                         if (up ? newOpacity >= min : newOpacity <= min)
-                            return [3 /*break*/, 4];
-                        return [4 /*yield*/, delay(16)];
+                            return [3, 4];
+                        return [4, delay(16)];
                     case 2:
                         _a.sent();
                         _a.label = 3;
                     case 3:
                         i++;
-                        return [3 /*break*/, 1];
+                        return [3, 1];
                     case 4:
                         delete element.fades;
-                        return [2 /*return*/, element];
+                        return [2, element];
                 }
             });
         });
     };
-    /**
-     * @summary fades out an element
-     * @param {HTMLElement} el
-     * @param {number} [speed]
-     */
     var fadeOut = function (el, speed) {
         if (speed === void 0) { speed = 200; }
         return fadeTo(el, 0, speed);
     };
-    var Store = /** @class */ (function () {
+    var Store = (function () {
         function Store() {
         }
         Object.defineProperty(Store, "numKeys", {
@@ -189,11 +145,6 @@ StackExchange.ready(function () {
             enumerable: false,
             configurable: true
         });
-        /**
-         * @summary clears storage
-         * @param {string} startsWith
-         * @returns {void}
-         */
         Store.clear = function (startsWith) {
             var _a = this, numKeys = _a.numKeys, prefix = _a.prefix, storage = _a.storage;
             for (var i = numKeys - 1; i >= 0; i--) {
@@ -222,7 +173,7 @@ StackExchange.ready(function () {
         Store.storage = localStorage;
         return Store;
     }());
-    var Debugger = /** @class */ (function () {
+    var Debugger = (function () {
         function Debugger(on) {
             this.on = on;
         }
@@ -247,19 +198,10 @@ StackExchange.ready(function () {
     var FILTER_UNSAFE = ")7tZ5Od";
     var debugLogger = new Debugger(Store.load("debug"));
     var site = window.location.hostname;
-    var sitename = (StackExchange.options.site.name || "").replace(/\s?Stack Exchange/, ""); //same for others ("Android Enthusiasts Stack Exchange", SR, and more);
-    // A regular expression to match the possible targets in a string.
+    var sitename = (StackExchange.options.site.name || "").replace(/\s?Stack Exchange/, "");
     var allTgtMatcher = new RegExp("\\[(E?[AQ]|C)(?:,(E?[AQ]|C))*\\]");
-    //itemprop distinguishes between the author and editor
     var userLinkSel = ".post-signature .user-details[itemprop=author] a";
-    //selects all views except actions
     var viewsSel = ".main .view:not(:last-child)";
-    /**
-     * All the different "targets" a comment can be placed on.
-     * The values are used as comment title prefixes to make it easy for the user to change them
-     * by simply adding the prefix to their comment title.
-     * @enum
-     */
     var Target;
     (function (Target) {
         Target["Closure"] = "C";
@@ -268,18 +210,11 @@ StackExchange.ready(function () {
         Target["EditSummaryAnswer"] = "EA";
         Target["EditSummaryQuestion"] = "EQ";
     })(Target || (Target = {}));
-    /**
-     * @summary template for the anchor HTML
-     */
     var htmllink = function (url, label) {
         if (label === void 0) { label = url; }
         return "<a href=\"" + url + "\" target=\"_blank\">" + label + "</a>";
     };
-    /**
-     * @summary template for the <em> HTML
-     */
     var htmlem = function (text) { return "<em>" + text + "</em>"; };
-    //default comments
     var commentDefaults = [
         {
             Target: [Target.CommentQuestion],
@@ -348,72 +283,14 @@ StackExchange.ready(function () {
     var week = 604800;
     var month = 2592000;
     var year = 31536000;
-    // Self Updating Userscript, see https://gist.github.com/Benjol/874058
-    if (typeof window.ARC_AutoUpdate === "function")
-        return window.ARC_AutoUpdate(VERSION);
     if (!Store.load("WelcomeMessage"))
         Store.save("WelcomeMessage", "Welcome to " + sitename + "! ");
-    /**
-     * @summary checks if a given version is newer
-     * @param {string} newVer new semantic version
-     * @param {string} curVer current semantic version
-     * @returns {boolean}
-     */
-    var isNewer = function (newVer, curVer) {
-        var np = newVer.split(".").map(Number);
-        var cp = curVer.split(".").map(Number);
-        return np.some(function (v, idx) {
-            return v > cp[idx] &&
-                np.slice(0, idx).every(function (v, i) { return i === idx || v >= cp[i]; });
-        });
-    };
-    /**
-     * @summary if has never version, download
-     * @param {Notifier} notifier
-     * @returns {void}
-     */
-    var updateCheck = function (notifier) {
-        window.ARC_AutoUpdate = function (newver) {
-            if (isNewer(newver, VERSION))
-                notifier(newver, RAW_URL);
-        };
-        var script = document.createElement("script");
-        script.src = RAW_URL;
-        document.head.append(script);
-    };
-    /**
-     * @description Check to see if a new version has become available since last check
-     * - only checks once a day
-     * - does not check for first time visitors, shows them a welcome message instead
-     * - called at the end of the main script if function exists
-     * @param {HTMLElement} popup
-     */
-    var checkForNewVersion = function (popup) {
-        var today = new Date().setHours(0, 0, 0, 0);
-        var LastUpdateCheckDay = Store.load("LastUpdateCheckDay");
-        if (!LastUpdateCheckDay) {
-            //first time visitor
-            notify(popup, "Please read this!", "Thank you for installing the userscript.\n                    Please note that you can edit the texts inline by double-clicking them.\n                    For other options, please see the README <a href=\"" + GITHUB_URL + "\" target=\"_blank\">here</a>.");
-        }
-        else if (LastUpdateCheckDay != today) {
-            updateCheck(function (newVersion, installURL) {
-                if (newVersion == Store.load("LastVersionAcknowledged"))
-                    return;
-                notify(popup, "New Version!", "A new version (" + newVersion + ") of the <a href=\"" + STACKAPPS_URL + "\">AutoReviewComments</a> userscript is now available, see the <a href=\"" + GITHUB_URL + "/releases\">release notes</a> for details or <a href=\"" + installURL + "\">click here</a> to install now.", function () { return Store.save("LastVersionAcknowledged", newVersion); });
-            });
-        }
-        Store.save("LastUpdateCheckDay", today);
-    };
-    /**
-     * @summary injects ARC-specific CSS into the page
-     * @returns {void}
-     */
     var addStyles = function () {
         var style = document.createElement("style");
         document.head.append(style);
         var sheet = style.sheet;
         if (!sheet)
-            return; //TODO: add failure handling
+            return;
         var arc = "auto-review-comments";
         [
             "." + arc + ".popup{\n                    position:absolute;\n                    display:block;\n                    width:690px;\n                    padding:15px 15px 10px;\n                }",
@@ -443,13 +320,6 @@ StackExchange.ready(function () {
             "." + arc + ".popup .main .searchfilter{\n                    width:100%;\n                    box-sizing:border-box;\n                    display:block\n                }",
         ].forEach(function (rule) { return sheet.insertRule(rule); });
     };
-    /**
-     * @summary makes a button
-     * @param {string} text
-     * @param {string} title
-     * @param {...string} classes
-     * @returns {HTMLAnchorElement}
-     */
     var makeButton = function (text, title) {
         var _a;
         var classes = [];
@@ -462,14 +332,6 @@ StackExchange.ready(function () {
         cancelBtn.title = title;
         return cancelBtn;
     };
-    /**
-     * @summary makes a link button
-     * @param {string} url
-     * @param {string} text
-     * @param {string} title
-     * @param {...string} classes
-     * @returns {HTMLAnchorElement}
-     */
     var makeLinkButton = function (url, text, title) {
         var classes = [];
         for (var _i = 3; _i < arguments.length; _i++) {
@@ -480,11 +342,6 @@ StackExchange.ready(function () {
         btn.target = "_blank";
         return btn;
     };
-    /**
-     * @summary creates the popup close button
-     * @param {string} id id to give to the element
-     * @returns {HTMLElement}
-     */
     var makeCloseBtn = function (id) {
         var close = document.createElement("div");
         close.classList.add("popup-close");
@@ -493,13 +350,6 @@ StackExchange.ready(function () {
         close.append(btn);
         return close;
     };
-    /**
-     * @summary makes an image element
-     * @param {string} id
-     * @param {string} src
-     * @param {...string} classes
-     * @returns {HTMLImageElement}
-     */
     var makeImage = function (id, src) {
         var _a;
         var classes = [];
@@ -512,11 +362,6 @@ StackExchange.ready(function () {
         img.id = id;
         return img;
     };
-    /**
-     * @summary makes comment submit button
-     * @param {string} id
-     * @returns {HTMLElement}
-     */
     var makeSubmitButton = function (id) {
         var submitBtn = document.createElement("input");
         submitBtn.classList.add("popup-submit");
@@ -525,23 +370,12 @@ StackExchange.ready(function () {
         submitBtn.id = id;
         return submitBtn;
     };
-    /**
-     * @summary hides the rest of the views and shows the current one
-     * @param {HTMLElement} view current view
-     * @returns {HTMLElement}
-     */
     var switchToView = function (view) {
         document.querySelectorAll(viewsSel).forEach(hide);
         show(view);
         Store.save("CurrentView", view.id);
         return view;
     };
-    /**
-     * @summary makes popup action view
-     * @param {HTMLElement} popup wrapper popup
-     * @param {string} id actions wrapper id
-     * @returns {HTMLElement}
-     */
     var makeActionsView = function (popup, id) {
         var wrap = document.createElement("div");
         wrap.classList.add("view");
@@ -568,8 +402,7 @@ StackExchange.ready(function () {
         var importBtn = makeButton("import/export", "use this to import/export all comments", "popup-actions-impexp");
         var descrBtn = makeButton("show/hide desc", "use this to hide/show all comments", "popup-actions-toggledesc");
         var remoteBtn = makeButton("remote", "setup remote source", "popup-actions-remote");
-        var dotsImg = makeImage("throbber2", "https://sstatic.net/img/progress-dots.gif", //TODO: make config
-        "throbber");
+        var dotsImg = makeImage("throbber2", "https://sstatic.net/img/progress-dots.gif", "throbber");
         var welcomeBtn = makeButton("welcome", "configure welcome", "popup-actions-welcome");
         var sep = makeSeparator();
         var actionsList = [
@@ -594,11 +427,6 @@ StackExchange.ready(function () {
         wrap.append(actionsWrap, submitWrap);
         return wrap;
     };
-    /**
-     * @summary makes the search view
-     * @param {string} id view id
-     * @returns {HTMLElement}
-     */
     var makeSearchView = function (id) {
         if (makeSearchView.view)
             return makeSearchView.view;
@@ -623,13 +451,6 @@ StackExchange.ready(function () {
         wrap.append(header, uinfo, searchWrap, actions);
         return (makeSearchView.view = wrap);
     };
-    /**
-     * @summary makes welcome view
-     * @param {HTMLElement} popup wrapper popup
-     * @param {string} id view id
-     * @param {PostType} postType parent post type
-     * @returns {HTMLElement}
-     */
     var makeWelcomeView = function (popup, id, postType) {
         if (makeWelcomeView.view)
             return makeWelcomeView.view;
@@ -682,13 +503,6 @@ StackExchange.ready(function () {
         wrap.append(text, welcomeWrap, actionsWrap);
         return (makeWelcomeView.view = wrap);
     };
-    /**
-     * @summary Show textarea in front of popup to import/export all comments (for other sites or for posting somewhere)
-     * @param {HTMLElement} popup wrapper popup
-     * @param {string} id view id
-     * @param {PostType} postType parent post type
-     * @returns {HTMLElement}
-     */
     var makeImpExpView = function (popup, id, postType) {
         if (makeImpExpView.view)
             return makeImpExpView.view;
@@ -702,7 +516,7 @@ StackExchange.ready(function () {
             return __generator(this, function (_a) {
                 doImport(txtArea.value);
                 updateComments(popup, postType);
-                return [2 /*return*/];
+                return [2];
             });
         }); });
         var jsonpBtn = makeButton("JSONP", "JSONP", "jsonp");
@@ -734,13 +548,6 @@ StackExchange.ready(function () {
         });
         return (makeImpExpView.view = wrap);
     };
-    /**
-     * @summary makes the remote view
-     * @param {HTMLElement} popup wrapper popup
-     * @param {string} id view id
-     * @param {PostType} postType parent post type
-     * @returns {HTMLElement}
-     */
     var makeRemoteView = function (popup, id, postType) {
         if (makeRemoteView.view)
             return makeRemoteView.view;
@@ -812,30 +619,17 @@ StackExchange.ready(function () {
         wrap.append(text, remoteInput, image, autoWrap, actionsWrap);
         return (makeRemoteView.view = wrap);
     };
-    /**
-     * @param {HTMLInputElement} input comment input
-     * @param {string} html comment HTML
-     * @param {string} op original poster info
-     * @returns {void}
-     */
     var insertComment = function (input, html, op) {
         var md = HTMLtoMarkdown(html)
-            .replace(/\[username\]/g, "") //TODO: get user info
+            .replace(/\[username\]/g, "")
             .replace(/\[OP\]/g, op);
         input.value = md;
-        input.focus(); //focus provokes character count test
+        input.focus();
         var hereTxt = "[type here]";
         var caret = md.indexOf(hereTxt);
         if (caret >= 0)
             input.setSelectionRange(caret, caret + hereTxt.length);
     };
-    /**
-     * @summary creates the popup markup
-     * @description memoizable popup maker
-     * @param {HTMLInputElement} input target comment input
-     * @param {PostType} postType
-     * @returns {HTMLElement}
-     */
     var makePopup = function (input, postType) {
         if (makePopup.popup)
             return makePopup.popup;
@@ -911,11 +705,6 @@ StackExchange.ready(function () {
         switchToView(views[0]);
         return (makePopup.popup = popup);
     };
-    /**
-     * @summary creates a <span> element
-     * @param {string} text
-     * @param {{ unsafe ?: boolean, classes ?: string[] }} options
-     */
     var span = function (text, _a) {
         var _b;
         var _c = _a.classes, classes = _c === void 0 ? [] : _c, _d = _a.unsafe, unsafe = _d === void 0 ? false : _d;
@@ -924,13 +713,6 @@ StackExchange.ready(function () {
         unsafe ? (el.innerHTML = text) : (el.innerText = text);
         return el;
     };
-    /**
-     * @summary makes a notification announcement
-     * @param {string} title
-     * @param {string} message
-     * @param  {boolean} [unsafe]
-     * @returns {HTMLElement}
-     */
     var makeAnnouncement = function (title, message, unsafe) {
         if (unsafe === void 0) { unsafe = false; }
         var wrap = document.createElement("div");
@@ -944,13 +726,6 @@ StackExchange.ready(function () {
         wrap.append(b(title), txt, close);
         return wrap;
     };
-    /**
-     * @summary makes an auto comment option
-     * @param {string} id
-     * @param {string} name
-     * @param {string} desc
-     * @returns {HTMLElement}
-     */
     var makeOption = function (id, name, desc) {
         var li = document.createElement("li");
         var reviewRadio = document.createElement("input");
@@ -976,11 +751,6 @@ StackExchange.ready(function () {
         li.append(reviewRadio, lbl);
         return li;
     };
-    /**
-     * TODO: do something with this Cthulhu
-     * @summary Calculate and format datespan for "Member since/for"
-     * @param {number} date
-     */
     function datespan(date) {
         var now = Date.now() / 1000;
         var then = new Date(date * 1000);
@@ -1015,12 +785,6 @@ StackExchange.ready(function () {
         }
         return strout;
     }
-    /**
-     * TODO: and about this Cthulhu
-     * @summary Calculate and format datespan for "Last seen"
-     * @param {number} date
-     * @returns {string}
-     */
     function lastseen(date) {
         var now = Date.now() / 1000;
         var today = new Date().setHours(0, 0, 0) / 1000;
@@ -1039,12 +803,6 @@ StackExchange.ready(function () {
             return "on " + weekday_name[then.getDay()];
         return then.toDateString();
     }
-    /**
-     * TODO: and about this one (how many Cthulhu are there?)
-     * @summary Format reputation string
-     * @param {number} r
-     * @returns {string}
-     */
     function repNumber(r) {
         if (r < 1e4)
             return r.toString();
@@ -1056,22 +814,9 @@ StackExchange.ready(function () {
         else
             return Math.round(r / 1e3) + "k";
     }
-    /**
-     * @summary Get the Id of the logged-in user
-     * @param {typeof StackExchage} se
-     * @returns {string}
-     */
     var getLoggedInUserId = function (se) {
         return se.options.user.userId || "";
     };
-    /**
-     * @summary shows a message
-     * @param {HTMLElement} popup
-     * @param {string} title
-     * @param {string} body
-     * @param {Function} [callback]
-     * @returns {void}
-     */
     var notify = function (popup, title, body, callback) {
         var message = makeAnnouncement(title, body, true);
         message.addEventListener("click", function (_a) {
@@ -1085,11 +830,6 @@ StackExchange.ready(function () {
         popup.prepend(message);
         return message;
     };
-    /**
-     * @summary gets user Id
-     * @param {HTMLInputElement} tgt element to insert comment in
-     * @returns {string}
-     */
     var getUserId = function (tgt) {
         var parent = tgt.closest(".answer") || tgt.closest(".question");
         if (!parent)
@@ -1098,18 +838,7 @@ StackExchange.ready(function () {
         var _a = __read(href.match(/users\/(\d+)\//) || [], 2), uid = _a[1];
         return uid || "";
     };
-    /**
-     * @summary checks if the user is new
-     * @param {number} date
-     * @returns {boolean}
-     */
     var isNewUser = function (date) { return Date.now() / 1000 - date < week; };
-    /**
-     * @summary get original poster username
-     * @description memoizable getter for poster name
-     * @param {boolean} [refresh]
-     * @returns {string}
-     */
     var getOP = function (refresh) {
         if (refresh === void 0) { refresh = false; }
         if (getOP.op && !refresh)
@@ -1121,30 +850,14 @@ StackExchange.ready(function () {
         var deleted = question.querySelector(".owner .user-details");
         return (getOP.op = (deleted && deleted.innerHTML) || "OP");
     };
-    /**
-     * @summary properly capitalizes a word
-     * @param {string} str
-     * @returns {string}
-     */
     var capitalize = function (str) {
         return str[0].toUpperCase() + str.slice(1).toLowerCase();
     };
-    /**
-     * @summary wraps text into a <strong> element
-     * @param {string} text
-     * @returns {HTMLElement}
-     */
     var b = function (text) {
         var strong = document.createElement("strong");
         strong.innerHTML = text;
         return strong;
     };
-    /**
-     * @summary creates an <a> element
-     * @param {string} url
-     * @param {string} [label]
-     * @returns {HTMLAnchorElement}
-     */
     var link = function (url, label) {
         if (label === void 0) { label = url; }
         var a = document.createElement("a");
@@ -1153,17 +866,7 @@ StackExchange.ready(function () {
         a.innerHTML = label;
         return a;
     };
-    /**
-     * @summary creates a text node
-     * @param {string} data
-     * @returns {Text}
-     */
     var text = function (data) { return document.createTextNode(data); };
-    /**
-     * @summary adds user info to the UI
-     * @param {HTMLElement} container
-     * @returns {void}
-     */
     var addUserInfo = function (container, userInfo) {
         var _a;
         var user_id = userInfo.user_id, creation_date = userInfo.creation_date, display_name = userInfo.display_name, last_access_date = userInfo.last_access_date, reputation = userInfo.reputation, user_type = userInfo.user_type;
@@ -1177,11 +880,6 @@ StackExchange.ready(function () {
         empty(container);
         container.append(capitalize(user_type), text(" user "), userLink, text(", member "), b(datespan(creation_date)), text(", last seen "), b(lastseen(last_access_date)), text(", reputation "), b(repNumber(reputation)));
     };
-    /**
-     * @summary get basic user info from the API
-     * @param {string} userid
-     * @returns {Promise<UserInfo|null>}
-     */
     var getUserInfo = function (userid) { return __awaiter(void 0, void 0, void 0, function () {
         var url, res, _a, userInfo;
         return __generator(this, function (_b) {
@@ -1193,31 +891,25 @@ StackExchange.ready(function () {
                         key: API_KEY,
                         unsafe: FILTER_UNSAFE,
                     }).toString();
-                    return [4 /*yield*/, fetch(url.toString())];
+                    return [4, fetch(url.toString())];
                 case 1:
                     res = _b.sent();
                     if (!res.ok)
-                        return [2 /*return*/, null];
-                    return [4 /*yield*/, res.json()];
+                        return [2, null];
+                    return [4, res.json()];
                 case 2:
                     _a = __read.apply(void 0, [(_b.sent()).items, 1]), userInfo = _a[0];
-                    return [2 /*return*/, userInfo];
+                    return [2, userInfo];
             }
         });
     }); };
-    /**
-     * @summary makes a separator <span>
-     * @returns {HTMLSpanElement}
-     */
     var makeSeparator = function () {
         var lsep = document.createElement("span");
         lsep.classList.add("lsep");
         lsep.innerHTML = " | ";
         return lsep;
     };
-    //Import complete text into comments
     function doImport(text) {
-        //clear out any existing stuff
         Store.clear("name-");
         Store.clear("desc-");
         var arr = text.split("\n");
@@ -1225,7 +917,6 @@ StackExchange.ready(function () {
         var descIndex = 0;
         arr.forEach(function (untrimmed) {
             var line = untrimmed.trim();
-            //TODO: rework
             if (line.indexOf("#") == 0) {
                 var name = line.replace(/^#+/g, "");
                 Store.save("name-" + nameIndex, name);
@@ -1237,10 +928,8 @@ StackExchange.ready(function () {
                 descIndex++;
             }
         });
-        //This is de-normalised, but I don't care.
         Store.save("commentcount", Math.min(nameIndex, descIndex));
     }
-    // From https://stackoverflow.com/a/12034334/259953
     var entityMapToHtml = {
         "&": "&amp;",
         "<": "&lt;",
@@ -1251,63 +940,33 @@ StackExchange.ready(function () {
         "&lt;": "<",
         "&gt;": ">",
     };
-    /**
-     * @summary escapes HTML entities
-     * @param {string} html
-     * @returns {string}
-     */
     var escapeHtml = function (html) {
         return String(html).replace(/[&<>]/g, function (s) { return entityMapToHtml[s]; });
     };
-    /**
-     * @summary unescapes HTML entities
-     * @param {string} html
-     * @returns {string}
-     */
     var unescapeHtml = function (html) {
         return Object.entries(entityMapFromHtml).reduce(function (acc, _a) {
             var _b = __read(_a, 2), k = _b[0], v = _b[1];
             return acc.replace(new RegExp(k, "g"), v);
         }, String(html));
     };
-    /**
-     * @summary changes HTML to Markdown
-     * @param {string} html
-     * @returns {string}
-     */
     var HTMLtoMarkdown = function (html) {
         return unescapeHtml(html
             .replace(/<a href="(.+?)">(.+?)<\/a>/g, "[$2]($1)")
             .replace(/<em>(.+?)<\/em>/g, "*$1*")
             .replace(/<strong>(.+?)<\/strong>/g, "**$1**"));
     };
-    /**
-     * @summary changes Markdown to HTML
-     * @param {string} markdown
-     * @returns {string}
-     */
     var markdownToHTML = function (markdown) {
         return escapeHtml(markdown)
             .replace(/\[([^\]]+)\]\((.+?)\)/g, '<a href="$2">$1</a>')
             .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
             .replace(/\*([^`]+?)\*/g, "<em>$1</em>");
     };
-    /**
-     * @summary untags the comment text
-     * @param {string} text
-     * @returns {string}
-     */
     var untag = function (text) {
         return text
             .replace(/\$SITENAME\$/g, sitename)
             .replace(/\$SITEURL\$/g, site)
             .replace(/\$MYUSERID\$/g, getLoggedInUserId(StackExchange));
     };
-    /**
-     * @summary tags the comment text
-     * @param {string} html
-     * @returns {string}
-     */
     var tag = function (html) {
         var regname = new RegExp(sitename, "g");
         var regurl = new RegExp("//" + site, "g");
@@ -1317,78 +976,61 @@ StackExchange.ready(function () {
             .replace(regurl, "//$SITEURL$")
             .replace(reguid, "/$MYUSERID$)");
     };
-    /**
-     * @summary disables an element
-     * @param {MaybeBtn} elOrQuery
-     */
     var disable = function (elOrQuery) {
         return ((typeof elOrQuery === "string"
             ? document.querySelector(elOrQuery)
             : elOrQuery).disabled = true);
     };
-    /**
-     * @summary enables an element
-     * @param {MaybeBtn} elOrQuery
-     */
     var enable = function (elOrQuery) {
         return ((typeof elOrQuery === "string"
             ? document.querySelector(elOrQuery)
             : elOrQuery).disabled = false);
     };
-    /**
-     * @summary Save textarea contents, replace element html with new edited content
-     * @param {string} id
-     * @param {string} value
-     * @returns {string}
-     */
     var saveComment = function (id, value) {
         var html = markdownToHTML(value);
         Store.save(id, tag(html));
         return (((Store.load("ShowGreeting") && Store.load("WelcomeMessage")) ||
             "") + untag(html));
     };
-    /**
-     * @summary Replace contents of element with a textarea (containing markdown of contents), and save/cancel buttons
-     * @param {HTMLElement} el
-     * @param {HTMLElement} popup
-     * @returns {void}
-     */
-    var openEditMode = function (el, popup) {
-        var backup = el.innerHTML;
-        //remove greeting before editing
+    var closeEditMode = function (commentElem, value) {
+        empty(commentElem);
+        commentElem.innerHTML = value;
+        enable("#" + Store.prefix + "-submit");
+    };
+    var openEditMode = function (commentElem, popup) {
+        var backup = commentElem.innerHTML;
         var html = tag(backup.replace(Store.load("WelcomeMessage", ""), ""));
         debugLogger.log({ backup: backup, html: html });
-        if (html.indexOf("<textarea") > -1)
-            return; //don't want to create a new textarea inside this one!
+        empty(commentElem);
+        var preview = document.createElement("span");
+        preview.classList.add("d-inline-block", "p8");
+        preview.innerHTML = html;
         var area = document.createElement("textarea");
         area.value = HTMLtoMarkdown(html);
-        // Disable quick-insert while editing.
+        area.id = area.name = commentElem.id;
         popup.querySelectorAll(".quick-insert").forEach(hide);
-        // Disable insert while editing.
         disable("#" + Store.prefix + "-submit");
+        area.addEventListener("input", function (_a) {
+            var target = _a.target;
+            var value = target.value;
+            preview.innerHTML = markdownToHTML(untag(value));
+        });
         area.addEventListener("change", function (_a) {
             var target = _a.target;
             var _b = target, id = _b.id, value = _b.value;
-            el.innerHTML = saveComment(id, value);
-            enable("#" + Store.prefix + "-submit");
+            saveComment(id, value);
+            closeEditMode(commentElem, value);
         });
-        //save/cancel links to add to textarea
         var actions = document.createElement("div");
         actions.classList.add("actions");
         var cancel = makeButton("cancel", "cancel edit");
         cancel.addEventListener("click", function () {
             popup.querySelectorAll(".quick-insert").forEach(show);
-            el.innerHTML = backup;
-            area.remove();
-            actions.remove();
+            closeEditMode(commentElem, backup);
         });
         actions.append(cancel);
-        el.append(area, actions);
+        commentElem.append(preview, area, actions);
     };
-    /**
-     * @summary Empty all custom comments from storage and rewrite to ui
-     * @returns {void}
-     */
     var resetComments = function () {
         Store.clear("name-");
         Store.clear("desc-");
@@ -1400,12 +1042,6 @@ StackExchange.ready(function () {
         });
         Store.save("commentcount", commentDefaults.length);
     };
-    /**
-     * TODO: rework once moved to config object
-     * @summary loads comments from storage
-     * @param {number} numComments
-     * @returns {{ name: string; desc: string }[]}
-     */
     var loadComments = function (numComments) {
         var comments = [];
         for (var i = 0; i < numComments; i++) {
@@ -1415,11 +1051,6 @@ StackExchange.ready(function () {
         }
         return comments;
     };
-    /**
-     * @summary makes the comment click handler (selecting comments)
-     * @param {HTMLElement} popup wrapper popup
-     * @returns {EventListener}
-     */
     var makeCommentClickHandler = function (popup) {
         return function (_a) {
             var target = _a.target;
@@ -1445,11 +1076,6 @@ StackExchange.ready(function () {
             enable("#" + Store.prefix + "-submit");
         };
     };
-    /**
-     * @summary makes the comment quick insert handler
-     * @param {HTMLElement} popup wrapper popup
-     * @returns {EventListener}
-     */
     var makeQuickInsertHandler = function (popup) {
         return function (_a) {
             var _b;
@@ -1467,12 +1093,6 @@ StackExchange.ready(function () {
             (_b = document.getElementById(Store.prefix + "-submit")) === null || _b === void 0 ? void 0 : _b.click();
         };
     };
-    /**
-     * @summary sets up comment event listeners
-     * @param {HTMLElement} popup wrapper popup
-     * @param {string} viewId comment view id
-     * @returns {void}
-     */
     var setupCommentHandlers = function (popup, viewId) {
         var currView = Store.load("CurrentView");
         popup.addEventListener("dblclick", function (_a) {
@@ -1499,12 +1119,6 @@ StackExchange.ready(function () {
             (_a = document.getElementById(Store.prefix + "-submit")) === null || _a === void 0 ? void 0 : _a.click();
         });
     };
-    /**
-     * @summary updates comments in the UI
-     * @param {HTMLElement} popup wrapper popup
-     * @param {PostType} postType parent post type
-     * @returns {void}
-     */
     var updateComments = function (popup, postType) {
         var numComments = Store.load("commentcount");
         if (!numComments)
@@ -1542,22 +1156,10 @@ StackExchange.ready(function () {
         ul.append.apply(ul, __spreadArray([], __read(listItems)));
         toggleDescriptionVisibility(popup);
     };
-    /**
-     * @summary Checks if a given comment could be used together with a given post type.
-     * @param {string} text The comment content itself.
-     * @param {PostType} postType The type of post the comment could be placed on.
-     * @return {boolean} true if the comment is valid for the type of post; false otherwise.
-     */
     var isCommentValidForType = function (text, postType) {
         var _a = __read(text.match(allTgtMatcher) || [], 2), matched = _a[1];
         return matched === postType;
     };
-    /**
-     * @summary filters comments based on text
-     * @param {HTMLElement} popup wrapper popup
-     * @param {string} text text to match
-     * @returns {void}
-     */
     var filterOn = function (popup, text) {
         var words = text
             .toLowerCase()
@@ -1580,12 +1182,6 @@ StackExchange.ready(function () {
             shown ? show(item) : hide(item);
         });
     };
-    /**
-     * @summary sets up search event handlers
-     * @param {HTMLElement} popup wrapper popup
-     * @param {string} filterSel filter button selector
-     * @returns {void}
-     */
     var setupSearchHandlers = function (popup, filterSel) {
         var sbox = popup.querySelector(".searchbox");
         var stext = sbox.querySelector(".searchfilter");
@@ -1623,23 +1219,12 @@ StackExchange.ready(function () {
         stext.addEventListener("paste", callback);
         stext.addEventListener("search", callback);
     };
-    /**
-     * @summary Adjust the descriptions so they show or hide based on the user's preference.
-     * @param {HTMLElement} popup
-     * @param {boolean} [hidden]
-     * @returns {void}
-     */
     var toggleDescriptionVisibility = function (popup, hidden) {
         if (hidden === void 0) { hidden = Store.load("hide-desc"); }
         popup
             .querySelectorAll("li:not(.action-selected) .action-desc")
             .forEach(function (d) { return (hidden ? hide(d) : show(d)); });
     };
-    /**
-     * @summary makes a JSONP request
-     * @param {string} url resource URL
-     * @returns {Promise<object>} response
-     */
     var getJSONP = function (url) {
         return new Promise(function (resolve, reject) {
             var cbkName = "jsonp-" + Date.now();
@@ -1662,16 +1247,13 @@ StackExchange.ready(function () {
             document.body.append(script);
         });
     };
-    //TODO: test out the change
-    //customise welcome
-    //reverse compatible!
     var loadFromRemote = function (url, success, error) { return __awaiter(void 0, void 0, void 0, function () {
         var data, err_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, getJSONP(url)];
+                    return [4, getJSONP(url)];
                 case 1:
                     data = _a.sent();
                     debugLogger.log({ data: data });
@@ -1684,32 +1266,21 @@ StackExchange.ready(function () {
                         Store.save("desc-" + i, markdownToHTML(description));
                     });
                     success();
-                    return [3 /*break*/, 3];
+                    return [3, 3];
                 case 2:
                     err_1 = _a.sent();
                     error(err_1);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
+                    return [3, 3];
+                case 3: return [2];
             }
         });
     }); };
-    /**
-     * @summary shows the popup (prevents SE overrides)
-     * @param {HTMLElement} popup
-     * @returns {void}
-     */
     var showPopup = function (popup) {
         fadeTo(popup, 1);
         var style = popup.style, classList = popup.classList;
         style.display = "";
         classList.remove("popup-closing", "popup-closed");
     };
-    /**
-     * @summary creates ARC modal and wires functionality
-     * @param {HTMLInputElement} target
-     * @param {PostType} postType
-     * @returns {Promise<void>}
-     */
     var autoLinkAction = function (target, postType) { return __awaiter(void 0, void 0, void 0, function () {
         var popup, throbber, userid, userInfoEl, uinfo;
         return __generator(this, function (_a) {
@@ -1720,10 +1291,8 @@ StackExchange.ready(function () {
                     if (!popup.isConnected)
                         document.body.append(popup);
                     showPopup(popup);
-                    //TODO: if popup is created only once, listeners should be setup only once
                     updateComments(popup, postType);
-                    //Auto-load from remote if required
-                    if (!window.VersionChecked && Store.load("AutoRemote") == "true") {
+                    if (Store.load("AutoRemote") == "true") {
                         throbber = document.getElementById("throbber2");
                         show(throbber);
                         loadFromRemote(Store.load("RemoteUrl"), function () {
@@ -1738,43 +1307,19 @@ StackExchange.ready(function () {
                     StackExchange.helpers.bindMovablePopups();
                     userid = getUserId(target);
                     userInfoEl = document.getElementById("userinfo");
-                    return [4 /*yield*/, getUserInfo(userid)];
+                    return [4, getUserInfo(userid)];
                 case 1:
                     uinfo = _a.sent();
                     debugLogger.log({ uinfo: uinfo, userid: userid });
                     if (!uinfo)
-                        return [2 /*return*/, fadeOut(userInfoEl)];
+                        return [2, fadeOut(userInfoEl)];
                     addUserInfo(userInfoEl, uinfo);
-                    //We only actually perform the updates check when someone clicks, this should make it less costly, and more timely
-                    //also wrap it so that it only gets called the *FIRST* time we open this dialog on any given page (not much of an optimisation).
-                    if (typeof checkForNewVersion == "function" && !window.VersionChecked) {
-                        checkForNewVersion(popup);
-                        window.VersionChecked = true;
-                    }
-                    return [2 /*return*/];
+                    return [2];
             }
         });
     }); };
-    /**
-     * @summary Attach an "auto" link somewhere in the DOM. This link is going to trigger the iconic ARC behavior.
-     * @param {string} selector A selector for a DOM element which, when clicked, will invoke the locator.
-     * @param {Locator} locator A function that will search for both the DOM element, next to which the "auto" link
-     *                           will be placed and where the text selected from the popup will be inserted.
-     *                           This function will receive the triggerElement as the first argument when called and it
-     *                           should return an array with the two DOM elements in the expected order.
-     * @param {Injector} injector A function that will be called to actually inject the "auto" link into the DOM.
-     *                            This function will receive the element that the locator found as the first argument when called.
-     *                            It will receive the action function as the second argument, so it know what to invoke when the "auto" link is clicked.
-     * @param {Actor} actor A function that will be called when the injected "auto" link is clicked.
-     */
     function addTriggerButton(selector, locator, injector, actor) {
         var maxTries = 20;
-        /**
-         * @summary The internal injector invokes the locator to find an element in relation to the trigger element and then invokes the injector on it.
-         * @param {HTMLElement} trigger The element that triggered the mechanism.
-         * @param {number} [retry=0] How often this operation was already retried. 20 retries will be performed in 50ms intervals.
-         * @private
-         */
         var _injector = function (trigger, retry) {
             if (maxTries <= retry)
                 return;
@@ -1782,7 +1327,6 @@ StackExchange.ready(function () {
             debugLogger.log({ injectNextTo: injectNextTo, placeIn: placeIn, injector: injector });
             if (injectNextTo)
                 return injector(injectNextTo, placeIn, actor);
-            // We didn't find it? Try again in 50ms.
             setTimeout(function () { return _injector(trigger, retry + 1); }, 50);
         };
         var content = document.getElementById("content");
@@ -1793,12 +1337,6 @@ StackExchange.ready(function () {
             _injector(target, 0);
         });
     }
-    /**
-     * @description A locator for the help link next to the comment box under a post and the textarea for the comment.
-     * @param {HTMLElement} where A DOM element, near which we're looking for the location where to inject our link.
-     * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the
-     *                     comment should be placed.
-     */
     var findCommentElements = function (_a) {
         var parentElement = _a.parentElement;
         var id = parentElement.id;
@@ -1808,11 +1346,6 @@ StackExchange.ready(function () {
         var placeCommentIn = div.querySelector("textarea");
         return [injectNextTo, placeCommentIn];
     };
-    /**
-     * @summary A locator for the edit summary input box under a post while it is being edited.
-     * @param {HTMLAnchorElement} where A DOM element, near which we're looking for the location where to inject our link.
-     * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the comment should be placed.
-     */
     var findEditSummaryElements = function (_a) {
         var href = _a.href;
         var _b = __read(href.match(/posts\/(\d+)\/edit/) || [], 2), divid = _b[1];
@@ -1820,35 +1353,15 @@ StackExchange.ready(function () {
         var placeIn = nextElementSibling.querySelector(".edit-comment");
         return [placeIn, placeIn];
     };
-    /**
-     * @summary A locator for the text area in which to put a custom off-topic closure reason in the closure dialog.
-     * @param {HTMLElement} where A DOM element, near which we're looking for the location where to inject our link.
-     * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the
-     *                     comment should be placed.
-     */
     var findClosureElements = function (_where) {
-        //TODO: why where is not used?
         var injectTo = document.querySelector(".close-as-off-topic-pane textarea");
         return [injectTo, injectTo];
     };
-    /**
-     * @summary A locator for the edit summary you get in the "Help and Improvement" review queue.
-     * @param {HTMLElement} where A DOM element, near which we're looking for the location where to inject our link.
-     * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the
-     *                     comment should be placed.
-     */
     var findReviewQueueElements = function (_where) {
         var injectTo = document.querySelector(".text-counter");
         var placeIn = document.querySelector(".edit-comment");
         return [injectTo, placeIn];
     };
-    /**
-     * @summary makes the "auto" button
-     * @param {Actor} what The function that will be called when the link is clicked.
-     * @param {HTMLElement} next The DOM element next to which we'll place the link.
-     * @param {HTMLElement} where The DOM element into which the comment should be placed.
-     * @returns {HTMLAnchorElement}
-     */
     var makePopupOpenButton = function (callback, next, where) {
         var alink = document.createElement("a");
         alink.classList.add("comment-auto-link");
@@ -1859,31 +1372,17 @@ StackExchange.ready(function () {
         });
         return alink;
     };
-    /**
-     * @summary gets target type by post type
-     * @param {HTMLElement} where The DOM element next to which we'll place the link.
-     * @param {[PostType, string][]} clsMap post type to target map
-     * @returns {string}
-     */
     var getTargetType = function (where, clsMap) {
         var parent = where.closest(".answer") || where.closest(".question");
         if (!parent)
             return Target.CommentQuestion;
         var classList = parent.classList;
-        //if not found, we have a problem
         var _a = __read(clsMap.find(function (_a) {
             var _b = __read(_a, 1), c = _b[0];
             return classList.contains(c);
         }) || [], 2), tgt = _a[1];
         return tgt;
     };
-    /**
-     * @summary Inject the auto link next to the given DOM element.
-     * @param {HTMLElement} where The DOM element next to which we'll place the link.
-     * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
-     * @param {Actor} actor The function that will be called when the link is clicked.
-     * @returns {void}
-     */
     var injectAutoLink = function (where, placeCommentIn, actor) {
         var existingAutoLinks = siblings(where, ".comment-auto-link");
         if (existingAutoLinks.length)
@@ -1897,13 +1396,6 @@ StackExchange.ready(function () {
         var alink = makePopupOpenButton(actor, placeCommentIn, tgt);
         where.after(lsep, alink);
     };
-    /**
-     * @summary Inject the auto link next to the given DOM element.
-     * @param {HTMLElement} where The DOM element next to which we'll place the link.
-     * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
-     * @param {Actor} actor The function that will be called when the link is clicked.
-     * @returns {void}
-     */
     var injectAutoLinkClosure = function (where, placeCommentIn, actor) {
         var existingAutoLinks = siblings(where, ".comment-auto-link");
         if (existingAutoLinks.length)
@@ -1912,13 +1404,6 @@ StackExchange.ready(function () {
         var alink = makePopupOpenButton(actor, placeCommentIn, Target.Closure);
         where.after(lsep, alink);
     };
-    /**
-     * @summary Inject hte auto link next to the "characters left" counter below the edit summary in the review queue.
-     * @param {HTMLElement} where The DOM element next to which we'll place the link.
-     * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
-     * @param {Actor} actor The function that will be called when the link is clicked.
-     * @returns {void}
-     */
     var injectAutoLinkReviewQueue = function (where, placeCommentIn, actor) {
         var existingAutoLinks = siblings(where, ".comment-auto-link");
         if (existingAutoLinks.length)
@@ -1928,14 +1413,6 @@ StackExchange.ready(function () {
         alink.style.float = "right";
         where.after(lsep, alink);
     };
-    /**
-     * Inject the auto link next to the edit summary input box.
-     * This will also slightly shrink the input box, so that the link will fit next to it.
-     * @param {HTMLElement} where The DOM element next to which we'll place the link.
-     * @param {HTMLElement} placeIn The DOM element into which the comment should be placed.
-     * @param {Actor} actor The function that will be called when the link is clicked.
-     * @returns {void}
-     */
     var injectAutoLinkEdit = function (where, placeIn, actor) {
         var existingAutoLinks = siblings(where, ".comment-auto-link");
         if (existingAutoLinks.length)
