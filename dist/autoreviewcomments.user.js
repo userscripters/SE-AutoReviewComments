@@ -955,15 +955,15 @@ StackExchange.ready(function () {
     };
     var HTMLtoMarkdown = function (html) {
         return unescapeHtml(html
-            .replace(/<a href="(.+?)">(.+?)<\/a>/g, "[$2]($1)")
+            .replace(/<a href="(.+?)".+?>(.+?)<\/a>/g, "[$2]($1)")
             .replace(/<em>(.+?)<\/em>/g, "*$1*")
             .replace(/<strong>(.+?)<\/strong>/g, "**$1**"));
     };
     var markdownToHTML = function (markdown) {
         return escapeHtml(markdown)
-            .replace(/\[([^\]]+)\]\((.+?)\)/g, '<a href="$2">$1</a>')
+            .replace(/\[([^\]]+)\]\((.+?)\)/g, htmllink("$2", "$1"))
             .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-            .replace(/\*([^`]+?)\*/g, "<em>$1</em>");
+            .replace(/\*([^`]+?)\*/g, htmlem("$1"));
     };
     var untag = function (text) {
         return text

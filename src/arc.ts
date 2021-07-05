@@ -1610,7 +1610,7 @@ StackExchange.ready(() => {
     const HTMLtoMarkdown = (html: string) =>
         unescapeHtml(
             html
-                .replace(/<a href="(.+?)">(.+?)<\/a>/g, "[$2]($1)")
+                .replace(/<a href="(.+?)".+?>(.+?)<\/a>/g, "[$2]($1)")
                 .replace(/<em>(.+?)<\/em>/g, "*$1*")
                 .replace(/<strong>(.+?)<\/strong>/g, "**$1**")
         );
@@ -1622,9 +1622,9 @@ StackExchange.ready(() => {
      */
     const markdownToHTML = (markdown: string) =>
         escapeHtml(markdown)
-            .replace(/\[([^\]]+)\]\((.+?)\)/g, '<a href="$2">$1</a>')
+            .replace(/\[([^\]]+)\]\((.+?)\)/g, htmllink("$2", "$1"))
             .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-            .replace(/\*([^`]+?)\*/g, "<em>$1</em>");
+            .replace(/\*([^`]+?)\*/g, htmlem("$1"));
 
     /**
      * @summary untags the comment text
