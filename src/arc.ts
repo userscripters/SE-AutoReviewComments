@@ -276,13 +276,16 @@ StackExchange.ready(() => {
 
     class Debugger {
         static prefix = "{{PREFIX}}";
+        private isDebuggingOn;
 
-        constructor(public on: boolean) {}
+        constructor(public on: boolean) {
+            this.isDebuggingOn = on;
+        }
 
         log(msg: string | object, ...params: unknown[]) {
-            const { on } = this;
+            const { isDebuggingOn } = this;
             const pfx = Debugger.prefix.replace("-", "");
-            on &&
+            isDebuggingOn &&
                 console.debug(
                     `${pfx}:\n\n${JSON.stringify(msg, null, 2)}`,
                     ...params
