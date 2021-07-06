@@ -1406,7 +1406,7 @@ StackExchange.ready(() => {
         const parent = tgt.closest(".answer") || tgt.closest(".question");
         if (!parent) return "";
         const { href } = parent.querySelector<HTMLAnchorElement>(userLinkSel)!;
-        const [, uid] = href.match(/users\/(\d+)\//) || [];
+        const [, uid] = /users\/(\d+)\//.exec(href) || [];
         return uid || "";
     };
 
@@ -1792,8 +1792,8 @@ StackExchange.ready(() => {
         Store.clear("desc-");
         commentDefaults.forEach(({ Description, Name, Target }, index) => {
             const prefix = Target ? `[${Target.join(",")}] ` : "";
-            Store.save("name-" + index, prefix + Name);
-            Store.save("desc-" + index, Description);
+            Store.save(`name-${index}`, prefix + Name);
+            Store.save(`desc-${index}`, Description);
         });
         Store.save("commentcount", commentDefaults.length);
     };
@@ -1807,8 +1807,8 @@ StackExchange.ready(() => {
     const loadComments = (numComments: number) => {
         const comments: { name: string; desc: string }[] = [];
         for (let i = 0; i < numComments; i++) {
-            const name = Store.load<string>("name-" + i);
-            const desc = Store.load<string>("desc-" + i);
+            const name = Store.load<string>(`name-${i}`);
+            const desc = Store.load<string>(`desc-${i}`);
             comments.push({ name, desc });
         }
         return comments;
@@ -2122,8 +2122,8 @@ StackExchange.ready(() => {
             Store.clear("name-");
             Store.clear("desc-");
             data.forEach(({ name, description }, i) => {
-                Store.save("name-" + i, name);
-                Store.save("desc-" + i, markdownToHTML(description));
+                Store.save(`name-${i}`, name);
+                Store.save(`desc-${i}`, markdownToHTML(description));
             });
             success();
         } catch (err) {
@@ -2166,7 +2166,7 @@ StackExchange.ready(() => {
 
         //Auto-load from remote if required
         if (Store.load("AutoRemote") == "true") {
-            var throbber = document.getElementById("throbber2")!;
+            const throbber = document.getElementById("throbber2")!;
             show(throbber);
             loadFromRemote(
                 Store.load("RemoteUrl"),
