@@ -114,6 +114,11 @@ type TextInputOptions = {
     classes?: string[];
 };
 
+type CheckboxOptions = {
+    checked?: boolean;
+    classes?: string[];
+};
+
 type CommentInfo = { name: string; description: string };
 
 StackExchange.ready(() => {
@@ -597,7 +602,7 @@ StackExchange.ready(() => {
     /**
      * @summary helper function for creating text inputs
      * @param {string} id input id (also sets the name)
-     * @param {{ value?: string, classes:string[] }} [options]
+     * @param {TextInputOptions} [options]
      * @returns {HTMLInputElement}
      */
     const makeTextInput = (
@@ -609,6 +614,24 @@ StackExchange.ready(() => {
         input.type = "text";
         input.id = input.name = id;
         input.value = value;
+        return input;
+    };
+
+    /**
+     * @summary helper function for creating checkboxes
+     * @param {string} id input id (also sets the name)
+     * @param {CheckboxOptions} [options]
+     * @returns {HTMLInputElement}
+     */
+    const makeCheckbox = (
+        id: string,
+        { checked = false, classes = [] }: CheckboxOptions = {}
+    ) => {
+        const input = document.createElement("input");
+        input.classList.add(...classes);
+        input.type = "checkbox";
+        input.id = input.name = id;
+        input.checked = checked;
         return input;
     };
 
