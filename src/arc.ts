@@ -917,9 +917,7 @@ StackExchange.ready(() => {
                 Object.entries(actionMap).find(([key]) => el.matches(key)) ||
                 [];
 
-            if (!action) return debugLogger.log({ target });
-
-            action(popup, wrap);
+            action && action(popup, wrap);
         });
 
         actionsWrap.append(...actions);
@@ -1094,9 +1092,7 @@ StackExchange.ready(() => {
                 Object.entries(actionMap).find(([key]) => el.matches(key)) ||
                 [];
 
-            if (!action) return debugLogger.log({ el, wrap });
-
-            action();
+            action && action();
         });
 
         actionsWrap.append(...actions);
@@ -1180,8 +1176,6 @@ StackExchange.ready(() => {
                     const selected = p.querySelector(".action-selected");
                     const descr = selected?.querySelector(".action-desc");
 
-                    debugLogger.log({ selected, descr });
-
                     if (!descr || !selected)
                         return notify(
                             p,
@@ -1204,9 +1198,7 @@ StackExchange.ready(() => {
                     (<HTMLElement>target).matches(selector)
                 ) || [];
 
-            if (!action) return debugLogger.log({ target, postType });
-
-            action(popup, postType);
+            action && action(popup, postType);
         });
 
         const commentViewId = "search-popup";
@@ -1869,8 +1861,6 @@ StackExchange.ready(() => {
 
             const descr = action.querySelector<HTMLElement>(".action-desc")!;
 
-            debugLogger.log({ acts, action, descr });
-
             show(descr);
             enable(`#${Store.prefix}-submit`);
         };
@@ -1889,8 +1879,6 @@ StackExchange.ready(() => {
 
             const action = el.closest("li");
             const radio = action?.querySelector("input");
-
-            debugLogger.log({ action, radio });
 
             if (!action || !radio)
                 return notify(popup, "Problem", "something went wrong");
@@ -2187,8 +2175,6 @@ StackExchange.ready(() => {
         target: HTMLInputElement,
         postType: PostType
     ) => {
-        debugLogger.log({ target, postType });
-
         const popup = makePopup(target, postType);
 
         if (!popup.isConnected) document.body.append(popup);
@@ -2260,8 +2246,6 @@ StackExchange.ready(() => {
             if (maxTries <= retry) return;
 
             const [injectNextTo, placeIn] = locator(trigger);
-
-            debugLogger.log({ injectNextTo, placeIn, injector });
 
             if (injectNextTo) return injector(injectNextTo, placeIn, actor);
 
