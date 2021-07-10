@@ -109,6 +109,13 @@ type StackAPIBatchResponse<T> = {
     quota_remaining: number;
 };
 
+type TextInputOptions = {
+    value?: string;
+    classes?: string[];
+};
+
+type CommentInfo = { name: string; description: string };
+
 StackExchange.ready(() => {
     /**
      * @summary centers the element
@@ -2122,7 +2129,15 @@ StackExchange.ready(() => {
             document.body.append(script);
         });
 
-    type CommentInfo = { name: string; description: string };
+    /**
+     * @summary makes a request for JSON data
+     * @param {string} url resource URL
+     * @returns {Promise<object>} response
+     */
+    const getJSON = async <T>(url: string): Promise<T> => {
+        const res = await fetch(url);
+        return res.json();
+    };
 
     //TODO: test out the change
     //customise welcome
