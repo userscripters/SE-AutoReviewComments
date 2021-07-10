@@ -1111,17 +1111,11 @@ StackExchange.ready(() => {
             const actionMap = {
                 ".remote-cancel": () =>
                     switchToView(makeSearchView("search-popup")),
-                ".remote-get": () => {
+                ".remote-get": async () => {
                     show(image);
-                    loadFromRemote(
-                        remoteInput.value,
-                        () => {
-                            updateComments(popup, postType);
-                            hide(image);
-                        },
-                        ({ message }: Error) =>
-                            notify(popup, "Problem", message)
-                    );
+                    await loadFromRemote(remoteInput.value);
+                    updateComments(popup, postType);
+                    hide(image);
                 },
             };
 
@@ -2126,30 +2120,30 @@ StackExchange.ready(() => {
     /**
      * @summary makes a JSONP request
      * @param {string} url resource URL
+     * @param {string} [callbackName] JSONP callback name
      * @returns {Promise<object>} response
      */
-    const getJSONP = <T>(url: string): Promise<T> =>
+    const getJSONP = <T>(url: string, callbackName = "callback"): Promise<T> =>
         new Promise((resolve, reject) => {
-            const cbkName = `jsonp-${Date.now()}`;
+            // if running from a manager, page is only accessible from unsafeWindow
+            const target =
+                typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
 
-            const uri = new URL(url);
-            uri.searchParams.append("callback", cbkName);
-
-            const script = document.createElement("script");
-            script.src = uri.toString();
-            script.async = true;
-
-            window[cbkName] = (json: T) => {
+            const clean = (handler: (value: T) => void, value: T) => {
                 script.remove();
-                delete window[cbkName];
-                resolve(json);
+                delete target[callbackName];
+                handler(value);
             };
 
-            script.addEventListener("error", ({ error }) => {
-                script.remove();
-                delete window[cbkName];
-                reject(error);
-            });
+            target[callbackName] = (json: T) => clean(resolve, json);
+
+            const script = document.createElement("script");
+            script.src = url;
+            script.async = true;
+
+            script.addEventListener("error", ({ error }) =>
+                clean(reject, error)
+            );
 
             document.body.append(script);
         });
@@ -2164,30 +2158,29 @@ StackExchange.ready(() => {
         return res.json();
     };
 
-    //TODO: test out the change
-    //customise welcome
-    //reverse compatible!
-    const loadFromRemote = async (
-        url: string,
-        success: (...args: any[]) => any,
-        error: (err: Error) => unknown
-    ) => {
-        try {
-            const data = await getJSONP<CommentInfo[]>(url);
+    /**
+     * @summary loads comments from a remote source
+     * @param {string} url remore URL to fetch from
+     * @returns {Promise<void>}
+     */
+    const loadFromRemote = async (url: string) => {
+        const isJSONP = /jsonp-data/.test(url);
 
-            debugLogger.log({ data });
+        debugLogger.log({ isJSONP });
 
-            Store.save("commentcount", data.length);
-            Store.clear("name-");
-            Store.clear("desc-");
-            data.forEach(({ name, description }, i) => {
-                Store.save(`name-${i}`, name);
-                Store.save(`desc-${i}`, markdownToHTML(description));
-            });
-            success();
-        } catch (err) {
-            error(err);
-        }
+        const fetcher = isJSONP ? getJSONP : getJSON;
+
+        const comments: CommentInfo[] = await fetcher(url);
+
+        debugLogger.log({ comments });
+
+        Store.save("commentcount", comments.length);
+        Store.clear("name-");
+        Store.clear("desc-");
+        comments.forEach(({ name, description }, i) => {
+            Store.save(`name-${i}`, name);
+            Store.save(`desc-${i}`, tag(markdownToHTML(description)));
+        });
     };
 
     /**
@@ -2218,21 +2211,15 @@ StackExchange.ready(() => {
 
         showPopup(popup);
 
-        //TODO: if popup is created only once, listeners should be setup only once
         updateComments(popup, postType);
 
         //Auto-load from remote if required
-        if (Store.load("AutoRemote") == "true") {
+        if (Store.load("AutoRemote")) {
             const throbber = document.getElementById("throbber2")!;
             show(throbber);
-            loadFromRemote(
-                Store.load("RemoteUrl"),
-                () => {
-                    updateComments(popup, postType);
-                    hide(throbber);
-                },
-                ({ message }: Error) => notify(popup, "Problem", message)
-            );
+            await loadFromRemote(Store.load("RemoteUrl"));
+            updateComments(popup, postType);
+            hide(throbber);
         }
 
         center(popup);
