@@ -588,6 +588,24 @@ StackExchange.ready(() => {
     };
 
     /**
+     * @summary helper function for creating text inputs
+     * @param {string} id input id (also sets the name)
+     * @param {{ value?: string, classes:string[] }} [options]
+     * @returns {HTMLInputElement}
+     */
+    const makeTextInput = (
+        id: string,
+        { value = "", classes = [] }: TextInputOptions = {}
+    ) => {
+        const input = document.createElement("input");
+        input.classList.add(...classes);
+        input.type = "text";
+        input.id = input.name = id;
+        input.value = value;
+        return input;
+    };
+
+    /**
      * @summary makes a button
      * @param {string} text
      * @param {string} title
