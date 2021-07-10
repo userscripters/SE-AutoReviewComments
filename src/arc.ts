@@ -119,7 +119,7 @@ type CheckboxOptions = {
     classes?: string[];
 };
 
-type CommentInfo = { name: string; description: string };
+type CommentInfo = { name: string; description: string; targets: string[] };
 
 StackExchange.ready(() => {
     /**
@@ -362,60 +362,60 @@ StackExchange.ready(() => {
     const htmlem = (text: string) => `<em>${text}</em>`;
 
     //default comments
-    const commentDefaults = [
+    const commentDefaults: CommentInfo[] = [
         {
-            Target: [Target.CommentQuestion],
-            Name: "More than one question asked",
-            Description: `It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!`,
+            targets: [Target.CommentQuestion],
+            name: "More than one question asked",
+            description: `It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!`,
         },
         {
-            Target: [Target.CommentQuestion],
-            Name: "Duplicate Closure",
-            Description: `This question will likely be closed as a duplicate soon. If the answers from the duplicates do not fully address your question, please edit it to include why and flag this for re-opening. Thanks!`,
+            targets: [Target.CommentQuestion],
+            name: "Duplicate Closure",
+            description: `This question will likely be closed as a duplicate soon. If the answers from the duplicates do not fully address your question, please edit it to include why and flag this for re-opening. Thanks!`,
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: "Answers just to say Thanks!",
-            Description: `Please do not add "thanks" as answers. Invest some time in the site and you will gain sufficient ${htmllink(
+            targets: [Target.CommentAnswer],
+            name: "Answers just to say Thanks!",
+            description: `Please do not add "thanks" as answers. Invest some time in the site and you will gain sufficient ${htmllink(
                 "/privileges",
                 "privileges"
             )} to upvote answers you like, which is our way of saying thank you.`,
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: "Nothing but a URL (and isn't spam)",
-            Description: `Whilst this may theoretically answer the question, ${htmllink(
+            targets: [Target.CommentAnswer],
+            name: "Nothing but a URL (and isn't spam)",
+            description: `Whilst this may theoretically answer the question, ${htmllink(
                 "https://meta.stackexchange.com/q/8259",
                 "it would be preferable"
             )} to include the essential parts of the answer here, and provide the link for reference.`,
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: "Requests to OP for further information",
-            Description: `This is really a comment, not an answer. With a bit more rep, ${htmllink(
+            targets: [Target.CommentAnswer],
+            name: "Requests to OP for further information",
+            description: `This is really a comment, not an answer. With a bit more rep, ${htmllink(
                 "/privileges/comment",
                 "you will be able to post comments"
             )}. For the moment, I have added the comment for you and flagging the post for deletion.`,
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: "OP using an answer for further information",
-            Description: `Please use the ${htmlem(
+            targets: [Target.CommentAnswer],
+            name: "OP using an answer for further information",
+            description: `Please use the ${htmlem(
                 "Post answer"
             )} button only for actual answers. You should modify your original question to add additional information.`,
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: "OP adding a new question as an answer",
-            Description: `If you have another question, please ask it by clicking the ${htmllink(
+            targets: [Target.CommentAnswer],
+            name: "OP adding a new question as an answer",
+            description: `If you have another question, please ask it by clicking the ${htmllink(
                 "/questions/ask",
                 "Ask Question"
             )} button.`,
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: 'Another user adding a "Me too!"',
-            Description: `If you have a ${htmlem(
+            targets: [Target.CommentAnswer],
+            name: 'Another user adding a "Me too!"',
+            description: `If you have a ${htmlem(
                 "new"
             )} question, please ask it by clicking the ${htmllink(
                 "/questions/ask",
@@ -426,14 +426,14 @@ StackExchange.ready(() => {
             )} the question. Alternatively, "star" it as a favorite, and you will be notified of any new answers.`,
         },
         {
-            Target: [Target.Closure],
-            Name: "Too localized",
-            Description: `This question appears to be off-topic because it is too localized.`,
+            targets: [Target.Closure],
+            name: "Too localized",
+            description: `This question appears to be off-topic because it is too localized.`,
         },
         {
-            Target: [Target.EditSummaryQuestion],
-            Name: "Improper tagging",
-            Description: `The tags you used are not appropriate for the question. Please review ${htmllink(
+            targets: [Target.EditSummaryQuestion],
+            name: "Improper tagging",
+            description: `The tags you used are not appropriate for the question. Please review ${htmllink(
                 "/help/tagging",
                 "What are tags, and how should I use them?"
             )}`,
@@ -1193,7 +1193,7 @@ StackExchange.ready(() => {
                 ".popup-actions-filter": () =>
                     switchToView(makeSearchView("search-popup")),
                 ".popup-actions-reset": (p, t) => {
-                    resetComments();
+                    resetComments(commentDefaults);
                     updateComments(p, t);
                 },
 
@@ -1834,15 +1834,16 @@ StackExchange.ready(() => {
 
     /**
      * @summary Empty all custom comments from storage and rewrite to ui
+     * @param {CommentInfo[]} comments new comments to overwrite with
      * @returns {void}
      */
-    const resetComments = () => {
+    const resetComments = (comments: CommentInfo[]) => {
         Store.clear("name-");
         Store.clear("desc-");
-        commentDefaults.forEach(({ Description, Name, Target }, index) => {
-            const prefix = Target ? `[${Target.join(",")}] ` : "";
-            Store.save(`name-${index}`, prefix + Name);
-            Store.save(`desc-${index}`, Description);
+        comments.forEach(({ description, name, targets }, index) => {
+            const prefix = targets ? `[${targets.join(",")}] ` : "";
+            Store.save(`name-${index}`, prefix + name);
+            Store.save(`desc-${index}`, description);
         });
         Store.save("commentcount", commentDefaults.length);
     };
@@ -1962,7 +1963,7 @@ StackExchange.ready(() => {
     const updateComments = (popup: HTMLElement, postType: PostType) => {
         const numComments = Store.load<number>("commentcount");
 
-        if (!numComments) resetComments();
+        if (!numComments) resetComments(commentDefaults);
 
         const ul = popup.querySelector(".action-list")!;
 
