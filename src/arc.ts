@@ -1050,6 +1050,7 @@ StackExchange.ready(() => {
      */
     const makeRemoteView: RemoteViewMaker = (popup, id, postType) => {
         const storeKeyRemote = "RemoteUrl"; //TODO: move to config
+        const storeKeyAuto = "AutoRemote";
 
         if (makeRemoteView.view) {
             const { view } = makeRemoteView;
@@ -1061,9 +1062,7 @@ StackExchange.ready(() => {
         wrap.classList.add("view");
         wrap.id = id;
 
-        const text = document.createTextNode(
-            "Remote source of comments (use import/export to create JSONP)"
-        );
+        const text = document.createTextNode("JSONP Remote source of comments");
 
         const remoteInput = makeTextInput("remoteurl", {
             classes: ["remoteurl"],
@@ -1083,14 +1082,11 @@ StackExchange.ready(() => {
         const autoWrap = document.createElement("div");
         autoWrap.classList.add("float-left");
 
-        const autoInput = document.createElement("input");
-        autoInput.type = "checkbox";
-        autoInput.id = "remoteauto";
-        autoInput.checked = Store.load("AutoRemote");
-
-        autoInput.addEventListener("change", () => {
-            Store.save("AutoRemote", autoInput.checked);
+        const autoInput = makeCheckbox("remoteauto", {
+            checked: Store.load(storeKeyAuto, false),
         });
+
+        autoInput.addEventListener("change", () => Store.toggle(storeKeyAuto));
 
         const autoLabel = document.createElement("label");
         autoLabel.title = "get from remote on every page refresh";
@@ -1112,10 +1108,6 @@ StackExchange.ready(() => {
             const el = <HTMLElement>target;
 
             const actionMap = {
-                ".popup-actions-remote": () => {
-                    remoteInput.value &&= Store.load("RemoteUrl");
-                    autoInput.checked = Store.load("AutoRemote", false);
-                },
                 ".remote-cancel": () =>
                     switchToView(makeSearchView("search-popup")),
                 ".remote-get": () => {
