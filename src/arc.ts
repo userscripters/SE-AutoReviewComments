@@ -15,6 +15,10 @@ interface Window {
     [x: string]: unknown;
 }
 
+interface Document {
+    getElementById<T extends HTMLElement>(elementId: string): T | null;
+}
+
 type PostType = "answer" | "question";
 
 type Placement = readonly [insert: HTMLElement | null, place: HTMLElement];
