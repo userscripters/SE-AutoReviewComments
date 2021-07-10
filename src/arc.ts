@@ -1004,6 +1004,21 @@ StackExchange.ready(() => {
     };
 
     /**
+     * @summary updates remote URL
+     * @param {string} key store key for the remote URL
+     * @returns {boolean}
+     */
+    const updateRemoteURL = (key: string) => {
+        const remoteInput =
+            document.getElementById<HTMLInputElement>("remoteurl");
+
+        if (!remoteInput) return false;
+
+        remoteInput.value = Store.load(key);
+        return true;
+    };
+
+    /**
      * @summary makes the remote view
      * @param {HTMLElement} popup wrapper popup
      * @param {string} id view id
@@ -1011,7 +1026,13 @@ StackExchange.ready(() => {
      * @returns {HTMLElement}
      */
     const makeRemoteView: RemoteViewMaker = (popup, id, postType) => {
-        if (makeRemoteView.view) return makeRemoteView.view;
+        const storeKeyRemote = "RemoteUrl"; //TODO: move to config
+
+        if (makeRemoteView.view) {
+            const { view } = makeRemoteView;
+            updateRemoteURL(storeKeyRemote);
+            return view;
+        }
 
         const wrap = document.createElement("div");
         wrap.classList.add("view");
@@ -1021,13 +1042,13 @@ StackExchange.ready(() => {
             "Remote source of comments (use import/export to create JSONP)"
         );
 
-        const remoteInput = document.createElement("input");
-        remoteInput.classList.add("remoteurl");
-        remoteInput.type = "text";
-        remoteInput.id = "remoteurl";
+        const remoteInput = makeTextInput("remoteurl", {
+            classes: ["remoteurl"],
+            value: Store.load(storeKeyRemote),
+        });
 
         remoteInput.addEventListener("change", () => {
-            Store.save("RemoteUrl", remoteInput.value);
+            Store.save(storeKeyRemote, remoteInput.value);
         });
 
         const image = makeImage(
