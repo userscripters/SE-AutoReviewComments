@@ -1,3 +1,25 @@
+// ==UserScript==
+// @author           benjol
+// @contributors     double beep (https://github.com/double-beep), Oleg Valter (https://github.com/Oaphi)
+// @description      No more re-typing the same comments over and over!
+// @grant            GM_deleteValue
+// @grant            GM_getValue
+// @grant            GM_listValues
+// @grant            GM_setValue
+// @homepage         https://github.com/userscripters/SE-AutoReviewComments#readme
+// @match            *://*.askubuntu.com/*
+// @match            *://*.mathoverflow.net/*
+// @match            *://*.serverfault.com/*
+// @match            *://*.stackapps.com/*
+// @match            *://*.stackexchange.com/*
+// @match            *://*.stackoverflow.com/*
+// @match            *://*.superuser.com/.*
+// @name             autoreviewcomments
+// @source           git+https://github.com/userscripters/SE-AutoReviewComments.git
+// @supportURL       https://github.com/userscripters/SE-AutoReviewComments/issues
+// @version          1.4.7
+// ==/UserScript==
+
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -216,54 +238,54 @@ StackExchange.ready(function () {
     var htmlem = function (text) { return "<em>" + text + "</em>"; };
     var commentDefaults = [
         {
-            Target: [Target.CommentQuestion],
-            Name: "More than one question asked",
-            Description: "It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!",
+            targets: [Target.CommentQuestion],
+            name: "More than one question asked",
+            description: "It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!",
         },
         {
-            Target: [Target.CommentQuestion],
-            Name: "Duplicate Closure",
-            Description: "This question will likely be closed as a duplicate soon. If the answers from the duplicates do not fully address your question, please edit it to include why and flag this for re-opening. Thanks!",
+            targets: [Target.CommentQuestion],
+            name: "Duplicate Closure",
+            description: "This question will likely be closed as a duplicate soon. If the answers from the duplicates do not fully address your question, please edit it to include why and flag this for re-opening. Thanks!",
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: "Answers just to say Thanks!",
-            Description: "Please do not add \"thanks\" as answers. Invest some time in the site and you will gain sufficient " + htmllink("/privileges", "privileges") + " to upvote answers you like, which is our way of saying thank you.",
+            targets: [Target.CommentAnswer],
+            name: "Answers just to say Thanks!",
+            description: "Please do not add \"thanks\" as answers. Invest some time in the site and you will gain sufficient " + htmllink("/privileges", "privileges") + " to upvote answers you like, which is our way of saying thank you.",
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: "Nothing but a URL (and isn't spam)",
-            Description: "Whilst this may theoretically answer the question, " + htmllink("https://meta.stackexchange.com/q/8259", "it would be preferable") + " to include the essential parts of the answer here, and provide the link for reference.",
+            targets: [Target.CommentAnswer],
+            name: "Nothing but a URL (and isn't spam)",
+            description: "Whilst this may theoretically answer the question, " + htmllink("https://meta.stackexchange.com/q/8259", "it would be preferable") + " to include the essential parts of the answer here, and provide the link for reference.",
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: "Requests to OP for further information",
-            Description: "This is really a comment, not an answer. With a bit more rep, " + htmllink("/privileges/comment", "you will be able to post comments") + ". For the moment, I have added the comment for you and flagging the post for deletion.",
+            targets: [Target.CommentAnswer],
+            name: "Requests to OP for further information",
+            description: "This is really a comment, not an answer. With a bit more rep, " + htmllink("/privileges/comment", "you will be able to post comments") + ". For the moment, I have added the comment for you and flagging the post for deletion.",
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: "OP using an answer for further information",
-            Description: "Please use the " + htmlem("Post answer") + " button only for actual answers. You should modify your original question to add additional information.",
+            targets: [Target.CommentAnswer],
+            name: "OP using an answer for further information",
+            description: "Please use the " + htmlem("Post answer") + " button only for actual answers. You should modify your original question to add additional information.",
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: "OP adding a new question as an answer",
-            Description: "If you have another question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button.",
+            targets: [Target.CommentAnswer],
+            name: "OP adding a new question as an answer",
+            description: "If you have another question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button.",
         },
         {
-            Target: [Target.CommentAnswer],
-            Name: 'Another user adding a "Me too!"',
-            Description: "If you have a " + htmlem("new") + " question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button. If you have sufficient reputation, " + htmllink("/privileges/vote-up", "you may upvote") + " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers.",
+            targets: [Target.CommentAnswer],
+            name: 'Another user adding a "Me too!"',
+            description: "If you have a " + htmlem("new") + " question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button. If you have sufficient reputation, " + htmllink("/privileges/vote-up", "you may upvote") + " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers.",
         },
         {
-            Target: [Target.Closure],
-            Name: "Too localized",
-            Description: "This question appears to be off-topic because it is too localized.",
+            targets: [Target.Closure],
+            name: "Too localized",
+            description: "This question appears to be off-topic because it is too localized.",
         },
         {
-            Target: [Target.EditSummaryQuestion],
-            Name: "Improper tagging",
-            Description: "The tags you used are not appropriate for the question. Please review " + htmllink("/help/tagging", "What are tags, and how should I use them?"),
+            targets: [Target.EditSummaryQuestion],
+            name: "Improper tagging",
+            description: "The tags you used are not appropriate for the question. Please review " + htmllink("/help/tagging", "What are tags, and how should I use them?"),
         },
     ];
     var weekday_name = [
@@ -300,7 +322,7 @@ StackExchange.ready(function () {
             "." + arc + ".popup .main .view {\n                    overflow: auto;\n                    padding: 1vh 1vw;\n                }",
             "." + arc + ".popup .main .userinfo{\n                    padding:5px;\n                    margin-bottom:7px;\n                }",
             "." + arc + ".popup .main .remoteurl, ." + arc + ".popup .main .customwelcome {\n                    display: block;\n                    width: 100%;\n                }",
-            "." + arc + ".popup .main .action-list{\n                    margin:0 0 7px 0 !important;\n                    overflow-y:auto;\n                }",
+            "." + arc + ".popup .main .action-list{\n                    margin:0 0 7px 0 !important;\n                    overflow-y:scroll;\n                    max-height: 400px;\n                }",
             "." + arc + ".popup .main .action-list li{\n                    width:100%;\n                    padding:0;\n                    transition:.1s\n                }",
             "." + arc + ".popup .main .action-list li:hover{\n                    background-color:#f2f2f2\n                }",
             "." + arc + ".popup .main .action-list li.action-selected:hover{\n                    background-color:#e6e6e6\n                }",
@@ -318,6 +340,26 @@ StackExchange.ready(function () {
             "." + arc + ".announcement .notify-close a{\n                    color:black;\n                    text-decoration:none;\n                    font-weight:bold;\n                    font-size:16px;\n                }",
             "." + arc + ".popup .main .searchfilter{\n                    width:100%;\n                    box-sizing:border-box;\n                    display:block\n                }",
         ].forEach(function (rule) { return sheet.insertRule(rule); });
+    };
+    var makeTextInput = function (id, _a) {
+        var _b;
+        var _c = _a === void 0 ? {} : _a, _d = _c.value, value = _d === void 0 ? "" : _d, _e = _c.classes, classes = _e === void 0 ? [] : _e;
+        var input = document.createElement("input");
+        (_b = input.classList).add.apply(_b, __spreadArray([], __read(classes)));
+        input.type = "text";
+        input.id = input.name = id;
+        input.value = value;
+        return input;
+    };
+    var makeCheckbox = function (id, _a) {
+        var _b;
+        var _c = _a === void 0 ? {} : _a, _d = _c.checked, checked = _d === void 0 ? false : _d, _e = _c.classes, classes = _e === void 0 ? [] : _e;
+        var input = document.createElement("input");
+        (_b = input.classList).add.apply(_b, __spreadArray([], __read(classes)));
+        input.type = "checkbox";
+        input.id = input.name = id;
+        input.checked = checked;
+        return input;
     };
     var makeButton = function (text, title) {
         var _a;
@@ -494,9 +536,7 @@ StackExchange.ready(function () {
                 return el.matches(key);
             }) ||
                 [], 2), action = _b[1];
-            if (!action)
-                return debugLogger.log({ target: target });
-            action(popup, wrap);
+            action && action(popup, wrap);
         });
         actionsWrap.append.apply(actionsWrap, __spreadArray([], __read(actions)));
         wrap.append(text, welcomeWrap, actionsWrap);
@@ -551,30 +591,39 @@ StackExchange.ready(function () {
         });
         return (makeImpExpView.view = updateImpExpComments(view));
     };
+    var updateRemoteURL = function (key) {
+        var remoteInput = document.getElementById("remoteurl");
+        if (!remoteInput)
+            return false;
+        remoteInput.value = Store.load(key);
+        return true;
+    };
     var makeRemoteView = function (popup, id, postType) {
-        if (makeRemoteView.view)
-            return makeRemoteView.view;
+        var storeKeyRemote = "RemoteUrl";
+        var storeKeyAuto = "AutoRemote";
+        if (makeRemoteView.view) {
+            var view = makeRemoteView.view;
+            updateRemoteURL(storeKeyRemote);
+            return view;
+        }
         var wrap = document.createElement("div");
         wrap.classList.add("view");
         wrap.id = id;
-        var text = document.createTextNode("Remote source of comments (use import/export to create JSONP)");
-        var remoteInput = document.createElement("input");
-        remoteInput.classList.add("remoteurl");
-        remoteInput.type = "text";
-        remoteInput.id = "remoteurl";
+        var text = document.createTextNode("JSONP Remote source of comments");
+        var remoteInput = makeTextInput("remoteurl", {
+            classes: ["remoteurl"],
+            value: Store.load(storeKeyRemote),
+        });
         remoteInput.addEventListener("change", function () {
-            Store.save("RemoteUrl", remoteInput.value);
+            Store.save(storeKeyRemote, remoteInput.value);
         });
         var image = makeImage("throbber1", "https://sstatic.net/img/progress-dots.gif", "throbber");
         var autoWrap = document.createElement("div");
         autoWrap.classList.add("float-left");
-        var autoInput = document.createElement("input");
-        autoInput.type = "checkbox";
-        autoInput.id = "remoteauto";
-        autoInput.checked = Store.load("AutoRemote");
-        autoInput.addEventListener("change", function () {
-            Store.save("AutoRemote", autoInput.checked);
+        var autoInput = makeCheckbox("remoteauto", {
+            checked: Store.load(storeKeyAuto, false),
         });
+        autoInput.addEventListener("change", function () { return Store.toggle(storeKeyAuto); });
         var autoLabel = document.createElement("label");
         autoLabel.title = "get from remote on every page refresh";
         autoLabel.htmlFor = autoInput.id;
@@ -591,32 +640,30 @@ StackExchange.ready(function () {
             var target = _a.target;
             var el = target;
             var actionMap = {
-                ".popup-actions-remote": function () {
-                    remoteInput.value && (remoteInput.value = Store.load("RemoteUrl"));
-                    autoInput.checked = Store.load("AutoRemote", false);
-                },
                 ".remote-cancel": function () {
                     return switchToView(makeSearchView("search-popup"));
                 },
-                ".remote-get": function () {
-                    show(image);
-                    loadFromRemote(remoteInput.value, function () {
-                        updateComments(popup, postType);
-                        hide(image);
-                    }, function (_a) {
-                        var message = _a.message;
-                        return notify(popup, "Problem", message);
+                ".remote-get": function () { return __awaiter(void 0, void 0, void 0, function () {
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                show(image);
+                                return [4, loadFromRemote(remoteInput.value)];
+                            case 1:
+                                _a.sent();
+                                updateComments(popup, postType);
+                                hide(image);
+                                return [2];
+                        }
                     });
-                },
+                }); },
             };
             var _b = __read(Object.entries(actionMap).find(function (_a) {
                 var _b = __read(_a, 1), key = _b[0];
                 return el.matches(key);
             }) ||
                 [], 2), action = _b[1];
-            if (!action)
-                return debugLogger.log({ el: el, wrap: wrap });
-            action();
+            action && action();
         });
         actionsWrap.append.apply(actionsWrap, __spreadArray([], __read(actions)));
         wrap.append(text, remoteInput, image, autoWrap, actionsWrap);
@@ -662,7 +709,7 @@ StackExchange.ready(function () {
                     return switchToView(makeSearchView("search-popup"));
                 },
                 ".popup-actions-reset": function (p, t) {
-                    resetComments();
+                    resetComments(commentDefaults);
                     updateComments(p, t);
                 },
                 ".popup-actions-toggledesc": function (p) {
@@ -673,7 +720,6 @@ StackExchange.ready(function () {
                 ".popup-submit": function (p) {
                     var selected = p.querySelector(".action-selected");
                     var descr = selected === null || selected === void 0 ? void 0 : selected.querySelector(".action-desc");
-                    debugLogger.log({ selected: selected, descr: descr });
                     if (!descr || !selected)
                         return notify(p, "Nothing selected", "please select a comment");
                     var op = getOP();
@@ -687,9 +733,7 @@ StackExchange.ready(function () {
                 var _b = __read(_a, 1), selector = _b[0];
                 return target.matches(selector);
             }) || [], 2), action = _b[1];
-            if (!action)
-                return debugLogger.log({ target: target, postType: postType });
-            action(popup, postType);
+            action && action(popup, postType);
         });
         var commentViewId = "search-popup";
         var views = [
@@ -837,8 +881,11 @@ StackExchange.ready(function () {
         var parent = tgt.closest(".answer") || tgt.closest(".question");
         if (!parent)
             return "";
-        var href = parent.querySelector(userLinkSel).href;
-        var _a = __read(href.match(/users\/(\d+)\//) || [], 2), uid = _a[1];
+        var userLink = parent.querySelector(userLinkSel);
+        if (!userLink)
+            return "";
+        var href = userLink.href;
+        var _a = __read(/users\/(\d+)\//.exec(href) || [], 2), uid = _a[1];
         return uid || "";
     };
     var isNewUser = function (date) { return Date.now() / 1000 - date < week; };
@@ -1040,14 +1087,14 @@ StackExchange.ready(function () {
         commentElem.append(preview, area, actions);
         dataset.mode = "edit";
     };
-    var resetComments = function () {
+    var resetComments = function (comments) {
         Store.clear("name-");
         Store.clear("desc-");
-        commentDefaults.forEach(function (_a, index) {
-            var Description = _a.Description, Name = _a.Name, Target = _a.Target;
-            var prefix = Target ? "[" + Target.join(",") + "] " : "";
-            Store.save("name-" + index, prefix + Name);
-            Store.save("desc-" + index, Description);
+        comments.forEach(function (_a, index) {
+            var description = _a.description, name = _a.name, targets = _a.targets;
+            var prefix = targets ? "[" + targets.join(",") + "] " : "";
+            Store.save("name-" + index, prefix + name);
+            Store.save("desc-" + index, description);
         });
         Store.save("commentcount", commentDefaults.length);
     };
@@ -1080,7 +1127,6 @@ StackExchange.ready(function () {
             var classList = action.classList;
             classList.add("action-selected");
             var descr = action.querySelector(".action-desc");
-            debugLogger.log({ acts: acts, action: action, descr: descr });
             show(descr);
             enable("#" + Store.prefix + "-submit");
         };
@@ -1094,7 +1140,6 @@ StackExchange.ready(function () {
                 return;
             var action = el.closest("li");
             var radio = action === null || action === void 0 ? void 0 : action.querySelector("input");
-            debugLogger.log({ action: action, radio: radio });
             if (!action || !radio)
                 return notify(popup, "Problem", "something went wrong");
             action.classList.add("action-selected");
@@ -1131,7 +1176,7 @@ StackExchange.ready(function () {
     var updateComments = function (popup, postType) {
         var numComments = Store.load("commentcount");
         if (!numComments)
-            resetComments();
+            resetComments(commentDefaults);
         var ul = popup.querySelector(".action-list");
         empty(ul);
         var comments = loadComments(numComments);
@@ -1234,53 +1279,58 @@ StackExchange.ready(function () {
             .querySelectorAll("li:not(.action-selected) .action-desc")
             .forEach(function (d) { return (hidden ? hide(d) : show(d)); });
     };
-    var getJSONP = function (url) {
+    var getJSONP = function (url, callbackName) {
+        if (callbackName === void 0) { callbackName = "callback"; }
         return new Promise(function (resolve, reject) {
-            var cbkName = "jsonp-" + Date.now();
-            var uri = new URL(url);
-            uri.searchParams.append("callback", cbkName);
-            var script = document.createElement("script");
-            script.src = uri.toString();
-            script.async = true;
-            window[cbkName] = function (json) {
+            var target = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
+            var clean = function (handler, value) {
                 script.remove();
-                delete window[cbkName];
-                resolve(json);
+                delete target[callbackName];
+                handler(value);
             };
+            target[callbackName] = function (json) { return clean(resolve, json); };
+            var script = document.createElement("script");
+            script.src = url;
+            script.async = true;
             script.addEventListener("error", function (_a) {
                 var error = _a.error;
-                script.remove();
-                delete window[cbkName];
-                reject(error);
+                return clean(reject, error);
             });
             document.body.append(script);
         });
     };
-    var loadFromRemote = function (url, success, error) { return __awaiter(void 0, void 0, void 0, function () {
-        var data, err_1;
+    var getJSON = function (url) { return __awaiter(void 0, void 0, void 0, function () {
+        var res;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4, fetch(url)];
+                case 1:
+                    res = _a.sent();
+                    return [2, res.json()];
+            }
+        });
+    }); };
+    var loadFromRemote = function (url) { return __awaiter(void 0, void 0, void 0, function () {
+        var isJSONP, fetcher, comments;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4, getJSONP(url)];
+                    isJSONP = /jsonp-data/.test(url);
+                    debugLogger.log({ isJSONP: isJSONP });
+                    fetcher = isJSONP ? getJSONP : getJSON;
+                    return [4, fetcher(url)];
                 case 1:
-                    data = _a.sent();
-                    debugLogger.log({ data: data });
-                    Store.save("commentcount", data.length);
+                    comments = _a.sent();
+                    debugLogger.log({ comments: comments });
+                    Store.save("commentcount", comments.length);
                     Store.clear("name-");
                     Store.clear("desc-");
-                    data.forEach(function (_a, i) {
+                    comments.forEach(function (_a, i) {
                         var name = _a.name, description = _a.description;
                         Store.save("name-" + i, name);
-                        Store.save("desc-" + i, markdownToHTML(description));
+                        Store.save("desc-" + i, tag(markdownToHTML(description)));
                     });
-                    success();
-                    return [3, 3];
-                case 2:
-                    err_1 = _a.sent();
-                    error(err_1);
-                    return [3, 3];
-                case 3: return [2];
+                    return [2];
             }
         });
     }); };
@@ -1295,29 +1345,27 @@ StackExchange.ready(function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    debugLogger.log({ target: target, postType: postType });
                     popup = makePopup(target, postType);
                     if (!popup.isConnected)
                         document.body.append(popup);
                     showPopup(popup);
                     updateComments(popup, postType);
-                    if (Store.load("AutoRemote") == "true") {
-                        throbber = document.getElementById("throbber2");
-                        show(throbber);
-                        loadFromRemote(Store.load("RemoteUrl"), function () {
-                            updateComments(popup, postType);
-                            hide(throbber);
-                        }, function (_a) {
-                            var message = _a.message;
-                            return notify(popup, "Problem", message);
-                        });
-                    }
+                    if (!Store.load("AutoRemote")) return [3, 2];
+                    throbber = document.getElementById("throbber2");
+                    show(throbber);
+                    return [4, loadFromRemote(Store.load("RemoteUrl"))];
+                case 1:
+                    _a.sent();
+                    updateComments(popup, postType);
+                    hide(throbber);
+                    _a.label = 2;
+                case 2:
                     center(popup);
                     StackExchange.helpers.bindMovablePopups();
                     userid = getUserId(target);
                     userInfoEl = document.getElementById("userinfo");
                     return [4, getUserInfo(userid)];
-                case 1:
+                case 3:
                     uinfo = _a.sent();
                     debugLogger.log({ uinfo: uinfo, userid: userid });
                     if (!uinfo)
@@ -1333,7 +1381,6 @@ StackExchange.ready(function () {
             if (maxTries <= retry)
                 return;
             var _a = __read(locator(trigger), 2), injectNextTo = _a[0], placeIn = _a[1];
-            debugLogger.log({ injectNextTo: injectNextTo, placeIn: placeIn, injector: injector });
             if (injectNextTo)
                 return injector(injectNextTo, placeIn, actor);
             setTimeout(function () { return _injector(trigger, retry + 1); }, 50);

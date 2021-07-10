@@ -6,13 +6,24 @@
     "test": "mocha -r ts-node/register",
     "replace": "ts-node utils/replace.ts",
     "clean": "rm -rf dist",
-    "build": "npm run clean && tsc && npm run replace"
+    "build": "npm run clean && tsc && npm run replace && npm run headers-tm",
+    "headers-tm": "bash ./scripts/headers.sh"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/userscripters/SE-AutoReviewComments.git"
   },
   "author": "benjol",
+  "contributors": [
+    {
+      "name": "double beep",
+      "url": "https://github.com/double-beep"
+    },
+    {
+      "name": "Oleg Valter",
+      "url": "https://github.com/Oaphi"
+    }
+  ],
   "bugs": {
     "url": "https://github.com/userscripters/SE-AutoReviewComments/issues"
   },
@@ -25,6 +36,7 @@
     "@types/mocha": "^8.2.2",
     "@types/node": "^16.0.0",
     "@types/tampermonkey": "^4.0.2",
+    "@userscripters/generate-headers": "^1.6.4",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "eslint": "^7.30.0",
