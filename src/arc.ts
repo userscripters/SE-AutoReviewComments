@@ -941,7 +941,7 @@ StackExchange.ready(() => {
                 Object.entries(actionMap).find(([key]) => el.matches(key)) ||
                 [];
 
-            action && action(popup, wrap);
+            action?.(popup, wrap);
         });
 
         actionsWrap.append(...actions);
@@ -1123,7 +1123,7 @@ StackExchange.ready(() => {
                 Object.entries(actionMap).find(([key]) => el.matches(key)) ||
                 [];
 
-            action && action();
+            action?.();
         });
 
         actionsWrap.append(...actions);
@@ -1229,7 +1229,7 @@ StackExchange.ready(() => {
                     (<HTMLElement>target).matches(selector)
                 ) || [];
 
-            action && action(popup, postType);
+            action?.(popup, postType);
         });
 
         const commentViewId = "search-popup";
