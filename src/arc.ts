@@ -1454,7 +1454,11 @@ StackExchange.ready(() => {
     const getUserId = (tgt: HTMLInputElement) => {
         const parent = tgt.closest(".answer") || tgt.closest(".question");
         if (!parent) return "";
-        const { href } = parent.querySelector<HTMLAnchorElement>(userLinkSel)!;
+
+        const userLink = parent.querySelector<HTMLAnchorElement>(userLinkSel);
+        if (!userLink) return "";
+
+        const { href } = userLink;
         const [, uid] = /users\/(\d+)\//.exec(href) || [];
         return uid || "";
     };
