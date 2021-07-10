@@ -507,7 +507,8 @@ StackExchange.ready(() => {
                 }`,
             `.${arc}.popup .main .action-list{
                     margin:0 0 7px 0 !important;
-                    overflow-y:auto;
+                    overflow-y:scroll;
+                    max-height: 400px;
                 }`,
             `.${arc}.popup .main .action-list li{
                     width:100%;
