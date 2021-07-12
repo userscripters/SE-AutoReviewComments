@@ -1106,6 +1106,21 @@ StackExchange.ready(() => {
     };
 
     /**
+     * @summary factory for remote change listeners
+     * @param {string} storeKey key to store URL under
+     * @param {HTMLInputElement} input URL input to get value from
+     * @returns {EventListener}
+     */
+    const makeOnRemoteChange =
+        (storeKey: string, input: HTMLInputElement): EventListener =>
+        () => {
+            const { value } = input;
+            //unscheme -> scheme is for foolproofing
+            Store.save(storeKey, scheme(unscheme(value)));
+            input.value = unscheme(value);
+        };
+
+    /**
      * @summary makes the remote view
      * @param {HTMLElement} popup wrapper popup
      * @param {string} id view id
@@ -1113,29 +1128,46 @@ StackExchange.ready(() => {
      * @returns {HTMLElement}
      */
     const makeRemoteView: RemoteViewMaker = (popup, id, postType) => {
-        const storeKeyRemote = "RemoteUrl"; //TODO: move to config
+        const storeKeyJSON = "remote_json";
+        const storeKeyJSONP = "RemoteUrl"; //TODO: move to config
         const storeKeyAuto = "AutoRemote";
 
         if (makeRemoteView.view) {
             const { view } = makeRemoteView;
-            updateRemoteURL(storeKeyRemote, storeKeyRemote);
+            updateRemoteURL(storeKeyJSONP, storeKeyJSONP);
             return view;
         }
 
         const wrap = el("div", "view");
         wrap.id = id;
 
-        const [jsonpWrap, jsonpInput] = makeStacksURLInput(
-            storeKeyRemote,
-            "https://",
-            "JSONP source",
-            unscheme(Store.load(storeKeyRemote))
+        const initialScheme = "https://";
+        const initialURL = unscheme(Store.load(storeKeyJSONP));
+
+        const inputWrap = el("div", "d-flex", "fd-column", "gs8");
+
+        const [jsonWrap, jsonInput] = makeStacksURLInput(
+            storeKeyJSON,
+            initialScheme,
+            "JSON source",
+            initialURL
         );
 
-        jsonpInput.addEventListener("change", () => {
-            Store.save(storeKeyRemote, scheme(jsonpInput.value));
-            jsonpInput.value = unscheme(jsonpInput.value);
-        });
+        const [jsonpWrap, jsonpInput] = makeStacksURLInput(
+            storeKeyJSONP,
+            initialScheme,
+            "JSONP source",
+            initialURL
+        );
+
+        jsonInput.addEventListener(
+            "change",
+            makeOnRemoteChange(storeKeyJSON, jsonInput)
+        );
+        jsonpInput.addEventListener(
+            "change",
+            makeOnRemoteChange(storeKeyJSONP, jsonpInput)
+        );
 
         const image = makeImage(
             "throbber1",
@@ -1188,8 +1220,8 @@ StackExchange.ready(() => {
         });
 
         actionsWrap.append(...actions);
-
-        wrap.append(jsonpWrap, image, autoWrap, actionsWrap);
+        inputWrap.append(jsonWrap, jsonpWrap);
+        wrap.append(inputWrap, image, autoWrap, actionsWrap);
 
         return (makeRemoteView.view = wrap);
     };
