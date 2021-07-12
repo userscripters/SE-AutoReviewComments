@@ -32,7 +32,7 @@
     "@tsconfig/recommended": "^1.0.1",
     "@types/chai": "^4.2.19",
     "@types/chai-as-promised": "^7.1.4",
-    "@types/greasemonkey": "^4.0.1",
+    "@types/greasemonkey": "^4.0.2",
     "@types/mocha": "^8.2.2",
     "@types/node": "^16.0.0",
     "@types/tampermonkey": "^4.0.2",
