@@ -1122,19 +1122,19 @@ StackExchange.ready(() => {
             return view;
         }
 
-        const wrap = document.createElement("div");
-        wrap.classList.add("view");
+        const wrap = el("div", "view");
         wrap.id = id;
 
-        const text = document.createTextNode("JSONP Remote source of comments");
+        const [jsonpWrap, jsonpInput] = makeStacksURLInput(
+            storeKeyRemote,
+            "https://",
+            "JSONP source",
+            unscheme(Store.load(storeKeyRemote))
+        );
 
-        const remoteInput = makeTextInput("remoteurl", {
-            classes: ["remoteurl"],
-            value: Store.load(storeKeyRemote),
-        });
-
-        remoteInput.addEventListener("change", () => {
-            Store.save(storeKeyRemote, remoteInput.value);
+        jsonpInput.addEventListener("change", () => {
+            Store.save(storeKeyRemote, scheme(jsonpInput.value));
+            jsonpInput.value = unscheme(jsonpInput.value);
         });
 
         const image = makeImage(
@@ -1143,8 +1143,7 @@ StackExchange.ready(() => {
             "throbber"
         );
 
-        const autoWrap = document.createElement("div");
-        autoWrap.classList.add("float-left");
+        const autoWrap = el("div", "float-left");
 
         const autoInput = makeCheckbox("remoteauto", {
             checked: Store.load(storeKeyAuto, false),
@@ -1159,8 +1158,7 @@ StackExchange.ready(() => {
 
         autoWrap.append(autoInput, autoLabel);
 
-        const actionsWrap = document.createElement("div");
-        actionsWrap.classList.add("float-right");
+        const actionsWrap = el("div", "float-right");
 
         const actions: Node[] = [
             makeButton("get now", "get remote", "remote-get"),
@@ -1176,7 +1174,7 @@ StackExchange.ready(() => {
                     switchToView(makeSearchView("search-popup")),
                 ".remote-get": async () => {
                     show(image);
-                    await loadFromRemote(remoteInput.value);
+                    await fetchFromRemote(scheme(jsonpInput.value));
                     updateComments(popup, postType);
                     hide(image);
                 },
@@ -1191,7 +1189,7 @@ StackExchange.ready(() => {
 
         actionsWrap.append(...actions);
 
-        wrap.append(text, remoteInput, image, autoWrap, actionsWrap);
+        wrap.append(jsonpWrap, image, autoWrap, actionsWrap);
 
         return (makeRemoteView.view = wrap);
     };
@@ -2231,7 +2229,7 @@ StackExchange.ready(() => {
      * @param {string} url remore URL to fetch from
      * @returns {Promise<void>}
      */
-    const loadFromRemote = async (url: string) => {
+    const fetchFromRemote = async (url: string) => {
         const isJSONP = /jsonp-data/.test(url);
 
         debugLogger.log({ isJSONP });
@@ -2285,7 +2283,7 @@ StackExchange.ready(() => {
         if (Store.load("AutoRemote")) {
             const throbber = document.getElementById("throbber2")!;
             show(throbber);
-            await loadFromRemote(Store.load("RemoteUrl"));
+            await fetchFromRemote(Store.load("RemoteUrl"));
             updateComments(popup, postType);
             hide(throbber);
         }
