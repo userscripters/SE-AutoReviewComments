@@ -480,9 +480,6 @@ StackExchange.ready(() => {
                     width:690px;
                     padding:15px 15px 10px;
                 }`,
-            `.${arc}.popup .throbber{
-                    display:none
-                }`,
             `.${arc}.popup>div>textarea{
                     width:100%;
                     height:442px;
@@ -764,21 +761,6 @@ StackExchange.ready(() => {
     };
 
     /**
-     * @summary makes an image element
-     * @param {string} id
-     * @param {string} src
-     * @param {...string} classes
-     * @returns {HTMLImageElement}
-     */
-    const makeImage = (id: string, src: string, ...classes: string[]) => {
-        const img = document.createElement("img");
-        img.classList.add(...classes);
-        img.src = src;
-        img.id = id;
-        return img;
-    };
-
-    /**
      * @summary makes comment submit button
      * @param {string} id
      * @returns {HTMLElement}
@@ -811,6 +793,8 @@ StackExchange.ready(() => {
      * @returns {HTMLElement}
      */
     const makeActionsView: ActionsViewMaker = (popup, id) => {
+        if (makeActionsView.view) return makeActionsView.view;
+
         const wrap = document.createElement("div");
         wrap.classList.add("view");
         wrap.id = id;
@@ -849,22 +833,48 @@ StackExchange.ready(() => {
             fadeTo(seeBtn.closest(".main")!, 1);
         });
 
-        const filterBtn = makeButton(
-            "filter",
-            "filter",
-            "popup-actions-filter"
-        );
+        const btnGroup = el("div", "s-btn-group");
+
+        const btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
+
+        const buttons = [
+            makeButton(
+                "filter",
+                "filter",
+                ...btnGroupClasses,
+                "popup-actions-filter"
+            ),
+            makeButton(
+                "import/export",
+                "use this to import/export all comments",
+                ...btnGroupClasses,
+                "popup-actions-impexp"
+            ),
+            makeButton(
+                "remote",
+                "setup remote source",
+                ...btnGroupClasses,
+                "popup-actions-remote"
+            ),
+            makeButton(
+                "welcome",
+                "configure welcome",
+                ...btnGroupClasses,
+                "popup-actions-welcome"
+            ),
+        ];
+
+        btnGroup.append(...buttons);
+
+        btnGroup.addEventListener("click", ({ target }) => {
+            buttons.forEach(({ classList }) => classList.remove("is-selected"));
+            (target as HTMLButtonElement).classList.add("is-selected");
+        });
 
         const resetBtn = makeButton(
             "reset",
             "reset any custom comments",
             "popup-actions-reset"
-        );
-
-        const importBtn = makeButton(
-            "import/export",
-            "use this to import/export all comments",
-            "popup-actions-impexp"
         );
 
         const descrBtn = makeButton(
@@ -873,48 +883,11 @@ StackExchange.ready(() => {
             "popup-actions-toggledesc"
         );
 
-        const remoteBtn = makeButton(
-            "remote",
-            "setup remote source",
-            "popup-actions-remote"
-        );
-
-        const dotsImg = makeImage(
-            "throbber2",
-            "https://sstatic.net/img/progress-dots.gif", //TODO: make config
-            "throbber"
-        );
-
-        const welcomeBtn = makeButton(
-            "welcome",
-            "configure welcome",
-            "popup-actions-welcome"
-        );
-
-        const sep = makeSeparator();
-
-        const actionsList = [
-            helpBtn,
-            sep.cloneNode(),
-            seeBtn,
-            sep.cloneNode(),
-            filterBtn,
-            sep.cloneNode(),
-            resetBtn,
-            sep.cloneNode(),
-            importBtn,
-            sep.cloneNode(),
-            descrBtn,
-            sep.cloneNode(),
-            remoteBtn,
-            dotsImg,
-            sep.cloneNode(),
-            welcomeBtn,
-        ];
+        const actionsList = [helpBtn, seeBtn, resetBtn, descrBtn, btnGroup];
 
         actionsWrap.append(...actionsList);
         wrap.append(actionsWrap, submitWrap);
-        return wrap;
+        return (makeActionsView.view = wrap);
     };
 
     /**
@@ -2361,11 +2334,8 @@ StackExchange.ready(() => {
 
         //Auto-load from remote if required
         if (Store.load("AutoRemote")) {
-            const throbber = document.getElementById("throbber2")!;
-            show(throbber);
             await fetchFromRemote(Store.load("RemoteUrl"));
             updateComments(popup, postType);
-            hide(throbber);
         }
 
         center(popup);
