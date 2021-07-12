@@ -618,6 +618,55 @@ StackExchange.ready(() => {
         return input;
     };
 
+    const el = <T extends keyof HTMLElementTagNameMap>(
+        tag: T,
+        ...classes: string[]
+    ): HTMLElementTagNameMap[T] => {
+        const el = document.createElement(tag);
+        el.classList.add(...classes);
+        return el;
+    };
+
+    /**
+     * {@link https://stackoverflow.design/product/components/inputs/#input-fills}
+     *
+     * @summary creates a Stacks URL input
+     * @param {string} id input id (also sets the name)
+     * @param {string} schema URL schema (http://, https://, or custom)
+     * @param {string} label input label
+     * @param {string} [value] input value
+     * @returns {[HTMLDivElement,HTMLInputElement]}
+     */
+    const makeStacksURLInput = (
+        id: string,
+        schema: string,
+        label: string,
+        value?: string
+    ) => {
+        const wrap = el("div", "d-flex", "gs4", "gsy", "fd-column");
+
+        const lbl = el("label", "flex--item", "s-label");
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+
+        const iwrap = el("div", "d-flex");
+
+        const ischema = el("div", "flex--item", "s-input-fill", "order-first");
+        ischema.textContent = schema;
+
+        const iinput = el("div", "d-flex", "fl-grow1", "ps-relative");
+
+        const input = makeTextInput(id, {
+            value,
+            classes: ["flex--item", "s-input", "blr0"],
+        });
+
+        iinput.append(input);
+        iwrap.append(ischema, iinput);
+        wrap.append(lbl, iwrap);
+        return [wrap, input] as const;
+    };
+
     /**
      * @summary helper function for creating checkboxes
      * @param {string} id input id (also sets the name)
