@@ -1077,6 +1077,21 @@ StackExchange.ready(() => {
     };
 
     /**
+     * @summary prepend schema to URL
+     * @param {string} url target URL
+     * @returns {string}
+     */
+    const scheme = (url: string) =>
+        /^https?:\/\//.test(url) ? url : `https://${url}`;
+
+    /**
+     * @summary remove schema from URL
+     * @param {string} url target URL
+     * @returns {string}
+     */
+    const unscheme = (url: string) => url.replace(/^https?:\/\//, "");
+
+    /**
      * @summary updates remote URL
      * @param {string} key store key for the remote URL
      * @returns {boolean}
