@@ -618,6 +618,24 @@ StackExchange.ready(() => {
         return input;
     };
 
+    /**
+     * @summary helper function for creating checkboxes
+     * @param {string} id input id (also sets the name)
+     * @param {CheckboxOptions} [options]
+     * @returns {HTMLInputElement}
+     */
+    const makeCheckbox = (
+        id: string,
+        { checked = false, classes = [] }: CheckboxOptions = {}
+    ) => {
+        const input = document.createElement("input");
+        input.classList.add(...classes);
+        input.type = "checkbox";
+        input.id = input.name = id;
+        input.checked = checked;
+        return input;
+    };
+
     const el = <T extends keyof HTMLElementTagNameMap>(
         tag: T,
         ...classes: string[]
@@ -668,21 +686,30 @@ StackExchange.ready(() => {
     };
 
     /**
-     * @summary helper function for creating checkboxes
-     * @param {string} id input id (also sets the name)
-     * @param {CheckboxOptions} [options]
-     * @returns {HTMLInputElement}
+     * {@link https://stackoverflow.design/product/components/checkbox/}
+     *
+     * @summary creates a Stacks checkbox
+     * @param {string} label checkbox label
+     * @param {boolean} [state] initial checkbox state
+     * @returns {[HTMLDivElement, HTMLInputElement]}
      */
-    const makeCheckbox = (
-        id: string,
-        { checked = false, classes = [] }: CheckboxOptions = {}
-    ) => {
-        const input = document.createElement("input");
-        input.classList.add(...classes);
-        input.type = "checkbox";
-        input.id = input.name = id;
-        input.checked = checked;
-        return input;
+    const makeStacksCheckbox = (id: string, label: string, state = false) => {
+        const fset = el("fieldset", "d-flex", "gs8");
+
+        const iwrap = el("div", "flex--item");
+
+        const lbl = el("label", "flex--item", "s-label", "fw-normal");
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+
+        const input = makeCheckbox(id, {
+            checked: state,
+            classes: ["s-checkbox"],
+        });
+
+        iwrap.append(input);
+        fset.append(iwrap, lbl);
+        return [fset, input] as const;
     };
 
     /**
@@ -1129,8 +1156,10 @@ StackExchange.ready(() => {
      */
     const makeRemoteView: RemoteViewMaker = (popup, id, postType) => {
         const storeKeyJSON = "remote_json";
+        const storeKeyJSONauto = "remote_json_auto";
+
         const storeKeyJSONP = "RemoteUrl"; //TODO: move to config
-        const storeKeyAuto = "AutoRemote";
+        const storeKeyJSONPauto = "AutoRemote";
 
         if (makeRemoteView.view) {
             const { view } = makeRemoteView;
@@ -1173,18 +1202,26 @@ StackExchange.ready(() => {
 
         const autoWrap = el("div", "float-left");
 
-        const autoInput = makeCheckbox("remoteauto", {
-            checked: Store.load(storeKeyAuto, false),
-        });
+        const toggleText = "auto get";
 
-        autoInput.addEventListener("change", () => Store.toggle(storeKeyAuto));
+        const [autoJSONwrap, autoJSONcbx] = makeStacksCheckbox(
+            storeKeyJSONauto,
+            toggleText,
+            Store.load(storeKeyJSONauto, false)
+        );
 
-        const autoLabel = document.createElement("label");
-        autoLabel.title = "get from remote on every page refresh";
-        autoLabel.htmlFor = autoInput.id;
-        autoLabel.textContent = "auto-get";
+        const [autoJSONPwrap, autoJSONPcbx] = makeStacksCheckbox(
+            storeKeyJSONPauto,
+            toggleText,
+            Store.load(storeKeyJSONPauto, false)
+        );
 
-        autoWrap.append(autoInput, autoLabel);
+        autoJSONcbx.addEventListener("change", () =>
+            Store.toggle(storeKeyJSONauto)
+        );
+        autoJSONPcbx.addEventListener("change", () =>
+            Store.toggle(storeKeyJSONPauto)
+        );
 
         const getNowText = "get now";
         const commonBtnClasses = ["s-btn__muted", "s-btn__outlined", "ml8"];
@@ -1227,9 +1264,11 @@ StackExchange.ready(() => {
             action?.();
         });
 
+        inputWrap.append(jsonWrap, jsonpWrap);
+        jsonWrap.append(autoJSONwrap);
+        jsonpWrap.append(autoJSONPwrap);
         jsonIWrap.after(getJSONbtn);
         jsonpIWrap.after(getJSONPbtn);
-        inputWrap.append(jsonWrap, jsonpWrap);
         wrap.append(inputWrap, autoWrap);
 
         return (makeRemoteView.view = wrap);
