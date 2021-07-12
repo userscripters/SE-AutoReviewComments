@@ -635,7 +635,7 @@ StackExchange.ready(() => {
      * @param {string} schema URL schema (http://, https://, or custom)
      * @param {string} label input label
      * @param {string} [value] input value
-     * @returns {[HTMLDivElement,HTMLInputElement]}
+     * @returns {[HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLInputElement]}
      */
     const makeStacksURLInput = (
         id: string,
@@ -664,7 +664,7 @@ StackExchange.ready(() => {
         iinput.append(input);
         iwrap.append(ischema, iinput);
         wrap.append(lbl, iwrap);
-        return [wrap, input] as const;
+        return [wrap, iwrap, iinput, input] as const;
     };
 
     /**
@@ -693,11 +693,10 @@ StackExchange.ready(() => {
      * @returns {HTMLAnchorElement}
      */
     const makeButton = (text: string, title: string, ...classes: string[]) => {
-        const cancelBtn = document.createElement("a");
-        cancelBtn.classList.add(...classes);
-        cancelBtn.innerHTML = text;
-        cancelBtn.title = title;
-        return cancelBtn;
+        const button = el("button", "s-btn", ...classes);
+        button.innerHTML = text;
+        button.title = title;
+        return button;
     };
 
     /**
@@ -714,10 +713,11 @@ StackExchange.ready(() => {
         title: string,
         ...classes: string[]
     ) => {
-        const btn = makeButton(text, title, ...classes);
-        btn.href = url;
-        btn.target = "_blank";
-        return btn;
+        const anchor = el("a");
+        anchor.target = "_blank";
+        anchor.href = url;
+        anchor.append(makeButton(text, title, ...classes));
+        return anchor;
     };
 
     /**
@@ -1134,6 +1134,8 @@ StackExchange.ready(() => {
 
         if (makeRemoteView.view) {
             const { view } = makeRemoteView;
+            //TODO: default id to store key
+            updateRemoteURL(storeKeyJSON, storeKeyJSON);
             updateRemoteURL(storeKeyJSONP, storeKeyJSONP);
             return view;
         }
@@ -1146,14 +1148,14 @@ StackExchange.ready(() => {
 
         const inputWrap = el("div", "d-flex", "fd-column", "gs8");
 
-        const [jsonWrap, jsonInput] = makeStacksURLInput(
+        const [jsonWrap, , jsonIWrap, jsonInput] = makeStacksURLInput(
             storeKeyJSON,
             initialScheme,
             "JSON source",
             initialURL
         );
 
-        const [jsonpWrap, jsonpInput] = makeStacksURLInput(
+        const [jsonpWrap, , jsonpIWrap, jsonpInput] = makeStacksURLInput(
             storeKeyJSONP,
             initialScheme,
             "JSONP source",
@@ -1167,12 +1169,6 @@ StackExchange.ready(() => {
         jsonpInput.addEventListener(
             "change",
             makeOnRemoteChange(storeKeyJSONP, jsonpInput)
-        );
-
-        const image = makeImage(
-            "throbber1",
-            "https://sstatic.net/img/progress-dots.gif",
-            "throbber"
         );
 
         const autoWrap = el("div", "float-left");
@@ -1190,25 +1186,37 @@ StackExchange.ready(() => {
 
         autoWrap.append(autoInput, autoLabel);
 
-        const actionsWrap = el("div", "float-right");
+        const getNowText = "get now";
+        const commonBtnClasses = ["s-btn__muted", "s-btn__outlined", "ml8"];
 
-        const actions: Node[] = [
-            makeButton("get now", "get remote", "remote-get"),
-            makeSeparator(),
-            makeButton("cancel", "cancel remote", "remote-cancel"),
-        ];
+        const getJSONbtn = makeButton(
+            getNowText,
+            "get JSON remote",
+            "remote-json-get",
+            ...commonBtnClasses
+        );
+        const getJSONPbtn = makeButton(
+            getNowText,
+            "get JSONP remote",
+            "remote-jsonp-get",
+            ...commonBtnClasses
+        );
 
         popup.addEventListener("click", ({ target }) => {
             const el = <HTMLElement>target;
 
             const actionMap = {
-                ".remote-cancel": () =>
-                    switchToView(makeSearchView("search-popup")),
-                ".remote-get": async () => {
-                    show(image);
+                ".remote-json-get": async () => {
+                    getJSONbtn.classList.add("is-loading");
+                    await fetchFromRemote(scheme(jsonInput.value));
+                    updateComments(popup, postType);
+                    getJSONbtn.classList.remove("is-loading");
+                },
+                ".remote-jsonp-get": async () => {
+                    getJSONPbtn.classList.add("is-loading");
                     await fetchFromRemote(scheme(jsonpInput.value));
                     updateComments(popup, postType);
-                    hide(image);
+                    getJSONPbtn.classList.remove("is-loading");
                 },
             };
 
@@ -1219,9 +1227,10 @@ StackExchange.ready(() => {
             action?.();
         });
 
-        actionsWrap.append(...actions);
+        jsonIWrap.after(getJSONbtn);
+        jsonpIWrap.after(getJSONPbtn);
         inputWrap.append(jsonWrap, jsonpWrap);
-        wrap.append(inputWrap, image, autoWrap, actionsWrap);
+        wrap.append(inputWrap, autoWrap);
 
         return (makeRemoteView.view = wrap);
     };
