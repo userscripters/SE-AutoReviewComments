@@ -1094,15 +1094,14 @@ StackExchange.ready(() => {
     /**
      * @summary updates remote URL
      * @param {string} key store key for the remote URL
+     * @param {string} inputId id of the remote input
      * @returns {boolean}
      */
-    const updateRemoteURL = (key: string) => {
-        const remoteInput =
-            document.getElementById<HTMLInputElement>("remoteurl");
+    const updateRemoteURL = (key: string, inputId: string) => {
+        const input = document.getElementById<HTMLInputElement>(inputId);
+        if (!input) return false;
 
-        if (!remoteInput) return false;
-
-        remoteInput.value = Store.load(key);
+        input.value = unscheme(Store.load(key));
         return true;
     };
 
@@ -1119,7 +1118,7 @@ StackExchange.ready(() => {
 
         if (makeRemoteView.view) {
             const { view } = makeRemoteView;
-            updateRemoteURL(storeKeyRemote);
+            updateRemoteURL(storeKeyRemote, storeKeyRemote);
             return view;
         }
 
