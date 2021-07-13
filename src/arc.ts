@@ -1645,18 +1645,19 @@ StackExchange.ready(() => {
 
     /**
      * @summary adds user info to the UI
-     * @param {HTMLElement} container
+     * @param {UserInfo} userInfo
      * @returns {void}
      */
-    const addUserInfo = (container: HTMLElement, userInfo: UserInfo) => {
-        const {
-            user_id,
-            creation_date,
-            display_name,
-            last_access_date,
-            reputation,
-            user_type,
-        } = userInfo;
+    const addUserInfo = ({
+        user_id,
+        creation_date,
+        display_name,
+        last_access_date,
+        reputation,
+        user_type,
+    }: UserInfo) => {
+        const container = document.getElementById("userinfo");
+        if (!container) return;
 
         if (isNewUser(creation_date)) {
             Store.save("ShowGreeting", true);
@@ -2345,15 +2346,11 @@ StackExchange.ready(() => {
         //Get user info and inject
         const userid = getUserId(target);
 
-        const userInfoEl = document.getElementById("userinfo")!;
-
-        const uinfo = await getUserInfo(userid);
-
-        debugLogger.log({ uinfo, userid });
-
-        if (!uinfo) return fadeOut(userInfoEl);
-
-        addUserInfo(userInfoEl, uinfo);
+        if (userid) {
+            const uinfo = await getUserInfo(userid);
+            debugLogger.log({ userid, uinfo });
+            if (uinfo) addUserInfo(uinfo);
+        }
     };
 
     /**
