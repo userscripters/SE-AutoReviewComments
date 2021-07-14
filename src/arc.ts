@@ -619,6 +619,40 @@ StackExchange.ready(() => {
         return el;
     };
 
+    type TextAreaOptions = {
+        value?: string;
+        label?: string;
+    };
+
+    /**
+     * {@link https://stackoverflow.design/product/components/textarea/}
+     *
+     * @summary creates a Stacks textarea
+     * @param {string} id textarea id (also sets the name)
+     * @param {TextAreaOptions} options textarea options
+     * @returns {[HTMLDivElement, HTMLTextAreaElement]}
+     */
+    const makeStacksTextArea = (
+        id: string,
+        { label = "", value = "" }: TextAreaOptions
+    ) => {
+        const wrap = el("div", "d-flex", "fd-column", "gs4", "gsy");
+
+        if (label) {
+            const lbl = el("label", "flex--item", "s-label");
+            lbl.htmlFor = id;
+            lbl.textContent = label;
+            wrap.append(lbl);
+        }
+
+        const area = el("textarea", "flex--item", "s-textarea");
+        area.id = area.name = id;
+        area.value = value;
+        wrap.append(area);
+
+        return [wrap, area] as const;
+    };
+
     /**
      * {@link https://stackoverflow.design/product/components/inputs/#input-fills}
      *
@@ -1030,14 +1064,21 @@ StackExchange.ready(() => {
 
         const actionWrap = el("div", "actions");
 
-        const txtArea = document.createElement("textarea");
+        const [areaWrap, area] = makeStacksTextArea("impexp", {
+            label: "Comment source",
+        });
 
-        txtArea.addEventListener("change", async () => {
-            doImport(txtArea.value);
+        area.addEventListener("change", async () => {
+            doImport(area.value);
             updateComments(popup, postType);
         });
 
-        const jsonpBtn = makeButton("JSONP", "JSONP", "jsonp");
+        const jsonpBtn = makeButton(
+            "JSONP",
+            "JSONP",
+            "s-btn__outlined",
+            "jsonp"
+        );
 
         const cancelBtn = makeButton(
             "cancel",
@@ -1054,7 +1095,7 @@ StackExchange.ready(() => {
 
         actionWrap.append(jsonpBtn, cancelBtn);
 
-        view.append(txtArea, actionWrap);
+        view.append(areaWrap, actionWrap);
 
         const cbk = "callback";
         jsonpBtn.addEventListener("click", () => {
@@ -1065,7 +1106,7 @@ StackExchange.ready(() => {
                 .map((comment) => JSON.stringify(comment))
                 .join(",\n");
 
-            txtArea.value = `${cbk}([\n${content}\n])`;
+            area.value = `${cbk}([\n${content}\n])`;
 
             view.querySelector(".actions")?.remove();
         });
@@ -1915,18 +1956,9 @@ StackExchange.ready(() => {
         preview.classList.add("d-inline-block", "p8"); //TODO: config
         preview.innerHTML = html;
 
-        const area = document.createElement("textarea");
-        area.value = HTMLtoMarkdown(html);
-        area.id = area.name = commentElem.id;
-
-        // Disable comment input while editing
-        commentElem.closest("li")!.querySelector("input")!.disabled = true;
-
-        // Disable quick-insert while editing.
-        popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(hide);
-
-        // Disable insert while editing.
-        disable(`#${Store.prefix}-submit`);
+        const [areaWrap, area] = makeStacksTextArea(commentElem.id, {
+            value: HTMLtoMarkdown(html),
+        });
 
         area.addEventListener("input", ({ target }) => {
             const { value } = <HTMLTextAreaElement>target;
@@ -1937,6 +1969,15 @@ StackExchange.ready(() => {
             const { id, value } = <HTMLTextAreaElement>target;
             closeEditMode(commentElem, saveComment(id, value));
         });
+
+        // Disable comment input while editing
+        commentElem.closest("li")!.querySelector("input")!.disabled = true;
+
+        // Disable quick-insert while editing.
+        popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(hide);
+
+        // Disable insert while editing.
+        disable(`#${Store.prefix}-submit`);
 
         // save/cancel links to add to textarea
         const actions = document.createElement("div");
@@ -1949,7 +1990,7 @@ StackExchange.ready(() => {
         });
 
         actions.append(cancel);
-        commentElem.append(preview, area, actions);
+        commentElem.append(preview, areaWrap, actions);
 
         dataset.mode = "edit";
     };
