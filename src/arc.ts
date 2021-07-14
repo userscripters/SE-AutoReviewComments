@@ -33,34 +33,14 @@ type Injector = (
     action: Actor
 ) => void;
 
+type ViewMaker = {
+    view?: HTMLElement;
+    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
+};
+
 type WrapperPopupMaker = {
     popup?: HTMLElement;
     (target: HTMLInputElement, postType: PostType): HTMLElement;
-};
-
-type ActionsViewMaker = {
-    view?: HTMLElement;
-    (popup: HTMLElement, id: string): HTMLElement;
-};
-
-type SearchViewMaker = {
-    view?: HTMLElement;
-    (id: string): HTMLElement;
-};
-
-type WelcomeViewMaker = {
-    view?: HTMLElement;
-    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
-};
-
-type RemoteViewMaker = {
-    view?: HTMLElement;
-    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
-};
-
-type ImpExpViewMaker = {
-    view?: HTMLElement;
-    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
 };
 
 type UserType =
@@ -334,7 +314,7 @@ StackExchange.ready(() => {
     const userLinkSel = ".post-signature .user-details[itemprop=author] a";
 
     //selects all views except actions
-    const viewsSel = ".main .view:not(:last-child)";
+    const viewsSel = ".main .view:not(:first-child)";
 
     /**
      * All the different "targets" a comment can be placed on.
@@ -776,14 +756,70 @@ StackExchange.ready(() => {
 
     /**
      * @summary hides the rest of the views and shows the current one
-     * @param {HTMLElement} view current view
-     * @returns {HTMLElement}
+     * @param {string} viewsSel selector for views
+     * @returns {(view:HTMLElement) => HTMLElement}
      */
-    const switchToView = (view: HTMLElement) => {
+    const makeViewSwitcher = (viewsSel: string) => (view: HTMLElement) => {
         document.querySelectorAll<HTMLElement>(viewsSel).forEach(hide);
         show(view);
         Store.save("CurrentView", view.id);
         return view;
+    };
+
+    /**
+     * @summary makes tabs view
+     * @param {HTMLElement} popup wrapper popup
+     * @param {string} id actions wrapper id
+     * @param {PostType} postType parent post type
+     * @returns {HTMLElement}
+     */
+    const makeTabsView: ViewMaker = (_popup, id, _postType) => {
+        if (makeTabsView.view) return makeTabsView.view;
+
+        const wrap = el("div", "view");
+        wrap.id = id;
+
+        const btnGroup = el("div", "s-btn-group");
+
+        const btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
+
+        const buttons = [
+            makeButton(
+                "filter",
+                "filter",
+                ...btnGroupClasses,
+                "popup-actions-filter"
+            ),
+            makeButton(
+                "import/export",
+                "use this to import/export all comments",
+                ...btnGroupClasses,
+                "popup-actions-impexp"
+            ),
+            makeButton(
+                "remote",
+                "setup remote source",
+                ...btnGroupClasses,
+                "popup-actions-remote"
+            ),
+            makeButton(
+                "welcome",
+                "configure welcome",
+                ...btnGroupClasses,
+                "popup-actions-welcome"
+            ),
+        ];
+
+        btnGroup.append(...buttons);
+
+        btnGroup.addEventListener("click", ({ target }) => {
+            buttons.forEach(({ classList }) => classList.remove("is-selected"));
+            (target as HTMLElement).classList.add("is-selected");
+        });
+
+        wrap.append(btnGroup);
+
+        return (makeTabsView.view = wrap);
     };
 
     /**
@@ -792,7 +828,7 @@ StackExchange.ready(() => {
      * @param {string} id actions wrapper id
      * @returns {HTMLElement}
      */
-    const makeActionsView: ActionsViewMaker = (popup, id) => {
+    const makeActionsView: ViewMaker = (popup, id) => {
         if (makeActionsView.view) return makeActionsView.view;
 
         const wrap = document.createElement("div");
@@ -833,44 +869,6 @@ StackExchange.ready(() => {
             fadeTo(seeBtn.closest(".main")!, 1);
         });
 
-        const btnGroup = el("div", "s-btn-group");
-
-        const btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
-
-        const buttons = [
-            makeButton(
-                "filter",
-                "filter",
-                ...btnGroupClasses,
-                "popup-actions-filter"
-            ),
-            makeButton(
-                "import/export",
-                "use this to import/export all comments",
-                ...btnGroupClasses,
-                "popup-actions-impexp"
-            ),
-            makeButton(
-                "remote",
-                "setup remote source",
-                ...btnGroupClasses,
-                "popup-actions-remote"
-            ),
-            makeButton(
-                "welcome",
-                "configure welcome",
-                ...btnGroupClasses,
-                "popup-actions-welcome"
-            ),
-        ];
-
-        btnGroup.append(...buttons);
-
-        btnGroup.addEventListener("click", ({ target }) => {
-            buttons.forEach(({ classList }) => classList.remove("is-selected"));
-            (target as HTMLButtonElement).classList.add("is-selected");
-        });
-
         const resetBtn = makeButton(
             "reset",
             "reset any custom comments",
@@ -883,7 +881,7 @@ StackExchange.ready(() => {
             "popup-actions-toggledesc"
         );
 
-        const actionsList = [helpBtn, seeBtn, resetBtn, descrBtn, btnGroup];
+        const actionsList = [helpBtn, seeBtn, resetBtn, descrBtn];
 
         actionsWrap.append(...actionsList);
         wrap.append(actionsWrap, submitWrap);
@@ -892,10 +890,11 @@ StackExchange.ready(() => {
 
     /**
      * @summary makes the search view
+     * @param {HTMLElement} popup wrapper popup
      * @param {string} id view id
      * @returns {HTMLElement}
      */
-    const makeSearchView: SearchViewMaker = (id) => {
+    const makeSearchView: ViewMaker = (_popup, id) => {
         if (makeSearchView.view) return makeSearchView.view;
 
         const wrap = document.createElement("div");
@@ -934,7 +933,7 @@ StackExchange.ready(() => {
      * @param {PostType} postType parent post type
      * @returns {HTMLElement}
      */
-    const makeWelcomeView: WelcomeViewMaker = (popup, id, postType) => {
+    const makeWelcomeView: ViewMaker = (popup, id, postType) => {
         if (makeWelcomeView.view) return makeWelcomeView.view;
 
         const wrap = document.createElement("div");
@@ -947,10 +946,9 @@ StackExchange.ready(() => {
 
         const welcomeWrap = document.createElement("div");
 
-        const input = document.createElement("input");
-        input.classList.add("customwelcome");
-        input.type = "text";
-        input.id = "customwelcome";
+        const input = makeTextInput("customwelcome", {
+            classes: ["customwelcome"],
+        });
 
         input.addEventListener("change", () =>
             Store.save("WelcomeMessage", input.value)
@@ -958,14 +956,15 @@ StackExchange.ready(() => {
 
         welcomeWrap.append(input);
 
-        const actionsWrap = document.createElement("div");
-        actionsWrap.classList.add("float-right");
+        const actionsWrap = el("div", "float-right");
 
         const actions: Node[] = [
             makeButton("force", "force", "welcome-force"),
             makeSeparator(),
             makeButton("cancel", "cancel", "welcome-cancel"),
         ];
+
+        const viewSwitcher = makeViewSwitcher(viewsSel);
 
         popup.addEventListener("click", ({ target }) => {
             const el = <HTMLElement>target;
@@ -978,8 +977,8 @@ StackExchange.ready(() => {
                     input.value ||= Store.load("WelcomeMessage");
                     show(w);
                 },
-                ".welcome-cancel": () =>
-                    switchToView(makeSearchView("search-popup")),
+                ".welcome-cancel": (p) =>
+                    viewSwitcher(makeSearchView(p, "search-popup", postType)),
                 ".welcome-force": () => {
                     Store.save("ShowGreeting", true);
                     updateComments(popup, postType);
@@ -1025,7 +1024,7 @@ StackExchange.ready(() => {
      * @param {PostType} postType parent post type
      * @returns {HTMLElement}
      */
-    const makeImpExpView: ImpExpViewMaker = (popup, id, postType) => {
+    const makeImpExpView: ViewMaker = (popup, id, postType) => {
         if (makeImpExpView.view)
             return updateImpExpComments(makeImpExpView.view);
 
@@ -1033,8 +1032,7 @@ StackExchange.ready(() => {
         view.classList.add("view");
         view.id = id;
 
-        const actionWrap = document.createElement("div");
-        actionWrap.classList.add("actions");
+        const actionWrap = el("div", "actions");
 
         const txtArea = document.createElement("textarea");
 
@@ -1051,8 +1049,10 @@ StackExchange.ready(() => {
             "cancel"
         );
 
+        const viewSwitcher = makeViewSwitcher(viewsSel);
+
         cancelBtn.addEventListener("click", () =>
-            switchToView(makeSearchView("search-popup"))
+            viewSwitcher(makeSearchView(popup, "search-popup", postType))
         );
 
         actionWrap.append(jsonpBtn, makeSeparator(), cancelBtn);
@@ -1127,7 +1127,7 @@ StackExchange.ready(() => {
      * @param {PostType} postType parent post type
      * @returns {HTMLElement}
      */
-    const makeRemoteView: RemoteViewMaker = (popup, id, postType) => {
+    const makeRemoteView: ViewMaker = (popup, id, postType) => {
         const storeKeyJSON = "remote_json";
         const storeKeyJSONauto = "remote_json_auto";
 
@@ -1293,19 +1293,21 @@ StackExchange.ready(() => {
         main.classList.add("main");
         main.id = "main";
 
+        const viewSwitcher = makeViewSwitcher(viewsSel);
+
         popup.addEventListener("click", ({ target }) => {
             const actionMap: Record<
                 string,
                 (popup: HTMLElement, postType: PostType) => void
             > = {
                 ".popup-actions-welcome": (p, t) =>
-                    switchToView(makeWelcomeView(p, "welcome-popup", t)),
+                    viewSwitcher(makeWelcomeView(p, "welcome-popup", t)),
                 ".popup-actions-remote": (p, t) =>
-                    switchToView(makeRemoteView(p, "remote-popup", t)),
+                    viewSwitcher(makeRemoteView(p, "remote-popup", t)),
                 ".popup-actions-impexp": (p, t) =>
-                    switchToView(makeImpExpView(p, "impexp-popup", t)),
-                ".popup-actions-filter": () =>
-                    switchToView(makeSearchView("search-popup")),
+                    viewSwitcher(makeImpExpView(p, "impexp-popup", t)),
+                ".popup-actions-filter": (p) =>
+                    viewSwitcher(makeSearchView(p, "search-popup", postType)),
                 ".popup-actions-reset": (p, t) => {
                     resetComments(commentDefaults);
                     updateComments(p, t);
@@ -1348,13 +1350,16 @@ StackExchange.ready(() => {
 
         const commentViewId = "search-popup";
 
-        const views: HTMLElement[] = [
-            makeSearchView(commentViewId),
-            makeRemoteView(popup, "remote-popup", postType),
-            makeWelcomeView(popup, "welcome-popup", postType),
-            makeImpExpView(popup, "impexp-popup", postType),
-            makeActionsView(popup, "popup-actions"),
-        ];
+        const viewsMap = [
+            ["tabs-popup", makeTabsView],
+            [commentViewId, makeSearchView],
+            ["remote-popup", makeRemoteView],
+            ["welcome-popup", makeWelcomeView],
+            ["impexp-popup", makeImpExpView],
+            ["popup-actions", makeActionsView],
+        ] as const;
+
+        const views = viewsMap.map(([id, maker]) => maker(popup, id, postType));
 
         const hidden = views.slice(1, -1);
         hidden.forEach(hide);
@@ -1364,7 +1369,8 @@ StackExchange.ready(() => {
 
         setupCommentHandlers(popup, commentViewId);
         setupSearchHandlers(popup, ".popup-actions-filter");
-        switchToView(views[0]);
+
+        makeViewSwitcher(viewsSel)(views[0]);
 
         return (makePopup.popup = popup);
     };
@@ -2180,9 +2186,11 @@ StackExchange.ready(() => {
      */
     const setupSearchHandlers = (popup: HTMLElement, filterSel: string) => {
         const sbox = popup.querySelector<HTMLElement>(".searchbox")!;
-        const stext = sbox.querySelector<HTMLInputElement>(".searchfilter")!;
-        const kicker = popup.querySelector(filterSel)!;
+        const stext = sbox.querySelector<HTMLInputElement>(".searchfilter");
+        const kicker = popup.querySelector(filterSel);
         const storageKey = "showFilter";
+
+        if (!stext || !kicker) return debugLogger.log("missing elements");
 
         const showHideFilter = () => {
             const shown = Store.load(storageKey, false);
