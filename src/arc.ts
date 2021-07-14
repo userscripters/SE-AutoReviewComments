@@ -1025,8 +1025,7 @@ StackExchange.ready(() => {
         if (makeImpExpView.view)
             return updateImpExpComments(makeImpExpView.view);
 
-        const view = document.createElement("div");
-        view.classList.add("view");
+        const view = el("div", "view");
         view.id = id;
 
         const actionWrap = el("div", "actions");
@@ -1043,6 +1042,7 @@ StackExchange.ready(() => {
         const cancelBtn = makeButton(
             "cancel",
             "cancel import/export",
+            "s-btn__danger",
             "cancel"
         );
 
@@ -1052,7 +1052,7 @@ StackExchange.ready(() => {
             viewSwitcher(makeSearchView(popup, "search-popup", postType))
         );
 
-        actionWrap.append(jsonpBtn, makeSeparator(), cancelBtn);
+        actionWrap.append(jsonpBtn, cancelBtn);
 
         view.append(txtArea, actionWrap);
 
