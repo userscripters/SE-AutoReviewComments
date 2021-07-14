@@ -538,9 +538,6 @@ StackExchange.ready(() => {
                     background-color:#222;
                     color:#fff
                 }`,
-            `.${arc}.popup .actions,.auto-review-comments.popup .main .actions{
-                    margin:6px
-                }`,
             `.${arc}.popup .main .popup-submit{
                     float:none;
                     margin:0 0 5px 0;
