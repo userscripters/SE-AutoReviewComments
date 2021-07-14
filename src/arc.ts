@@ -1406,7 +1406,7 @@ StackExchange.ready(() => {
         popup.append(close, main);
 
         setupCommentHandlers(popup, commentViewId);
-        setupSearchHandlers(popup, ".popup-actions-filter");
+        setupSearchHandlers(popup);
 
         makeViewSwitcher(viewsSel)(views[0]);
 
@@ -2219,39 +2219,15 @@ StackExchange.ready(() => {
     /**
      * @summary sets up search event handlers
      * @param {HTMLElement} popup wrapper popup
-     * @param {string} filterSel filter button selector
      * @returns {void}
      */
-    const setupSearchHandlers = (popup: HTMLElement, filterSel: string) => {
+    const setupSearchHandlers = (popup: HTMLElement) => {
+        const filterSel = ".searchfilter";
+
         const sbox = popup.querySelector<HTMLElement>(".searchbox")!;
-        const stext = sbox.querySelector<HTMLInputElement>(".searchfilter");
-        const kicker = popup.querySelector(filterSel);
-        const storageKey = "showFilter";
 
-        if (!stext || !kicker) return debugLogger.log("missing elements");
-
-        const showHideFilter = () => {
-            const shown = Store.load(storageKey, false);
-
-            if (shown) {
-                show(sbox);
-                stext.focus();
-            } else {
-                hide(sbox);
-                stext.innerHTML = "";
-                filterOn(popup, "");
-            }
-
-            Store.save(storageKey, shown);
-        };
-
-        showHideFilter();
-
-        kicker.addEventListener("click", () => {
-            Store.toggle(storageKey);
-            showHideFilter();
-            return false;
-        });
+        const stext = sbox.querySelector<HTMLInputElement>(filterSel);
+        if (!stext) return debugLogger.log(`missing filter: ${filterSel}`);
 
         const callback: EventListener = ({ target }) =>
             setTimeout(() => {
