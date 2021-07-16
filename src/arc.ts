@@ -1288,7 +1288,7 @@ StackExchange.ready(() => {
                 },
                 ".remote-jsonp-get": async () => {
                     getJSONPbtn.classList.add("is-loading");
-                    await fetchFromRemote(scheme(jsonpInput.value));
+                    await fetchFromRemote(scheme(jsonpInput.value), true);
                     updateComments(popup, postType);
                     getJSONPbtn.classList.remove("is-loading");
                 },
@@ -2329,18 +2329,15 @@ StackExchange.ready(() => {
     /**
      * @summary loads comments from a remote source
      * @param {string} url remore URL to fetch from
+     * @param {boolean} [isJSONP] JSONP switch
      * @returns {Promise<void>}
      */
-    const fetchFromRemote = async (url: string) => {
-        const isJSONP = /jsonp-data/.test(url);
-
+    const fetchFromRemote = async (url: string, isJSONP = false) => {
         debugLogger.log({ isJSONP });
 
         const fetcher = isJSONP ? getJSONP : getJSON;
 
         const comments: CommentInfo[] = await fetcher(url);
-
-        debugLogger.log({ comments });
 
         Store.save("commentcount", comments.length);
         Store.clear("name-");
@@ -2379,13 +2376,18 @@ StackExchange.ready(() => {
 
         showPopup(popup);
 
-        updateComments(popup, postType);
-
-        //Auto-load from remote if required
+        //Auto-load from JSONP remote if enabled
         if (Store.load("AutoRemote")) {
-            await fetchFromRemote(Store.load("RemoteUrl"));
-            updateComments(popup, postType);
+            debugLogger.log(`autofetching JSONP remote`);
+            await fetchFromRemote(Store.load("RemoteUrl"), true);
         }
+
+        if (Store.load("remote_json_auto")) {
+            debugLogger.log(`autofetching JSON remote`);
+            await fetchFromRemote(Store.load("remote_json"));
+        }
+
+        updateComments(popup, postType);
 
         center(popup);
 
