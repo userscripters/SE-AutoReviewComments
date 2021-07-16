@@ -460,6 +460,9 @@ StackExchange.ready(() => {
                     width:690px;
                     padding:15px 15px 10px;
                 }`,
+            `.${arc}.popup .svg-icon.mute-text a {
+                    color: var(--black-500);
+                }`,
             `.${arc}.popup>div>textarea{
                     width:100%;
                     height:442px;
@@ -735,27 +738,6 @@ StackExchange.ready(() => {
     };
 
     /**
-     * @summary makes a link button
-     * @param {string} url
-     * @param {string} text
-     * @param {string} title
-     * @param {...string} classes
-     * @returns {HTMLAnchorElement}
-     */
-    const makeLinkButton = (
-        url: string,
-        text: string,
-        title: string,
-        ...classes: string[]
-    ) => {
-        const anchor = el("a");
-        anchor.target = "_blank";
-        anchor.href = url;
-        anchor.append(makeButton(text, title, ...classes));
-        return anchor;
-    };
-
-    /**
      * @summary creates the popup close button
      * @param {string} id id to give to the element
      * @returns {HTMLElement}
@@ -769,6 +751,44 @@ StackExchange.ready(() => {
 
         close.append(btn);
         return close;
+    };
+
+    /**
+     * @summary makes an info button icon
+     * @param {string} url info URL
+     * @param {string} title link title
+     * @param {...string} classes classes to apply
+     * @returns {SVGSVGElement}
+     */
+    const makeInfoButton = (
+        url: string,
+        title: string,
+        ...classes: string[]
+    ) => {
+        const NS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(NS, "svg");
+        svg.classList.add("svg-icon", "iconInfo", ...classes);
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("width", "18");
+        svg.setAttribute("height", "18");
+        svg.setAttribute("viewBox", `0 0 18 18`);
+
+        const anchor = document.createElementNS(NS, "a");
+        anchor.setAttribute("href", url);
+        anchor.setAttribute("target", "_blank");
+
+        const ttl = document.createElementNS(NS, "title");
+        ttl.textContent = title;
+
+        const path = document.createElementNS(NS, "path");
+        path.setAttribute(
+            "d",
+            "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z"
+        );
+
+        anchor.append(ttl, path);
+        svg.append(anchor);
+        return svg;
     };
 
     /**
@@ -807,10 +827,16 @@ StackExchange.ready(() => {
     const makeTabsView: ViewMaker = (_popup, id, _postType) => {
         if (makeTabsView.view) return makeTabsView.view;
 
-        const wrap = el("div", "view");
+        const wrap = el(
+            "div",
+            "view",
+            "d-flex",
+            "ai-center",
+            "jc-space-between"
+        );
         wrap.id = id;
 
-        const btnGroup = el("div", "s-btn-group");
+        const btnGroup = el("div", "s-btn-group", "flex--item");
 
         const btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
 
@@ -848,7 +874,14 @@ StackExchange.ready(() => {
             (target as HTMLElement).classList.add("is-selected");
         });
 
-        wrap.append(btnGroup);
+        const info = makeInfoButton(
+            GITHUB_URL,
+            `see info about this popup (v${VERSION})`,
+            "flex--item",
+            "mute-text"
+        );
+
+        wrap.append(btnGroup, info);
 
         return (makeTabsView.view = wrap);
     };
@@ -876,13 +909,6 @@ StackExchange.ready(() => {
         disable(submitBtn);
 
         submitWrap.append(submitBtn);
-
-        const helpBtn = makeLinkButton(
-            GITHUB_URL,
-            "info",
-            `see info about this popup (v${VERSION})`,
-            "popup-actions-help"
-        );
 
         const seeBtn = makeButton(
             "see-through",
@@ -912,7 +938,7 @@ StackExchange.ready(() => {
             "popup-actions-toggledesc"
         );
 
-        const actionsList = [helpBtn, seeBtn, resetBtn, descrBtn];
+        const actionsList = [seeBtn, resetBtn, descrBtn];
 
         actionsWrap.append(...actionsList);
         wrap.append(actionsWrap, submitWrap);
