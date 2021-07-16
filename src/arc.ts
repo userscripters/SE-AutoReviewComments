@@ -27,6 +27,13 @@ type Locator<T extends HTMLElement = HTMLElement> = (where: T) => Placement;
 
 type Actor = (...args: any[]) => any;
 
+type ActionMap = Record<string, (p: HTMLElement, w: HTMLElement) => void>;
+
+type PopupActionMap = Record<
+    string,
+    (popup: HTMLElement, postType: PostType) => void
+>;
+
 type Injector = (
     injected: HTMLElement,
     placed: HTMLElement,
@@ -190,6 +197,21 @@ StackExchange.ready(() => {
      * @returns {HTMLElement}
      */
     const fadeOut = (el: HTMLElement, speed = 200) => fadeTo(el, 0, speed);
+
+    /**
+     * @summary finds and runs a handler from a hashmap
+     * @param {Record<string, (...args: any[]) => any>} hashmap key -> val lookup
+     * @param {(key: string) => boolean} comparator comparator function
+     * @returns {any}
+     */
+    const runFromHashmap = <U extends Record<string, (...args: any[]) => any>>(
+        hashmap: U,
+        comparator: (key: keyof U) => boolean,
+        ...params: Parameters<U[keyof U]>
+    ): ReturnType<U[keyof U]> | void => {
+        const hash = Object.keys(hashmap).find(comparator);
+        return hash && hashmap[hash]?.(...params);
+    };
 
     const storageMap: Record<string, Storage> = {
         GM_setValue: {
@@ -1024,29 +1046,25 @@ StackExchange.ready(() => {
         const viewSwitcher = makeViewSwitcher(viewsSel);
 
         popup.addEventListener("click", ({ target }) => {
-            const el = <HTMLElement>target;
-
-            const actionMap: Record<
-                string,
-                (p: HTMLElement, w: HTMLElement) => void
-            > = {
-                ".popup-actions-welcome": (_p, w) => {
-                    input.value ||= Store.load("WelcomeMessage");
-                    show(w);
+            runFromHashmap<ActionMap>(
+                {
+                    ".popup-actions-welcome": (_p, w) => {
+                        input.value ||= Store.load("WelcomeMessage");
+                        show(w);
+                    },
+                    ".welcome-cancel": (p) =>
+                        viewSwitcher(
+                            makeSearchView(p, "search-popup", postType)
+                        ),
+                    ".welcome-force": () => {
+                        Store.save("ShowGreeting", true);
+                        updateComments(popup, postType);
+                    },
                 },
-                ".welcome-cancel": (p) =>
-                    viewSwitcher(makeSearchView(p, "search-popup", postType)),
-                ".welcome-force": () => {
-                    Store.save("ShowGreeting", true);
-                    updateComments(popup, postType);
-                },
-            };
-
-            const [, action] =
-                Object.entries(actionMap).find(([key]) => el.matches(key)) ||
-                [];
-
-            action?.(popup, wrap);
+                (key) => (target as HTMLElement).matches(key),
+                popup,
+                wrap
+            );
         });
 
         actionsWrap.append(...actions);
@@ -1277,28 +1295,23 @@ StackExchange.ready(() => {
         );
 
         popup.addEventListener("click", ({ target }) => {
-            const el = <HTMLElement>target;
-
-            const actionMap = {
-                ".remote-json-get": async () => {
-                    getJSONbtn.classList.add("is-loading");
-                    await fetchFromRemote(scheme(jsonInput.value));
-                    updateComments(popup, postType);
-                    getJSONbtn.classList.remove("is-loading");
+            runFromHashmap(
+                {
+                    ".remote-json-get": async () => {
+                        getJSONbtn.classList.add("is-loading");
+                        await fetchFromRemote(scheme(jsonInput.value));
+                        updateComments(popup, postType);
+                        getJSONbtn.classList.remove("is-loading");
+                    },
+                    ".remote-jsonp-get": async () => {
+                        getJSONPbtn.classList.add("is-loading");
+                        await fetchFromRemote(scheme(jsonpInput.value), true);
+                        updateComments(popup, postType);
+                        getJSONPbtn.classList.remove("is-loading");
+                    },
                 },
-                ".remote-jsonp-get": async () => {
-                    getJSONPbtn.classList.add("is-loading");
-                    await fetchFromRemote(scheme(jsonpInput.value), true);
-                    updateComments(popup, postType);
-                    getJSONPbtn.classList.remove("is-loading");
-                },
-            };
-
-            const [, action] =
-                Object.entries(actionMap).find(([key]) => el.matches(key)) ||
-                [];
-
-            action?.();
+                (key) => (target as HTMLElement).matches(key)
+            );
         });
 
         inputWrap.append(jsonWrap, jsonpWrap);
@@ -1360,56 +1373,53 @@ StackExchange.ready(() => {
         const viewSwitcher = makeViewSwitcher(viewsSel);
 
         popup.addEventListener("click", ({ target }) => {
-            const actionMap: Record<
-                string,
-                (popup: HTMLElement, postType: PostType) => void
-            > = {
-                ".popup-actions-welcome": (p, t) =>
-                    viewSwitcher(makeWelcomeView(p, "welcome-popup", t)),
-                ".popup-actions-remote": (p, t) =>
-                    viewSwitcher(makeRemoteView(p, "remote-popup", t)),
-                ".popup-actions-impexp": (p, t) =>
-                    viewSwitcher(makeImpExpView(p, "impexp-popup", t)),
-                ".popup-actions-filter": (p) =>
-                    viewSwitcher(makeSearchView(p, "search-popup", postType)),
-                ".popup-actions-reset": (p, t) => {
-                    resetComments(commentDefaults);
-                    updateComments(p, t);
+            runFromHashmap<PopupActionMap>(
+                {
+                    ".popup-actions-welcome": (p, t) =>
+                        viewSwitcher(makeWelcomeView(p, "welcome-popup", t)),
+                    ".popup-actions-remote": (p, t) =>
+                        viewSwitcher(makeRemoteView(p, "remote-popup", t)),
+                    ".popup-actions-impexp": (p, t) =>
+                        viewSwitcher(makeImpExpView(p, "impexp-popup", t)),
+                    ".popup-actions-filter": (p) =>
+                        viewSwitcher(
+                            makeSearchView(p, "search-popup", postType)
+                        ),
+                    ".popup-actions-reset": (p, t) => {
+                        resetComments(commentDefaults);
+                        updateComments(p, t);
+                    },
+
+                    ".popup-actions-toggledesc": (p) => {
+                        const newVisibility = !Store.load("hide-desc");
+                        Store.save("hide-desc", newVisibility);
+                        toggleDescriptionVisibility(p, newVisibility);
+                    },
+
+                    ".popup-submit": (p) => {
+                        const selected = p.querySelector(".action-selected");
+                        const descr = selected?.querySelector(".action-desc");
+
+                        if (!descr || !selected)
+                            return notify(
+                                p,
+                                "Nothing selected",
+                                "please select a comment"
+                            );
+
+                        const op = getOP();
+
+                        debugLogger.log({ op });
+
+                        insertComment(input, descr.innerHTML, op);
+                        fadeOut(p);
+                        hide(p);
+                    },
                 },
-
-                ".popup-actions-toggledesc": (p) => {
-                    const newVisibility = !Store.load("hide-desc");
-                    Store.save("hide-desc", newVisibility);
-                    toggleDescriptionVisibility(p, newVisibility);
-                },
-
-                ".popup-submit": (p) => {
-                    const selected = p.querySelector(".action-selected");
-                    const descr = selected?.querySelector(".action-desc");
-
-                    if (!descr || !selected)
-                        return notify(
-                            p,
-                            "Nothing selected",
-                            "please select a comment"
-                        );
-
-                    const op = getOP();
-
-                    debugLogger.log({ op });
-
-                    insertComment(input, descr.innerHTML, op);
-                    fadeOut(p);
-                    hide(p);
-                },
-            };
-
-            const [, action] =
-                Object.entries(actionMap).find(([selector]) =>
-                    (<HTMLElement>target).matches(selector)
-                ) || [];
-
-            action?.(popup, postType);
+                (sel) => (target as HTMLElement).matches(sel),
+                popup,
+                postType
+            );
         });
 
         const commentViewId = "search-popup";
@@ -2130,7 +2140,7 @@ StackExchange.ready(() => {
         const selectHandler = makeCommentClickHandler(popup);
 
         popup.addEventListener("click", (event) => {
-            debugLogger.log({ currView, viewId, event });
+            debugLogger.log({ currView, viewId });
             if (currView !== viewId) return;
             insertHandler(event);
             selectHandler(event);
