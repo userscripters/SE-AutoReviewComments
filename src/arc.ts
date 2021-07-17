@@ -1153,7 +1153,7 @@ StackExchange.ready(() => {
         });
 
         area.addEventListener("change", async () => {
-            doImport(area.value);
+            importComments(popup, area.value);
             updateComments(popup, postType);
         });
 
@@ -1841,35 +1841,48 @@ StackExchange.ready(() => {
         return lsep;
     };
 
-    //Import complete text into comments
-    function doImport(text: string) {
-        //clear out any existing stuff
+    /**
+     * @summary imports comments given text
+     * @param {HTMLElement} popup parent popup
+     * @param {string} text comment text to parse
+     * @returns {void}
+     */
+    const importComments = (popup: HTMLElement, text: string) => {
         Store.clear("name-");
         Store.clear("desc-");
-        const arr = text.split("\n");
-        let nameIndex = 0;
-        let descIndex = 0;
-        arr.forEach((untrimmed) => {
-            const line = untrimmed.trim();
 
-            //TODO: rework
+        const lines = text.split("\n");
 
-            if (line.indexOf("#") == 0) {
-                var name = line.replace(/^#+/g, "");
-                Store.save("name-" + nameIndex, name);
-                nameIndex++;
-            }
+        const names: string[] = [];
+        const descs: string[] = [];
 
-            if (line.length > 0) {
-                var desc = markdownToHTML(line);
-                Store.save("desc-" + descIndex, tag(desc));
-                descIndex++;
-            }
+        lines.forEach((line) => {
+            const ln = line.trim();
+
+            if (ln.startsWith("#")) return names.push(ln.replace(/^#+/g, ""));
+
+            if (ln) return descs.push(tag(markdownToHTML(ln)));
         });
 
-        //This is de-normalised, but I don't care.
-        Store.save("commentcount", Math.min(nameIndex, descIndex));
-    }
+        const { length: numNames } = names;
+        const { length: numDescs } = descs;
+
+        debugLogger.log({ numNames, numDescs });
+
+        if (numNames !== numDescs)
+            return notify(
+                popup,
+                "Failed to import",
+                "Titles and descriptions do not match"
+            );
+
+        names.forEach((name, idx) => {
+            Store.save(`name-${idx}`, name);
+            Store.save(`desc-${idx}`, descs[idx]);
+        });
+
+        Store.save("commentcount", numNames);
+    };
 
     // From https://stackoverflow.com/a/12034334/259953
     const entityMapToHtml: Record<string, string> = {
