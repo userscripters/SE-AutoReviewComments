@@ -27,8 +27,6 @@ type Locator<T extends HTMLElement = HTMLElement> = (where: T) => Placement;
 
 type Actor = (...args: any[]) => any;
 
-type ActionMap = Record<string, (p: HTMLElement, w: HTMLElement) => void>;
-
 type PopupActionMap = Record<
     string,
     (popup: HTMLElement, postType: PostType) => void
@@ -1028,9 +1026,8 @@ StackExchange.ready(() => {
     const makeWelcomeView: ViewMaker = (popup, id, postType) => {
         if (makeWelcomeView.view) return makeWelcomeView.view;
 
-        const wrap = document.createElement("div");
-        wrap.classList.add("view");
-        wrap.id = id;
+        const view = el("div", "view");
+        view.id = id;
 
         const text = document.createTextNode(
             'Setup the "welcome" message (blank is none):'
@@ -1051,39 +1048,35 @@ StackExchange.ready(() => {
         const actionsWrap = el("div", "float-right");
 
         const actions: Node[] = [
-            makeButton("force", "force", "welcome-force"),
-            makeSeparator(),
-            makeButton("cancel", "cancel", "welcome-cancel"),
+            makeButton("force", "force", "welcome-force", "s-btn__outlined"),
+            makeButton("cancel", "cancel", "welcome-cancel", "s-btn__danger"),
         ];
 
         const viewSwitcher = makeViewSwitcher(viewsSel);
 
         popup.addEventListener("click", ({ target }) => {
-            runFromHashmap<ActionMap>(
+            runFromHashmap<PopupActionMap>(
                 {
-                    ".popup-actions-welcome": (_p, w) => {
+                    ".popup-actions-welcome": () => {
                         input.value ||= Store.load("WelcomeMessage");
-                        show(w);
                     },
-                    ".welcome-cancel": (p) =>
-                        viewSwitcher(
-                            makeSearchView(p, "search-popup", postType)
-                        ),
-                    ".welcome-force": () => {
+                    ".welcome-cancel": (p, t) =>
+                        viewSwitcher(makeSearchView(p, "search-popup", t)),
+                    ".welcome-force": (p, t) => {
                         Store.save("ShowGreeting", true);
-                        updateComments(popup, postType);
+                        updateComments(p, t);
                     },
                 },
                 (key) => (target as HTMLElement).matches(key),
                 popup,
-                wrap
+                Store.load("post_type", postType)
             );
         });
 
         actionsWrap.append(...actions);
 
-        wrap.append(text, welcomeWrap, actionsWrap);
-        return (makeWelcomeView.view = wrap);
+        view.append(text, welcomeWrap, actionsWrap);
+        return (makeWelcomeView.view = view);
     };
 
     /**
