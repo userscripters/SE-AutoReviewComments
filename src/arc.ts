@@ -871,7 +871,7 @@ StackExchange.ready(() => {
             ),
             makeButton(
                 "import/export",
-                "use this to import/export all comments",
+                "import/export all comments",
                 ...btnGroupClasses,
                 "popup-actions-impexp"
             ),
@@ -886,6 +886,12 @@ StackExchange.ready(() => {
                 "configure welcome",
                 ...btnGroupClasses,
                 "popup-actions-welcome"
+            ),
+            makeButton(
+                "settings",
+                "configure ARC",
+                ...btnGroupClasses,
+                "popup-actions-settings"
             ),
         ];
 
@@ -906,6 +912,46 @@ StackExchange.ready(() => {
         wrap.append(btnGroup, info);
 
         return (makeTabsView.view = wrap);
+    };
+
+    /**
+     * @summary makes popup settings view
+     * @param {HTMLElement} popup wrapper popup
+     * @param {string} id actions wrapper id
+     * @param {PostType} postType parent post type
+     * @returns {HTMLElement}
+     */
+    const makeSettingsView: ViewMaker = (popup, id, postType) => {
+        if (makeSettingsView.view) return makeSettingsView.view;
+
+        const view = el("div", "view");
+        view.id = id;
+
+        const resetBtn = makeButton(
+            "reset",
+            "reset any custom comments",
+            "popup-actions-reset",
+            "s-btn__filled",
+            "s-btn__danger"
+        );
+
+        view.append(resetBtn);
+
+        popup.addEventListener("click", ({ target }) => {
+            runFromHashmap<PopupActionMap>(
+                {
+                    ".popup-actions-reset": (p, t) => {
+                        resetComments(commentDefaults);
+                        updateComments(p, t);
+                    },
+                },
+                (key) => (target as HTMLElement).matches(key),
+                popup,
+                Store.load("post_type", postType)
+            );
+        });
+
+        return (makeSettingsView.view = view);
     };
 
     /**
@@ -948,19 +994,13 @@ StackExchange.ready(() => {
             fadeTo(seeBtn.closest(".main")!, 1);
         });
 
-        const resetBtn = makeButton(
-            "reset",
-            "reset any custom comments",
-            "popup-actions-reset"
-        );
-
         const descrBtn = makeButton(
             "show/hide desc",
             "use this to hide/show all comments",
             "popup-actions-toggledesc"
         );
 
-        const actionsList = [seeBtn, resetBtn, descrBtn];
+        const actionsList = [seeBtn, descrBtn];
 
         actionsWrap.append(...actionsList);
         wrap.append(actionsWrap, submitWrap);
@@ -1351,7 +1391,7 @@ StackExchange.ready(() => {
      * @summary creates the popup markup
      * @description memoizable popup maker
      * @param {HTMLInputElement} input target comment input
-     * @param {PostType} postType
+     * @param {PostType} postType initial post type
      * @returns {HTMLElement}
      */
     const makePopup: WrapperPopupMaker = (input, postType) => {
@@ -1379,17 +1419,12 @@ StackExchange.ready(() => {
                         viewSwitcher(makeWelcomeView(p, "welcome-popup", t)),
                     ".popup-actions-remote": (p, t) =>
                         viewSwitcher(makeRemoteView(p, "remote-popup", t)),
+                    ".popup-actions-settings": (p, t) =>
+                        viewSwitcher(makeSettingsView(p, "settings-popup", t)),
                     ".popup-actions-impexp": (p, t) =>
                         viewSwitcher(makeImpExpView(p, "impexp-popup", t)),
-                    ".popup-actions-filter": (p) =>
-                        viewSwitcher(
-                            makeSearchView(p, "search-popup", postType)
-                        ),
-                    ".popup-actions-reset": (p, t) => {
-                        resetComments(commentDefaults);
-                        updateComments(p, t);
-                    },
-
+                    ".popup-actions-filter": (p, t) =>
+                        viewSwitcher(makeSearchView(p, "search-popup", t)),
                     ".popup-actions-toggledesc": (p) => {
                         const newVisibility = !Store.load("hide-desc");
                         Store.save("hide-desc", newVisibility);
@@ -1418,7 +1453,7 @@ StackExchange.ready(() => {
                 },
                 (sel) => (target as HTMLElement).matches(sel),
                 popup,
-                postType
+                Store.load("post_type", "question")
             );
         });
 
@@ -1430,10 +1465,16 @@ StackExchange.ready(() => {
             ["remote-popup", makeRemoteView],
             ["welcome-popup", makeWelcomeView],
             ["impexp-popup", makeImpExpView],
+            ["settings-popup", makeSettingsView],
             ["popup-actions", makeActionsView],
         ] as const;
 
-        const views = viewsMap.map(([id, maker]) => maker(popup, id, postType));
+        const initPostType = Store.load("post_type", postType);
+        debugLogger.log({ initPostType, postType });
+
+        const views = viewsMap.map(([id, maker]) =>
+            maker(popup, id, initPostType)
+        );
 
         const hidden = views.slice(1, -1);
         hidden.forEach(hide);
@@ -2380,6 +2421,8 @@ StackExchange.ready(() => {
         target: HTMLInputElement,
         postType: PostType
     ) => {
+        Store.save("post_type", postType);
+
         const popup = makePopup(target, postType);
 
         if (!popup.isConnected) document.body.append(popup);
