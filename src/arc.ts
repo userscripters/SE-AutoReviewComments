@@ -563,10 +563,6 @@ StackExchange.ready(() => {
                     background-color:#222;
                     color:#fff
                 }`,
-            `.${arc}.popup .main .popup-submit{
-                    float:none;
-                    margin:0 0 5px 0;
-                }`,
             `.${arc}.announcement strong:first-child {
                     display: block;
                 }`,
@@ -814,20 +810,6 @@ StackExchange.ready(() => {
     };
 
     /**
-     * @summary makes comment submit button
-     * @param {string} id
-     * @returns {HTMLElement}
-     */
-    const makeSubmitButton = (id: string) => {
-        const submitBtn = document.createElement("input");
-        submitBtn.classList.add("popup-submit");
-        submitBtn.type = "button";
-        submitBtn.value = "Insert";
-        submitBtn.id = id;
-        return submitBtn;
-    };
-
-    /**
      * @summary hides the rest of the views and shows the current one
      * @param {string} viewsSel selector for views
      * @returns {(view:HTMLElement) => HTMLElement}
@@ -967,16 +949,7 @@ StackExchange.ready(() => {
         wrap.classList.add("view");
         wrap.id = id;
 
-        const actionsWrap = document.createElement("div");
-        actionsWrap.classList.add("float-left", "actions");
-
-        const submitWrap = document.createElement("div");
-        submitWrap.classList.add("float-right");
-
-        const submitBtn = makeSubmitButton(`${Store.prefix}-submit`);
-        disable(submitBtn);
-
-        submitWrap.append(submitBtn);
+        const actionsWrap = el("div", "actipns");
 
         const seeBtn = makeButton(
             "see-through",
@@ -1003,7 +976,7 @@ StackExchange.ready(() => {
         const actionsList = [seeBtn, descrBtn];
 
         actionsWrap.append(...actionsList);
-        wrap.append(actionsWrap, submitWrap);
+        wrap.append(actionsWrap);
         return (makeActionsView.view = wrap);
     };
 
@@ -1431,7 +1404,7 @@ StackExchange.ready(() => {
                         toggleDescriptionVisibility(p, newVisibility);
                     },
 
-                    ".popup-submit": (p) => {
+                    ".quick-insert": (p) => {
                         const selected = p.querySelector(".action-selected");
                         const descr = selected?.querySelector(".action-desc");
 
@@ -1969,28 +1942,6 @@ StackExchange.ready(() => {
             .replace(reguid, "/$MYUSERID$)");
     };
 
-    type MaybeBtn = string | HTMLButtonElement | HTMLInputElement;
-
-    /**
-     * @summary disables an element
-     * @param {MaybeBtn} elOrQuery
-     */
-    const disable = (elOrQuery: MaybeBtn) =>
-        ((typeof elOrQuery === "string"
-            ? document.querySelector<HTMLButtonElement>(elOrQuery)!
-            : elOrQuery
-        ).disabled = true);
-
-    /**
-     * @summary enables an element
-     * @param {MaybeBtn} elOrQuery
-     */
-    const enable = (elOrQuery: MaybeBtn) =>
-        ((typeof elOrQuery === "string"
-            ? document.querySelector<HTMLButtonElement>(elOrQuery)!
-            : elOrQuery
-        ).disabled = false);
-
     /**
      * @summary Save textarea contents, replace element html with new edited content
      * @param {string} id
@@ -2016,7 +1967,6 @@ StackExchange.ready(() => {
         empty(commentElem);
         commentElem.innerHTML = value;
         commentElem.closest("li")!.querySelector("input")!.disabled = false;
-        enable(`#${Store.prefix}-submit`);
         dataset.mode = "insert";
     };
 
@@ -2065,9 +2015,6 @@ StackExchange.ready(() => {
 
         // Disable quick-insert while editing.
         popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(hide);
-
-        // Disable insert while editing.
-        disable(`#${Store.prefix}-submit`);
 
         // save/cancel links to add to textarea
         const actions = document.createElement("div");
@@ -2147,7 +2094,6 @@ StackExchange.ready(() => {
             const descr = action.querySelector<HTMLElement>(".action-desc")!;
 
             show(descr);
-            enable(`#${Store.prefix}-submit`);
         };
 
     /**
@@ -2169,10 +2115,7 @@ StackExchange.ready(() => {
                 return notify(popup, "Problem", "something went wrong");
 
             action.classList.add("action-selected");
-
             radio.checked = true;
-
-            document.getElementById(`${Store.prefix}-submit`)?.click();
         };
 
     /**
@@ -2198,12 +2141,6 @@ StackExchange.ready(() => {
             if (currView !== viewId) return;
             insertHandler(event);
             selectHandler(event);
-        });
-
-        popup.addEventListener("keyup", (event) => {
-            if (event.code !== "Enter") return;
-            event.preventDefault();
-            document.getElementById(`${Store.prefix}-submit`)?.click();
         });
     };
 
