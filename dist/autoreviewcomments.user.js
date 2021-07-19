@@ -90,16 +90,8 @@ StackExchange.ready(function () {
         Object.assign(style, update);
         return element;
     };
-    var hide = function (element) {
-        var style = element.style;
-        style.display = "none";
-        return element;
-    };
-    var show = function (element) {
-        var style = element.style;
-        style.display = "";
-        return element;
-    };
+    var hide = function (element) { return element.classList.add("d-none"); };
+    var show = function (element) { return element.classList.remove("d-none"); };
     var empty = function (node) {
         while (node.firstChild)
             node.firstChild.remove();
@@ -124,6 +116,16 @@ StackExchange.ready(function () {
     var fadeOut = function (el, speed) {
         if (speed === void 0) { speed = 200; }
         return fadeTo(el, 0, speed);
+    };
+    var pluralise = function (count) { return count === 1 ? "" : "s"; };
+    var runFromHashmap = function (hashmap, comparator) {
+        var _a;
+        var params = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            params[_i - 2] = arguments[_i];
+        }
+        var hash = Object.keys(hashmap).find(comparator);
+        return hash && ((_a = hashmap[hash]) === null || _a === void 0 ? void 0 : _a.call.apply(_a, __spreadArray([hashmap], __read(params))));
     };
     var storageMap = {
         GM_setValue: {
@@ -222,7 +224,7 @@ StackExchange.ready(function () {
     });
     var allTgtMatcher = new RegExp("\\[(E?[AQ]|C)(?:,(E?[AQ]|C))*\\]");
     var userLinkSel = ".post-signature .user-details[itemprop=author] a";
-    var viewsSel = ".main .view:not(:last-child)";
+    var viewsSel = ".main .view:not(:first-child)";
     var Target;
     (function (Target) {
         Target["Closure"] = "C";
@@ -288,22 +290,6 @@ StackExchange.ready(function () {
             description: "The tags you used are not appropriate for the question. Please review " + htmllink("/help/tagging", "What are tags, and how should I use them?"),
         },
     ];
-    var weekday_name = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-    ];
-    var minute = 60;
-    var hour = 3600;
-    var day = 86400;
-    var sixdays = 518400;
-    var week = 604800;
-    var month = 2592000;
-    var year = 31536000;
     if (!Store.load("WelcomeMessage"))
         Store.save("WelcomeMessage", "Welcome to " + sitename + "! ");
     var addStyles = function () {
@@ -315,7 +301,7 @@ StackExchange.ready(function () {
         var arc = "auto-review-comments";
         [
             "." + arc + ".popup{\n                    position:absolute;\n                    display:block;\n                    width:690px;\n                    padding:15px 15px 10px;\n                }",
-            "." + arc + ".popup .throbber{\n                    display:none\n                }",
+            "." + arc + ".popup .svg-icon.mute-text a {\n                    color: var(--black-500);\n                }",
             "." + arc + ".popup>div>textarea{\n                    width:100%;\n                    height:442px;\n                }",
             "." + arc + ".popup .view textarea {\n                    resize: vertical;\n                }",
             "." + arc + ".popup .main{\n                    overflow:hidden\n                }",
@@ -332,8 +318,6 @@ StackExchange.ready(function () {
             "." + arc + ".popup .main .action-list li label .quick-insert{\n                    display:none;\n                    position:absolute;\n                    top:0;\n                    right:0;\n                    height:100%;\n                    margin:0;font-size:300%;\n                    color:transparent;\n                    border:0;\n                    transition:.3s;\n                    text-shadow:0 0 1px #fff;\n                    cursor:pointer;\n                    background-color:rgba(0,0,0,0.1);\n                    background:rgba(0,0,0,0.1);\n                    box-shadow:none;\n                    -moz-box-shadow:none;\n                    -webkit-box-shadow:none;\n                }",
             "." + arc + ".popup .main .action-list li:hover label .quick-insert{\n                    display:block\n                }",
             "." + arc + ".popup .main .action-list li label .quick-insert:hover{\n                    background-color:#222;\n                    color:#fff\n                }",
-            "." + arc + ".popup .actions,.auto-review-comments.popup .main .actions{\n                    margin:6px\n                }",
-            "." + arc + ".popup .main .popup-submit{\n                    float:none;\n                    margin:0 0 5px 0;\n                }",
             "." + arc + ".announcement strong:first-child {\n                    display: block;\n                }",
             "." + arc + ".announcement{\n                    padding:7px;\n                    margin-bottom:10px;\n                    background:orange;\n                    font-size:15px;\n                }",
             "." + arc + ".announcement .notify-close{\n                    display:block;\n                    float:right;\n                    margin:0 4px;\n                    padding:0 4px;\n                    border:2px solid black;\n                    cursor:pointer;\n                    line-height:17px;\n                }",
@@ -361,27 +345,86 @@ StackExchange.ready(function () {
         input.checked = checked;
         return input;
     };
-    var makeButton = function (text, title) {
+    var el = function (tag) {
         var _a;
+        var classes = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            classes[_i - 1] = arguments[_i];
+        }
+        var el = document.createElement(tag);
+        (_a = el.classList).add.apply(_a, __spreadArray([], __read(classes)));
+        return el;
+    };
+    var makeStacksTextArea = function (id, _a) {
+        var _b = _a.label, label = _b === void 0 ? "" : _b, _c = _a.value, value = _c === void 0 ? "" : _c;
+        var wrap = el("div", "d-flex", "fd-column", "gs4", "gsy");
+        if (label) {
+            var lbl = el("label", "flex--item", "s-label");
+            lbl.htmlFor = id;
+            lbl.textContent = label;
+            wrap.append(lbl);
+        }
+        var area = el("textarea", "flex--item", "s-textarea");
+        area.id = area.name = id;
+        area.value = value;
+        wrap.append(area);
+        return [wrap, area];
+    };
+    var makeStacksURLInput = function (id, schema, label, value) {
+        var wrap = el("div", "d-flex", "gs4", "gsy", "fd-column");
+        var lbl = el("label", "flex--item", "s-label");
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+        var iwrap = el("div", "d-flex");
+        var ischema = el("div", "flex--item", "s-input-fill", "order-first");
+        ischema.textContent = schema;
+        var iinput = el("div", "d-flex", "fl-grow1", "ps-relative");
+        var input = makeTextInput(id, {
+            value: value,
+            classes: ["flex--item", "s-input", "blr0"],
+        });
+        iinput.append(input);
+        iwrap.append(ischema, iinput);
+        wrap.append(lbl, iwrap);
+        return [wrap, iwrap, iinput, input];
+    };
+    var makeStacksCheckbox = function (id, label, state) {
+        if (state === void 0) { state = false; }
+        var fset = el("fieldset", "d-flex", "gs8");
+        var iwrap = el("div", "flex--item");
+        var lbl = el("label", "flex--item", "s-label", "fw-normal");
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+        var input = makeCheckbox(id, {
+            checked: state,
+            classes: ["s-checkbox"],
+        });
+        iwrap.append(input);
+        fset.append(iwrap, lbl);
+        return [fset, input];
+    };
+    var makeStacksToggle = function (id, label, state) {
+        if (state === void 0) { state = false; }
+        var wrap = el("div", "d-flex", "ai-center", "gs8");
+        var lbl = el("label", "flex--item", "s-label");
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+        var iwrap = el("div", "flex--item", "s-toggle-switch");
+        var input = makeCheckbox(id, { checked: state });
+        var lever = el("div", "s-toggle-switch--indicator");
+        iwrap.append(input, lever);
+        wrap.append(lbl, iwrap);
+        return [wrap, input];
+    };
+    var makeButton = function (text, title) {
         var classes = [];
         for (var _i = 2; _i < arguments.length; _i++) {
             classes[_i - 2] = arguments[_i];
         }
-        var cancelBtn = document.createElement("a");
-        (_a = cancelBtn.classList).add.apply(_a, __spreadArray([], __read(classes)));
-        cancelBtn.innerHTML = text;
-        cancelBtn.title = title;
-        return cancelBtn;
-    };
-    var makeLinkButton = function (url, text, title) {
-        var classes = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            classes[_i - 3] = arguments[_i];
-        }
-        var btn = makeButton.apply(void 0, __spreadArray([text, title], __read(classes)));
-        btn.href = url;
-        btn.target = "_blank";
-        return btn;
+        var button = el.apply(void 0, __spreadArray(["button", "s-btn"], __read(classes)));
+        button.innerHTML = text;
+        button.title = title;
+        return button;
     };
     var makeCloseBtn = function (id) {
         var close = document.createElement("div");
@@ -391,44 +434,101 @@ StackExchange.ready(function () {
         close.append(btn);
         return close;
     };
-    var makeImage = function (id, src) {
+    var makeInfoButton = function (url, title) {
         var _a;
         var classes = [];
         for (var _i = 2; _i < arguments.length; _i++) {
             classes[_i - 2] = arguments[_i];
         }
-        var img = document.createElement("img");
-        (_a = img.classList).add.apply(_a, __spreadArray([], __read(classes)));
-        img.src = src;
-        img.id = id;
-        return img;
+        var NS = "http://www.w3.org/2000/svg";
+        var svg = document.createElementNS(NS, "svg");
+        (_a = svg.classList).add.apply(_a, __spreadArray(["svg-icon", "iconInfo"], __read(classes)));
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("width", "18");
+        svg.setAttribute("height", "18");
+        svg.setAttribute("viewBox", "0 0 18 18");
+        var anchor = document.createElementNS(NS, "a");
+        anchor.setAttribute("href", url);
+        anchor.setAttribute("target", "_blank");
+        var ttl = document.createElementNS(NS, "title");
+        ttl.textContent = title;
+        var path = document.createElementNS(NS, "path");
+        path.setAttribute("d", "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z");
+        anchor.append(ttl, path);
+        svg.append(anchor);
+        return svg;
     };
-    var makeSubmitButton = function (id) {
-        var submitBtn = document.createElement("input");
-        submitBtn.classList.add("popup-submit");
-        submitBtn.type = "button";
-        submitBtn.value = "Insert";
-        submitBtn.id = id;
-        return submitBtn;
-    };
-    var switchToView = function (view) {
+    var makeViewSwitcher = function (viewsSel) { return function (view) {
         document.querySelectorAll(viewsSel).forEach(hide);
         show(view);
         Store.save("CurrentView", view.id);
         return view;
+    }; };
+    var makeTabsView = function (_popup, id, _postType) {
+        if (makeTabsView.view)
+            return makeTabsView.view;
+        var wrap = el("div", "view", "d-flex", "ai-center", "jc-space-between");
+        wrap.id = id;
+        var btnGroup = el("div", "s-btn-group", "flex--item");
+        var btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
+        var buttons = [
+            makeButton.apply(void 0, __spreadArray(__spreadArray(["filter",
+                "filter"], __read(btnGroupClasses)), ["popup-actions-filter"])),
+            makeButton.apply(void 0, __spreadArray(__spreadArray(["import/export",
+                "import/export all comments"], __read(btnGroupClasses)), ["popup-actions-impexp"])),
+            makeButton.apply(void 0, __spreadArray(__spreadArray(["remote",
+                "setup remote source"], __read(btnGroupClasses)), ["popup-actions-remote"])),
+            makeButton.apply(void 0, __spreadArray(__spreadArray(["welcome",
+                "configure welcome"], __read(btnGroupClasses)), ["popup-actions-welcome"])),
+            makeButton.apply(void 0, __spreadArray(__spreadArray(["settings",
+                "configure ARC"], __read(btnGroupClasses)), ["popup-actions-settings"])),
+        ];
+        btnGroup.append.apply(btnGroup, __spreadArray([], __read(buttons)));
+        btnGroup.addEventListener("click", function (_a) {
+            var target = _a.target;
+            buttons.forEach(function (_a) {
+                var classList = _a.classList;
+                return classList.remove("is-selected");
+            });
+            target.classList.add("is-selected");
+        });
+        var info = makeInfoButton(GITHUB_URL, "see info about this popup (v" + VERSION + ")", "flex--item", "mute-text");
+        wrap.append(btnGroup, info);
+        return (makeTabsView.view = wrap);
+    };
+    var makeSettingsView = function (popup, id, postType) {
+        if (makeSettingsView.view)
+            return makeSettingsView.view;
+        var view = el("div", "view", "d-flex", "fd-column", "gs16");
+        view.id = id;
+        var generalWrap = el("div", "flex--item");
+        var dangerWrap = el("div", "flex--item");
+        var _a = __read(makeStacksToggle("toggleDescr", "hide comment descriptions", Store.load("hide-desc", false)), 1), descrToggle = _a[0];
+        var resetBtn = makeButton("reset", "reset any custom comments", "popup-actions-reset", "s-btn__filled", "s-btn__danger");
+        generalWrap.append(descrToggle);
+        dangerWrap.append(resetBtn);
+        view.append(generalWrap, dangerWrap);
+        popup.addEventListener("click", function (_a) {
+            var target = _a.target;
+            runFromHashmap({
+                ".popup-actions-reset": function (p, t) {
+                    resetComments(commentDefaults);
+                    updateComments(p, t);
+                },
+                "#toggleDescr": function (p) {
+                    return toggleDescriptionVisibility(p, Store.toggle("hide-desc"));
+                },
+            }, function (key) { return target.matches(key); }, popup, Store.load("post_type", postType));
+        });
+        return (makeSettingsView.view = view);
     };
     var makeActionsView = function (popup, id) {
+        if (makeActionsView.view)
+            return makeActionsView.view;
         var wrap = document.createElement("div");
         wrap.classList.add("view");
         wrap.id = id;
-        var actionsWrap = document.createElement("div");
-        actionsWrap.classList.add("float-left", "actions");
-        var submitWrap = document.createElement("div");
-        submitWrap.classList.add("float-right");
-        var submitBtn = makeSubmitButton(Store.prefix + "-submit");
-        disable(submitBtn);
-        submitWrap.append(submitBtn);
-        var helpBtn = makeLinkButton(GITHUB_URL, "info", "see info about this popup (v" + VERSION + ")", "popup-actions-help");
+        var actionsWrap = el("div", "actipns");
         var seeBtn = makeButton("see-through", "see through", "popup-actions-see");
         seeBtn.addEventListener("mouseenter", function () {
             fadeTo(popup, 0.4);
@@ -438,37 +538,12 @@ StackExchange.ready(function () {
             fadeTo(popup, 1.0);
             fadeTo(seeBtn.closest(".main"), 1);
         });
-        var filterBtn = makeButton("filter", "filter", "popup-actions-filter");
-        var resetBtn = makeButton("reset", "reset any custom comments", "popup-actions-reset");
-        var importBtn = makeButton("import/export", "use this to import/export all comments", "popup-actions-impexp");
-        var descrBtn = makeButton("show/hide desc", "use this to hide/show all comments", "popup-actions-toggledesc");
-        var remoteBtn = makeButton("remote", "setup remote source", "popup-actions-remote");
-        var dotsImg = makeImage("throbber2", "https://sstatic.net/img/progress-dots.gif", "throbber");
-        var welcomeBtn = makeButton("welcome", "configure welcome", "popup-actions-welcome");
-        var sep = makeSeparator();
-        var actionsList = [
-            helpBtn,
-            sep.cloneNode(),
-            seeBtn,
-            sep.cloneNode(),
-            filterBtn,
-            sep.cloneNode(),
-            resetBtn,
-            sep.cloneNode(),
-            importBtn,
-            sep.cloneNode(),
-            descrBtn,
-            sep.cloneNode(),
-            remoteBtn,
-            dotsImg,
-            sep.cloneNode(),
-            welcomeBtn,
-        ];
+        var actionsList = [seeBtn];
         actionsWrap.append.apply(actionsWrap, __spreadArray([], __read(actionsList)));
-        wrap.append(actionsWrap, submitWrap);
-        return wrap;
+        wrap.append(actionsWrap);
+        return (makeActionsView.view = wrap);
     };
-    var makeSearchView = function (id) {
+    var makeSearchView = function (_popup, id) {
         if (makeSearchView.view)
             return makeSearchView.view;
         var wrap = document.createElement("div");
@@ -495,52 +570,41 @@ StackExchange.ready(function () {
     var makeWelcomeView = function (popup, id, postType) {
         if (makeWelcomeView.view)
             return makeWelcomeView.view;
-        var wrap = document.createElement("div");
-        wrap.classList.add("view");
-        wrap.id = id;
+        var view = el("div", "view");
+        view.id = id;
         var text = document.createTextNode('Setup the "welcome" message (blank is none):');
         var welcomeWrap = document.createElement("div");
-        var input = document.createElement("input");
-        input.classList.add("customwelcome");
-        input.type = "text";
-        input.id = "customwelcome";
+        var input = makeTextInput("customwelcome", {
+            classes: ["customwelcome"],
+        });
         input.addEventListener("change", function () {
             return Store.save("WelcomeMessage", input.value);
         });
         welcomeWrap.append(input);
-        var actionsWrap = document.createElement("div");
-        actionsWrap.classList.add("float-right");
+        var actionsWrap = el("div", "float-right");
         var actions = [
-            makeButton("force", "force", "welcome-force"),
-            makeSeparator(),
-            makeButton("cancel", "cancel", "welcome-cancel"),
+            makeButton("force", "force", "welcome-force", "s-btn__outlined"),
+            makeButton("cancel", "cancel", "welcome-cancel", "s-btn__danger"),
         ];
+        var viewSwitcher = makeViewSwitcher(viewsSel);
         popup.addEventListener("click", function (_a) {
             var target = _a.target;
-            var el = target;
-            var actionMap = {
-                ".popup-actions-welcome": function (_p, w) {
+            runFromHashmap({
+                ".popup-actions-welcome": function () {
                     input.value || (input.value = Store.load("WelcomeMessage"));
-                    show(w);
                 },
-                ".welcome-cancel": function () {
-                    return switchToView(makeSearchView("search-popup"));
+                ".welcome-cancel": function (p, t) {
+                    return viewSwitcher(makeSearchView(p, "search-popup", t));
                 },
-                ".welcome-force": function () {
+                ".welcome-force": function (p, t) {
                     Store.save("ShowGreeting", true);
-                    updateComments(popup, postType);
+                    updateComments(p, t);
                 },
-            };
-            var _b = __read(Object.entries(actionMap).find(function (_a) {
-                var _b = __read(_a, 1), key = _b[0];
-                return el.matches(key);
-            }) ||
-                [], 2), action = _b[1];
-            action && action(popup, wrap);
+            }, function (key) { return target.matches(key); }, popup, Store.load("post_type", postType));
         });
         actionsWrap.append.apply(actionsWrap, __spreadArray([], __read(actions)));
-        wrap.append(text, welcomeWrap, actionsWrap);
-        return (makeWelcomeView.view = wrap);
+        view.append(text, welcomeWrap, actionsWrap);
+        return (makeWelcomeView.view = view);
     };
     var updateImpExpComments = function (view) {
         var area = view.querySelector("textarea");
@@ -558,26 +622,27 @@ StackExchange.ready(function () {
     var makeImpExpView = function (popup, id, postType) {
         if (makeImpExpView.view)
             return updateImpExpComments(makeImpExpView.view);
-        var view = document.createElement("div");
-        view.classList.add("view");
+        var view = el("div", "view");
         view.id = id;
-        var actionWrap = document.createElement("div");
-        actionWrap.classList.add("actions");
-        var txtArea = document.createElement("textarea");
-        txtArea.addEventListener("change", function () { return __awaiter(void 0, void 0, void 0, function () {
+        var actionWrap = el("div", "actions");
+        var _a = __read(makeStacksTextArea("impexp", {
+            label: "Comment source",
+        }), 2), areaWrap = _a[0], area = _a[1];
+        area.addEventListener("change", function () { return __awaiter(void 0, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                doImport(txtArea.value);
+                importComments(popup, area.value);
                 updateComments(popup, postType);
                 return [2];
             });
         }); });
-        var jsonpBtn = makeButton("JSONP", "JSONP", "jsonp");
-        var cancelBtn = makeButton("cancel", "cancel import/export", "cancel");
+        var jsonpBtn = makeButton("JSONP", "JSONP", "s-btn__outlined", "jsonp");
+        var cancelBtn = makeButton("cancel", "cancel import/export", "s-btn__danger", "cancel");
+        var viewSwitcher = makeViewSwitcher(viewsSel);
         cancelBtn.addEventListener("click", function () {
-            return switchToView(makeSearchView("search-popup"));
+            return viewSwitcher(makeSearchView(popup, "search-popup", postType));
         });
-        actionWrap.append(jsonpBtn, makeSeparator(), cancelBtn);
-        view.append(txtArea, actionWrap);
+        actionWrap.append(jsonpBtn, cancelBtn);
+        view.append(areaWrap, actionWrap);
         var cbk = "callback";
         jsonpBtn.addEventListener("click", function () {
             var _a;
@@ -586,87 +651,106 @@ StackExchange.ready(function () {
             var content = loaded
                 .map(function (comment) { return JSON.stringify(comment); })
                 .join(",\n");
-            txtArea.value = cbk + "([\n" + content + "\n])";
+            area.value = cbk + "([\n" + content + "\n])";
             (_a = view.querySelector(".actions")) === null || _a === void 0 ? void 0 : _a.remove();
         });
         return (makeImpExpView.view = updateImpExpComments(view));
     };
-    var updateRemoteURL = function (key) {
-        var remoteInput = document.getElementById("remoteurl");
-        if (!remoteInput)
+    var scheme = function (url) {
+        return /^https?:\/\//.test(url) ? url : "https://" + url;
+    };
+    var unscheme = function (url) { return url.replace(/^https?:\/\//, ""); };
+    var updateRemoteURL = function (key, inputId) {
+        var input = document.getElementById(inputId);
+        if (!input)
             return false;
-        remoteInput.value = Store.load(key);
+        input.value = unscheme(Store.load(key));
         return true;
     };
+    var makeOnRemoteChange = function (storeKey, input) {
+        return function () {
+            var value = input.value;
+            Store.save(storeKey, scheme(unscheme(value)));
+            input.value = unscheme(value);
+        };
+    };
     var makeRemoteView = function (popup, id, postType) {
-        var storeKeyRemote = "RemoteUrl";
-        var storeKeyAuto = "AutoRemote";
+        var storeKeyJSON = "remote_json";
+        var storeKeyJSONauto = "remote_json_auto";
+        var storeKeyJSONP = "RemoteUrl";
+        var storeKeyJSONPauto = "AutoRemote";
         if (makeRemoteView.view) {
             var view = makeRemoteView.view;
-            updateRemoteURL(storeKeyRemote);
+            updateRemoteURL(storeKeyJSON, storeKeyJSON);
+            updateRemoteURL(storeKeyJSONP, storeKeyJSONP);
             return view;
         }
-        var wrap = document.createElement("div");
-        wrap.classList.add("view");
+        var wrap = el("div", "view");
         wrap.id = id;
-        var text = document.createTextNode("JSONP Remote source of comments");
-        var remoteInput = makeTextInput("remoteurl", {
-            classes: ["remoteurl"],
-            value: Store.load(storeKeyRemote),
+        var initialScheme = "https://";
+        var initialURL = unscheme(Store.load(storeKeyJSONP));
+        var inputWrap = el("div", "d-flex", "fd-column", "gs8");
+        var _a = __read(makeStacksURLInput(storeKeyJSON, initialScheme, "JSON source", initialURL), 4), jsonWrap = _a[0], jsonIWrap = _a[2], jsonInput = _a[3];
+        var _b = __read(makeStacksURLInput(storeKeyJSONP, initialScheme, "JSONP source", initialURL), 4), jsonpWrap = _b[0], jsonpIWrap = _b[2], jsonpInput = _b[3];
+        jsonInput.addEventListener("change", makeOnRemoteChange(storeKeyJSON, jsonInput));
+        jsonpInput.addEventListener("change", makeOnRemoteChange(storeKeyJSONP, jsonpInput));
+        var autoWrap = el("div", "float-left");
+        var toggleText = "auto get";
+        var _c = __read(makeStacksCheckbox(storeKeyJSONauto, toggleText, Store.load(storeKeyJSONauto, false)), 2), autoJSONwrap = _c[0], autoJSONcbx = _c[1];
+        var _d = __read(makeStacksCheckbox(storeKeyJSONPauto, toggleText, Store.load(storeKeyJSONPauto, false)), 2), autoJSONPwrap = _d[0], autoJSONPcbx = _d[1];
+        autoJSONcbx.addEventListener("change", function () {
+            return Store.toggle(storeKeyJSONauto);
         });
-        remoteInput.addEventListener("change", function () {
-            Store.save(storeKeyRemote, remoteInput.value);
+        autoJSONPcbx.addEventListener("change", function () {
+            return Store.toggle(storeKeyJSONPauto);
         });
-        var image = makeImage("throbber1", "https://sstatic.net/img/progress-dots.gif", "throbber");
-        var autoWrap = document.createElement("div");
-        autoWrap.classList.add("float-left");
-        var autoInput = makeCheckbox("remoteauto", {
-            checked: Store.load(storeKeyAuto, false),
-        });
-        autoInput.addEventListener("change", function () { return Store.toggle(storeKeyAuto); });
-        var autoLabel = document.createElement("label");
-        autoLabel.title = "get from remote on every page refresh";
-        autoLabel.htmlFor = autoInput.id;
-        autoLabel.textContent = "auto-get";
-        autoWrap.append(autoInput, autoLabel);
-        var actionsWrap = document.createElement("div");
-        actionsWrap.classList.add("float-right");
-        var actions = [
-            makeButton("get now", "get remote", "remote-get"),
-            makeSeparator(),
-            makeButton("cancel", "cancel remote", "remote-cancel"),
-        ];
+        var getNowText = "get now";
+        var commonBtnClasses = ["s-btn__muted", "s-btn__outlined", "ml8"];
+        var getJSONbtn = makeButton.apply(void 0, __spreadArray([getNowText,
+            "get JSON remote",
+            "remote-json-get"], __read(commonBtnClasses)));
+        var getJSONPbtn = makeButton.apply(void 0, __spreadArray([getNowText,
+            "get JSONP remote",
+            "remote-jsonp-get"], __read(commonBtnClasses)));
         popup.addEventListener("click", function (_a) {
             var target = _a.target;
-            var el = target;
-            var actionMap = {
-                ".remote-cancel": function () {
-                    return switchToView(makeSearchView("search-popup"));
-                },
-                ".remote-get": function () { return __awaiter(void 0, void 0, void 0, function () {
+            runFromHashmap({
+                ".remote-json-get": function () { return __awaiter(void 0, void 0, void 0, function () {
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
-                                show(image);
-                                return [4, loadFromRemote(remoteInput.value)];
+                                getJSONbtn.classList.add("is-loading");
+                                return [4, fetchFromRemote(scheme(jsonInput.value))];
                             case 1:
                                 _a.sent();
                                 updateComments(popup, postType);
-                                hide(image);
+                                getJSONbtn.classList.remove("is-loading");
                                 return [2];
                         }
                     });
                 }); },
-            };
-            var _b = __read(Object.entries(actionMap).find(function (_a) {
-                var _b = __read(_a, 1), key = _b[0];
-                return el.matches(key);
-            }) ||
-                [], 2), action = _b[1];
-            action && action();
+                ".remote-jsonp-get": function () { return __awaiter(void 0, void 0, void 0, function () {
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                getJSONPbtn.classList.add("is-loading");
+                                return [4, fetchFromRemote(scheme(jsonpInput.value), true)];
+                            case 1:
+                                _a.sent();
+                                updateComments(popup, postType);
+                                getJSONPbtn.classList.remove("is-loading");
+                                return [2];
+                        }
+                    });
+                }); },
+            }, function (key) { return target.matches(key); });
         });
-        actionsWrap.append.apply(actionsWrap, __spreadArray([], __read(actions)));
-        wrap.append(text, remoteInput, image, autoWrap, actionsWrap);
+        inputWrap.append(jsonWrap, jsonpWrap);
+        jsonWrap.append(autoJSONwrap);
+        jsonpWrap.append(autoJSONPwrap);
+        jsonIWrap.after(getJSONbtn);
+        jsonpIWrap.after(getJSONPbtn);
+        wrap.append(inputWrap, autoWrap);
         return (makeRemoteView.view = wrap);
     };
     var insertComment = function (input, html, op) {
@@ -693,31 +777,26 @@ StackExchange.ready(function () {
         var main = document.createElement("div");
         main.classList.add("main");
         main.id = "main";
+        var viewSwitcher = makeViewSwitcher(viewsSel);
         popup.addEventListener("click", function (_a) {
             var target = _a.target;
-            var actionMap = {
+            runFromHashmap({
                 ".popup-actions-welcome": function (p, t) {
-                    return switchToView(makeWelcomeView(p, "welcome-popup", t));
+                    return viewSwitcher(makeWelcomeView(p, "welcome-popup", t));
                 },
                 ".popup-actions-remote": function (p, t) {
-                    return switchToView(makeRemoteView(p, "remote-popup", t));
+                    return viewSwitcher(makeRemoteView(p, "remote-popup", t));
+                },
+                ".popup-actions-settings": function (p, t) {
+                    return viewSwitcher(makeSettingsView(p, "settings-popup", t));
                 },
                 ".popup-actions-impexp": function (p, t) {
-                    return switchToView(makeImpExpView(p, "impexp-popup", t));
+                    return viewSwitcher(makeImpExpView(p, "impexp-popup", t));
                 },
-                ".popup-actions-filter": function () {
-                    return switchToView(makeSearchView("search-popup"));
+                ".popup-actions-filter": function (p, t) {
+                    return viewSwitcher(makeSearchView(p, "search-popup", t));
                 },
-                ".popup-actions-reset": function (p, t) {
-                    resetComments(commentDefaults);
-                    updateComments(p, t);
-                },
-                ".popup-actions-toggledesc": function (p) {
-                    var newVisibility = !Store.load("hide-desc");
-                    Store.save("hide-desc", newVisibility);
-                    toggleDescriptionVisibility(p, newVisibility);
-                },
-                ".popup-submit": function (p) {
+                ".quick-insert": function (p) {
                     var selected = p.querySelector(".action-selected");
                     var descr = selected === null || selected === void 0 ? void 0 : selected.querySelector(".action-desc");
                     if (!descr || !selected)
@@ -728,36 +807,41 @@ StackExchange.ready(function () {
                     fadeOut(p);
                     hide(p);
                 },
-            };
-            var _b = __read(Object.entries(actionMap).find(function (_a) {
-                var _b = __read(_a, 1), selector = _b[0];
-                return target.matches(selector);
-            }) || [], 2), action = _b[1];
-            action && action(popup, postType);
+            }, function (sel) { return target.matches(sel); }, popup, Store.load("post_type", "question"));
         });
         var commentViewId = "search-popup";
-        var views = [
-            makeSearchView(commentViewId),
-            makeRemoteView(popup, "remote-popup", postType),
-            makeWelcomeView(popup, "welcome-popup", postType),
-            makeImpExpView(popup, "impexp-popup", postType),
-            makeActionsView(popup, "popup-actions"),
+        var viewsMap = [
+            ["tabs-popup", makeTabsView],
+            [commentViewId, makeSearchView],
+            ["remote-popup", makeRemoteView],
+            ["welcome-popup", makeWelcomeView],
+            ["impexp-popup", makeImpExpView],
+            ["settings-popup", makeSettingsView],
+            ["popup-actions", makeActionsView],
         ];
+        var initPostType = Store.load("post_type", postType);
+        debugLogger.log({ initPostType: initPostType, postType: postType });
+        var views = viewsMap.map(function (_a) {
+            var _b = __read(_a, 2), id = _b[0], maker = _b[1];
+            return maker(popup, id, initPostType);
+        });
         var hidden = views.slice(1, -1);
         hidden.forEach(hide);
         main.append.apply(main, __spreadArray([], __read(views)));
         popup.append(close, main);
         setupCommentHandlers(popup, commentViewId);
-        setupSearchHandlers(popup, ".popup-actions-filter");
-        switchToView(views[0]);
+        setupSearchHandlers(popup);
+        makeViewSwitcher(viewsSel)(views[0]);
         return (makePopup.popup = popup);
     };
     var span = function (text, _a) {
         var _b;
-        var _c = _a.classes, classes = _c === void 0 ? [] : _c, _d = _a.unsafe, unsafe = _d === void 0 ? false : _d;
+        var _c = _a.classes, classes = _c === void 0 ? [] : _c, _d = _a.unsafe, unsafe = _d === void 0 ? false : _d, _e = _a.title, title = _e === void 0 ? "" : _e;
         var el = document.createElement("span");
         (_b = el.classList).add.apply(_b, __spreadArray([], __read(classes)));
         unsafe ? (el.innerHTML = text) : (el.innerText = text);
+        if (title)
+            el.title = title;
         return el;
     };
     var makeAnnouncement = function (title, message, unsafe) {
@@ -798,69 +882,95 @@ StackExchange.ready(function () {
         li.append(reviewRadio, lbl);
         return li;
     };
-    function datespan(date) {
-        var now = Date.now() / 1000;
-        var then = new Date(date * 1000);
-        var today = new Date().setHours(0, 0, 0) / 1000;
-        var nowseconds = now - today;
-        var elapsedSeconds = now - date;
-        var strout = "";
-        if (elapsedSeconds < nowseconds)
-            strout = "since today";
-        else if (elapsedSeconds < day + nowseconds)
-            strout = "since yesterday";
-        else if (elapsedSeconds < sixdays)
-            strout = "since " + weekday_name[then.getDay()];
-        else if (elapsedSeconds > year) {
-            strout = "for " + Math.round(elapsedSeconds / year) + " years";
-            if (elapsedSeconds % year > month)
-                strout +=
-                    ", " +
-                        Math.round((elapsedSeconds % year) / month) +
-                        " months";
-        }
-        else if (elapsedSeconds > month) {
-            strout = "for " + Math.round(elapsedSeconds / month) + " months";
-            if (elapsedSeconds % month > week)
-                strout +=
-                    ", " +
-                        Math.round((elapsedSeconds % month) / week) +
-                        " weeks";
-        }
-        else {
-            strout = "for " + Math.round(elapsedSeconds / week) + " weeks";
-        }
-        return strout;
-    }
-    function lastseen(date) {
-        var now = Date.now() / 1000;
-        var today = new Date().setHours(0, 0, 0) / 1000;
-        var nowseconds = now - today;
-        var elapsedSeconds = now - date;
-        if (elapsedSeconds < minute)
-            return Math.round(elapsedSeconds) + " seconds ago";
-        if (elapsedSeconds < hour)
-            return Math.round(elapsedSeconds / minute) + " minutes ago";
-        if (elapsedSeconds < nowseconds)
-            return Math.round(elapsedSeconds / hour) + " hours ago";
-        if (elapsedSeconds < day + nowseconds)
-            return "yesterday";
-        var then = new Date(date * 1000);
-        if (elapsedSeconds < sixdays)
-            return "on " + weekday_name[then.getDay()];
-        return then.toDateString();
-    }
-    function repNumber(r) {
-        if (r < 1e4)
-            return r.toString();
-        else if (r < 1e5) {
-            var d = Math.floor(Math.round(r / 100) / 10);
-            r = Math.round((r - d * 1e3) / 100);
-            return d + (r > 0 ? "." + r : "") + "k";
-        }
-        else
-            return Math.round(r / 1e3) + "k";
-    }
+    var timeUnits = {
+        second: 1,
+        get minute() {
+            return this.second * 60;
+        },
+        get hour() {
+            return this.minute * 60;
+        },
+        get day() {
+            return this.hour * 24;
+        },
+        get week() {
+            return this.day * 7;
+        },
+        get month() {
+            return this.day * 30;
+        },
+        get year() {
+            return this.month * 12;
+        },
+    };
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var absoluteTime = function (epochSeconds) {
+        var pad = function (number) { return number < 10 ? "0" + number : number; };
+        var date = new Date(epochSeconds * 1000);
+        var thisYear = new Date().getUTCFullYear();
+        var thatDateShortYear = date.getUTCFullYear().toString().substring(2);
+        return [
+            months[date.getUTCMonth()],
+            date.getUTCDate(),
+            date.getUTCFullYear() !== thisYear ? "'" + thatDateShortYear : "",
+            "at",
+            [
+                date.getUTCHours(),
+                ":",
+                pad(date.getUTCMinutes())
+            ].join("")
+        ].join(" ") || "";
+    };
+    var prettifyDate = function (dateSeconds) {
+        var _a, _b;
+        var diff = new Date().getTime() / 1000 - dateSeconds;
+        if (isNaN(diff) || diff < 0)
+            return "";
+        var findFromObject = function (object) { return Object.entries(object)
+            .sort(function (_a, _b) {
+            var _c = __read(_a, 1), a = _c[0];
+            var _d = __read(_b, 1), b = _d[0];
+            return Number(a) - Number(b);
+        })
+            .find(function (_a) {
+            var _b = __read(_a, 1), timeUnitSecs = _b[0];
+            return diff < Number(timeUnitSecs);
+        }) || [, ""]; };
+        var divideByMap = (_a = {},
+            _a[timeUnits.minute] = timeUnits.second,
+            _a[timeUnits.hour] = timeUnits.minute,
+            _a[timeUnits.day / 2] = timeUnits.hour,
+            _a[timeUnits.week] = timeUnits.day,
+            _a);
+        var _c = __read(findFromObject(divideByMap), 2), divideBy = _c[1];
+        var unitElapsed = Math.floor(diff / divideBy);
+        var pluralS = pluralise(unitElapsed);
+        var getTimeAgo = function (type) { return unitElapsed + " " + type + pluralS + " ago"; };
+        var stringsMap = (_b = {},
+            _b[timeUnits.second * 2] = "just now",
+            _b[timeUnits.minute] = getTimeAgo("sec"),
+            _b[timeUnits.hour] = getTimeAgo("min"),
+            _b[timeUnits.day / 2] = getTimeAgo("hour"),
+            _b[timeUnits.day] = "today",
+            _b[timeUnits.day * 2] = "yesterday",
+            _b[timeUnits.week] = getTimeAgo("day"),
+            _b);
+        var _d = __read(findFromObject(stringsMap), 2), relativeDateString = _d[1];
+        return relativeDateString || absoluteTime(dateSeconds);
+    };
+    var shortenReputationNumber = function (reputationNumber) {
+        var ranges = [
+            { divider: 1e6, suffix: 'm' },
+            { divider: 1e3, suffix: 'k' },
+        ];
+        var range = ranges.find(function (_a) {
+            var divider = _a.divider;
+            return reputationNumber >= divider;
+        });
+        return range
+            ? (reputationNumber / range.divider).toFixed(1) + range.suffix
+            : reputationNumber.toString();
+    };
     var getLoggedInUserId = function (se) {
         return se.options.user.userId || "";
     };
@@ -888,7 +998,7 @@ StackExchange.ready(function () {
         var _a = __read(/users\/(\d+)\//.exec(href) || [], 2), uid = _a[1];
         return uid || "";
     };
-    var isNewUser = function (date) { return Date.now() / 1000 - date < week; };
+    var isNewUser = function (date) { return Date.now() / 1000 - date < timeUnits.week; };
     var getOP = function (refresh) {
         if (refresh === void 0) { refresh = false; }
         if (getOP.op && !refresh)
@@ -908,6 +1018,7 @@ StackExchange.ready(function () {
         strong.innerHTML = text;
         return strong;
     };
+    var makeB = function (element) { return element.classList.add("fw-bold"); };
     var link = function (url, label) {
         if (label === void 0) { label = url; }
         var a = document.createElement("a");
@@ -917,18 +1028,37 @@ StackExchange.ready(function () {
         return a;
     };
     var text = function (data) { return document.createTextNode(data); };
-    var addUserInfo = function (container, userInfo) {
-        var _a;
-        var user_id = userInfo.user_id, creation_date = userInfo.creation_date, display_name = userInfo.display_name, last_access_date = userInfo.last_access_date, reputation = userInfo.reputation, user_type = userInfo.user_type;
+    var addUserInfo = function (_a) {
+        var _b;
+        var user_id = _a.user_id, creation_date = _a.creation_date, display_name = _a.display_name, last_access_date = _a.last_access_date, reputation = _a.reputation, user_type = _a.user_type;
+        var container = document.getElementById("userinfo");
+        if (!container)
+            return;
         if (isNewUser(creation_date)) {
             Store.save("ShowGreeting", true);
-            (_a = container
-                .querySelector(".action-desc")) === null || _a === void 0 ? void 0 : _a.prepend(Store.load("WelcomeMessage") || "");
+            (_b = container
+                .querySelector(".action-desc")) === null || _b === void 0 ? void 0 : _b.prepend(Store.load("WelcomeMessage") || "");
         }
         var userLink = link("/users/" + user_id, "");
         userLink.append(b(display_name));
         empty(container);
-        container.append(capitalize(user_type), text(" user "), userLink, text(", member "), b(datespan(creation_date)), text(", last seen "), b(lastseen(last_access_date)), text(", reputation "), b(repNumber(reputation)));
+        var relativeTimeClass = "relativetime";
+        var _c = __read([creation_date, last_access_date]
+            .map(function (date) {
+            var prettified = prettifyDate(date);
+            var isoString = new Date(date * 1000)
+                .toISOString()
+                .replace("T", " ")
+                .replace(/\.\d{3}/, "");
+            var dateSpan = span(prettified, {
+                classes: [relativeTimeClass],
+                unsafe: true,
+                title: isoString
+            });
+            makeB(dateSpan);
+            return dateSpan;
+        }), 2), prettyCreation = _c[0], prettyLastSeen = _c[1];
+        container.append(capitalize(user_type), text(" user "), userLink, text(", joined "), prettyCreation, text(", last seen "), prettyLastSeen, text(", reputation "), b(shortenReputationNumber(reputation)));
     };
     var getUserInfo = function (userid) { return __awaiter(void 0, void 0, void 0, function () {
         var url, res, _a, userInfo;
@@ -959,27 +1089,30 @@ StackExchange.ready(function () {
         lsep.innerHTML = " | ";
         return lsep;
     };
-    function doImport(text) {
+    var importComments = function (popup, text) {
         Store.clear("name-");
         Store.clear("desc-");
-        var arr = text.split("\n");
-        var nameIndex = 0;
-        var descIndex = 0;
-        arr.forEach(function (untrimmed) {
-            var line = untrimmed.trim();
-            if (line.indexOf("#") == 0) {
-                var name = line.replace(/^#+/g, "");
-                Store.save("name-" + nameIndex, name);
-                nameIndex++;
-            }
-            if (line.length > 0) {
-                var desc = markdownToHTML(line);
-                Store.save("desc-" + descIndex, tag(desc));
-                descIndex++;
-            }
+        var lines = text.split("\n");
+        var names = [];
+        var descs = [];
+        lines.forEach(function (line) {
+            var ln = line.trim();
+            if (ln.startsWith("#"))
+                return names.push(ln.replace(/^#+/g, ""));
+            if (ln)
+                return descs.push(tag(markdownToHTML(ln)));
         });
-        Store.save("commentcount", Math.min(nameIndex, descIndex));
-    }
+        var numNames = names.length;
+        var numDescs = descs.length;
+        debugLogger.log({ numNames: numNames, numDescs: numDescs });
+        if (numNames !== numDescs)
+            return notify(popup, "Failed to import", "Titles and descriptions do not match");
+        names.forEach(function (name, idx) {
+            Store.save("name-" + idx, name);
+            Store.save("desc-" + idx, descs[idx]);
+        });
+        Store.save("commentcount", numNames);
+    };
     var entityMapToHtml = {
         "&": "&amp;",
         "<": "&lt;",
@@ -1026,16 +1159,6 @@ StackExchange.ready(function () {
             .replace(regurl, "//$SITEURL$")
             .replace(reguid, "/$MYUSERID$)");
     };
-    var disable = function (elOrQuery) {
-        return ((typeof elOrQuery === "string"
-            ? document.querySelector(elOrQuery)
-            : elOrQuery).disabled = true);
-    };
-    var enable = function (elOrQuery) {
-        return ((typeof elOrQuery === "string"
-            ? document.querySelector(elOrQuery)
-            : elOrQuery).disabled = false);
-    };
     var saveComment = function (id, value) {
         var html = markdownToHTML(value);
         Store.save(id, tag(html));
@@ -1047,7 +1170,6 @@ StackExchange.ready(function () {
         empty(commentElem);
         commentElem.innerHTML = value;
         commentElem.closest("li").querySelector("input").disabled = false;
-        enable("#" + Store.prefix + "-submit");
         dataset.mode = "insert";
     };
     var openEditMode = function (commentElem, popup) {
@@ -1060,12 +1182,9 @@ StackExchange.ready(function () {
         var preview = document.createElement("span");
         preview.classList.add("d-inline-block", "p8");
         preview.innerHTML = html;
-        var area = document.createElement("textarea");
-        area.value = HTMLtoMarkdown(html);
-        area.id = area.name = commentElem.id;
-        commentElem.closest("li").querySelector("input").disabled = true;
-        popup.querySelectorAll(".quick-insert").forEach(hide);
-        disable("#" + Store.prefix + "-submit");
+        var _b = __read(makeStacksTextArea(commentElem.id, {
+            value: HTMLtoMarkdown(html),
+        }), 2), areaWrap = _b[0], area = _b[1];
         area.addEventListener("input", function (_a) {
             var target = _a.target;
             var value = target.value;
@@ -1076,6 +1195,8 @@ StackExchange.ready(function () {
             var _b = target, id = _b.id, value = _b.value;
             closeEditMode(commentElem, saveComment(id, value));
         });
+        commentElem.closest("li").querySelector("input").disabled = true;
+        popup.querySelectorAll(".quick-insert").forEach(hide);
         var actions = document.createElement("div");
         actions.classList.add("actions");
         var cancel = makeButton("cancel", "cancel edit");
@@ -1084,7 +1205,7 @@ StackExchange.ready(function () {
             closeEditMode(commentElem, backup);
         });
         actions.append(cancel);
-        commentElem.append(preview, area, actions);
+        commentElem.append(preview, areaWrap, actions);
         dataset.mode = "edit";
     };
     var resetComments = function (comments) {
@@ -1128,12 +1249,10 @@ StackExchange.ready(function () {
             classList.add("action-selected");
             var descr = action.querySelector(".action-desc");
             show(descr);
-            enable("#" + Store.prefix + "-submit");
         };
     };
     var makeQuickInsertHandler = function (popup) {
         return function (_a) {
-            var _b;
             var target = _a.target;
             var el = target;
             if (!el.matches("label > .quick-insert"))
@@ -1144,7 +1263,6 @@ StackExchange.ready(function () {
                 return notify(popup, "Problem", "something went wrong");
             action.classList.add("action-selected");
             radio.checked = true;
-            (_b = document.getElementById(Store.prefix + "-submit")) === null || _b === void 0 ? void 0 : _b.click();
         };
     };
     var setupCommentHandlers = function (popup, viewId) {
@@ -1159,18 +1277,11 @@ StackExchange.ready(function () {
         var insertHandler = makeQuickInsertHandler(popup);
         var selectHandler = makeCommentClickHandler(popup);
         popup.addEventListener("click", function (event) {
-            debugLogger.log({ currView: currView, viewId: viewId, event: event });
+            debugLogger.log({ currView: currView, viewId: viewId });
             if (currView !== viewId)
                 return;
             insertHandler(event);
             selectHandler(event);
-        });
-        popup.addEventListener("keyup", function (event) {
-            var _a;
-            if (event.code !== "Enter")
-                return;
-            event.preventDefault();
-            (_a = document.getElementById(Store.prefix + "-submit")) === null || _a === void 0 ? void 0 : _a.click();
         });
     };
     var updateComments = function (popup, postType) {
@@ -1236,30 +1347,12 @@ StackExchange.ready(function () {
             shown ? show(item) : hide(item);
         });
     };
-    var setupSearchHandlers = function (popup, filterSel) {
+    var setupSearchHandlers = function (popup) {
+        var filterSel = ".searchfilter";
         var sbox = popup.querySelector(".searchbox");
-        var stext = sbox.querySelector(".searchfilter");
-        var kicker = popup.querySelector(filterSel);
-        var storageKey = "showFilter";
-        var showHideFilter = function () {
-            var shown = Store.load(storageKey, false);
-            if (shown) {
-                show(sbox);
-                stext.focus();
-            }
-            else {
-                hide(sbox);
-                stext.innerHTML = "";
-                filterOn(popup, "");
-            }
-            Store.save(storageKey, shown);
-        };
-        showHideFilter();
-        kicker.addEventListener("click", function () {
-            Store.toggle(storageKey);
-            showHideFilter();
-            return false;
-        });
+        var stext = sbox.querySelector(filterSel);
+        if (!stext)
+            return debugLogger.log("missing filter: " + filterSel);
         var callback = function (_a) {
             var target = _a.target;
             return setTimeout(function () {
@@ -1310,30 +1403,31 @@ StackExchange.ready(function () {
             }
         });
     }); };
-    var loadFromRemote = function (url) { return __awaiter(void 0, void 0, void 0, function () {
-        var isJSONP, fetcher, comments;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    isJSONP = /jsonp-data/.test(url);
-                    debugLogger.log({ isJSONP: isJSONP });
-                    fetcher = isJSONP ? getJSONP : getJSON;
-                    return [4, fetcher(url)];
-                case 1:
-                    comments = _a.sent();
-                    debugLogger.log({ comments: comments });
-                    Store.save("commentcount", comments.length);
-                    Store.clear("name-");
-                    Store.clear("desc-");
-                    comments.forEach(function (_a, i) {
-                        var name = _a.name, description = _a.description;
-                        Store.save("name-" + i, name);
-                        Store.save("desc-" + i, tag(markdownToHTML(description)));
-                    });
-                    return [2];
-            }
+    var fetchFromRemote = function (url, isJSONP) {
+        if (isJSONP === void 0) { isJSONP = false; }
+        return __awaiter(void 0, void 0, void 0, function () {
+            var fetcher, comments;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        debugLogger.log({ isJSONP: isJSONP });
+                        fetcher = isJSONP ? getJSONP : getJSON;
+                        return [4, fetcher(url)];
+                    case 1:
+                        comments = _a.sent();
+                        Store.save("commentcount", comments.length);
+                        Store.clear("name-");
+                        Store.clear("desc-");
+                        comments.forEach(function (_a, i) {
+                            var name = _a.name, description = _a.description;
+                            Store.save("name-" + i, name);
+                            Store.save("desc-" + i, tag(markdownToHTML(description)));
+                        });
+                        return [2];
+                }
+            });
         });
-    }); };
+    };
     var showPopup = function (popup) {
         fadeTo(popup, 1);
         var style = popup.style, classList = popup.classList;
@@ -1341,37 +1435,42 @@ StackExchange.ready(function () {
         classList.remove("popup-closing", "popup-closed");
     };
     var autoLinkAction = function (target, postType) { return __awaiter(void 0, void 0, void 0, function () {
-        var popup, throbber, userid, userInfoEl, uinfo;
+        var popup, userid, uinfo;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    Store.save("post_type", postType);
                     popup = makePopup(target, postType);
                     if (!popup.isConnected)
                         document.body.append(popup);
                     showPopup(popup);
-                    updateComments(popup, postType);
                     if (!Store.load("AutoRemote")) return [3, 2];
-                    throbber = document.getElementById("throbber2");
-                    show(throbber);
-                    return [4, loadFromRemote(Store.load("RemoteUrl"))];
+                    debugLogger.log("autofetching JSONP remote");
+                    return [4, fetchFromRemote(Store.load("RemoteUrl"), true)];
                 case 1:
                     _a.sent();
-                    updateComments(popup, postType);
-                    hide(throbber);
                     _a.label = 2;
                 case 2:
+                    if (!Store.load("remote_json_auto")) return [3, 4];
+                    debugLogger.log("autofetching JSON remote");
+                    return [4, fetchFromRemote(Store.load("remote_json"))];
+                case 3:
+                    _a.sent();
+                    _a.label = 4;
+                case 4:
+                    updateComments(popup, postType);
                     center(popup);
                     StackExchange.helpers.bindMovablePopups();
                     userid = getUserId(target);
-                    userInfoEl = document.getElementById("userinfo");
+                    if (!userid) return [3, 6];
                     return [4, getUserInfo(userid)];
-                case 3:
+                case 5:
                     uinfo = _a.sent();
-                    debugLogger.log({ uinfo: uinfo, userid: userid });
-                    if (!uinfo)
-                        return [2, fadeOut(userInfoEl)];
-                    addUserInfo(userInfoEl, uinfo);
-                    return [2];
+                    debugLogger.log({ userid: userid, uinfo: uinfo });
+                    if (uinfo)
+                        addUserInfo(uinfo);
+                    _a.label = 6;
+                case 6: return [2];
             }
         });
     }); };
