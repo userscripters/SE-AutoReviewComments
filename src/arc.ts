@@ -121,6 +121,8 @@ type CheckboxOptions = {
 
 type CommentInfo = { name: string; description: string; targets: string[] };
 
+type TimeAgo = "sec" | "min" | "hour" | "day";
+
 StackExchange.ready(() => {
     /**
      * @summary centers the element
@@ -210,6 +212,12 @@ StackExchange.ready(() => {
      * @returns {HTMLElement}
      */
     const fadeOut = (el: HTMLElement, speed = 200) => fadeTo(el, 0, speed);
+
+    /**
+     * @summary Return "s" if the word should be pluralised
+     * @param {number} count amount
+     */
+    const pluralise = (count: number) => count === 1 ? "" : "s";
 
     const storageMap: Record<string, Storage> = {
         GM_setValue: {
@@ -439,24 +447,6 @@ StackExchange.ready(() => {
             )}`,
         },
     ];
-
-    const weekday_name = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-    ];
-
-    const minute = 60;
-    const hour = 3600;
-    const day = 86400;
-    const sixdays = 518400;
-    const week = 604800;
-    const month = 2592000;
-    const year = 31536000;
 
     if (!Store.load("WelcomeMessage"))
         Store.save("WelcomeMessage", `Welcome to ${sitename}! `);
@@ -1260,10 +1250,15 @@ StackExchange.ready(() => {
      * @param {string} text
      * @param {{ unsafe ?: boolean, classes ?: string[] }} options
      */
-    const span = (text: string, { classes = [], unsafe = false }) => {
+    const span = (text: string, {
+        classes = [] as string[],
+        unsafe = false,
+        title = ""
+    }) => {
         const el = document.createElement("span");
         el.classList.add(...classes);
         unsafe ? (el.innerHTML = text) : (el.innerText = text);
+        if (title) el.title = title;
         return el;
     };
 
@@ -1336,79 +1331,110 @@ StackExchange.ready(() => {
         return li;
     };
 
+    type TimeUnits = { [key in Partial<Intl.RelativeTimeFormatUnit>]: number };
+    const timeUnits = { // in seconds
+        second: 1,
+        get minute() {
+            return this.second * 60
+        },
+        get hour() {
+            return this.minute * 60
+        },
+        get day() {
+            return this.hour * 24
+        },
+        get week() {
+            return this.day * 7
+        },
+        get month() {
+            return this.day * 30
+        },
+        get year() {
+            return this.month * 12
+        },
+    } as TimeUnits;
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
     /**
-     * TODO: do something with this Cthulhu
-     * @summary Calculate and format datespan for "Member since/for"
-     * @param {number} date
+     * @summmary Get the absolute date, inspired from friendlyTime, https://dev.stackoverflow.com/content/Js/full.en.js
+     * @param {number} epochSeconds Epoch seconds of the date to convert
+     * @returns {string}
      */
-    function datespan(date: number) {
-        var now = Date.now() / 1000;
-        var then = new Date(date * 1000);
-        var today = new Date().setHours(0, 0, 0) / 1000;
-        var nowseconds = now - today;
-        var elapsedSeconds = now - date;
-        var strout = "";
-        if (elapsedSeconds < nowseconds) strout = "since today";
-        else if (elapsedSeconds < day + nowseconds) strout = "since yesterday";
-        else if (elapsedSeconds < sixdays)
-            strout = "since " + weekday_name[then.getDay()];
-        else if (elapsedSeconds > year) {
-            strout = "for " + Math.round(elapsedSeconds / year) + " years";
-            if (elapsedSeconds % year > month)
-                strout +=
-                    ", " +
-                    Math.round((elapsedSeconds % year) / month) +
-                    " months";
-        } else if (elapsedSeconds > month) {
-            strout = "for " + Math.round(elapsedSeconds / month) + " months";
-            if (elapsedSeconds % month > week)
-                strout +=
-                    ", " +
-                    Math.round((elapsedSeconds % month) / week) +
-                    " weeks";
-        } else {
-            strout = "for " + Math.round(elapsedSeconds / week) + " weeks";
-        }
-        return strout;
+    const absoluteTime = (epochSeconds: number) => {
+        const pad = (number: number) => number < 10 ? `0${number}` : number;
+        const date = new Date(epochSeconds * 1000);
+        const thisYear = new Date().getUTCFullYear();
+        const thatDateShortYear = date.getUTCFullYear().toString().substring(2);
+
+        return [
+            months[date.getUTCMonth()],
+            date.getUTCDate(),
+            date.getUTCFullYear() !== thisYear ? `'${thatDateShortYear}` : "",
+            "at",
+            [
+                date.getUTCHours(),
+                ":",
+                pad(date.getUTCMinutes())
+            ].join("")
+        ].join(" ") || ""; // e.g. Jan 23 at 3:19
     }
 
     /**
-     * TODO: and about this Cthulhu
-     * @summary Calculate and format datespan for "Last seen"
+     * @summary Calculate and format datespan for "Last seen ..." and "joined ...",
+     *          see prettyDate in SE's JS: https://dev.stackoverflow.com/content/Js/full.en.js
      * @param {number} date
      * @returns {string}
      */
-    function lastseen(date: number) {
-        var now = Date.now() / 1000;
-        var today = new Date().setHours(0, 0, 0) / 1000;
-        var nowseconds = now - today;
-        var elapsedSeconds = now - date;
-        if (elapsedSeconds < minute)
-            return Math.round(elapsedSeconds) + " seconds ago";
-        if (elapsedSeconds < hour)
-            return Math.round(elapsedSeconds / minute) + " minutes ago";
-        if (elapsedSeconds < nowseconds)
-            return Math.round(elapsedSeconds / hour) + " hours ago";
-        if (elapsedSeconds < day + nowseconds) return "yesterday";
-        var then = new Date(date * 1000);
-        if (elapsedSeconds < sixdays)
-            return "on " + weekday_name[then.getDay()];
-        return then.toDateString();
+    const prettifyDate = (dateSeconds: number) => {
+        const diff = new Date().getTime() / 1000 - dateSeconds;
+        if (isNaN(diff) || diff < 0) return "";
+
+        const findFromObject = <T>(object: T) => Object.entries(object)
+            .sort(([a], [b]) => Number(a) - Number(b)) // should not depend on key order
+            .find(([timeUnitSecs]) => diff < Number(timeUnitSecs)) || [, ""];
+
+        const divideByMap = { // key: a time unit, value: the time unit before
+            [timeUnits.minute]: timeUnits.second,
+            [timeUnits.hour]: timeUnits.minute,
+            [timeUnits.day / 2]: timeUnits.hour,
+            [timeUnits.week]: timeUnits.day
+        };
+        const [, divideBy] = findFromObject(divideByMap);
+
+        const unitElapsed = Math.floor(diff / divideBy);
+        const pluralS = pluralise(unitElapsed);
+        const getTimeAgo = (type: TimeAgo) => `${unitElapsed} ${type}${pluralS} ago`;
+
+        const stringsMap = {
+            [timeUnits.second * 2]: "just now",
+            [timeUnits.minute]:     getTimeAgo("sec"),   // less than a min           => ... secs ago
+            [timeUnits.hour]:       getTimeAgo("min"),   // less than an hour         => ... mins ago
+            [timeUnits.day / 2]:    getTimeAgo("hour"),  // less than 12 hours        => ... hours ago
+            [timeUnits.day]:        "today",             // during the last 12 hours  => today
+            [timeUnits.day * 2]:    "yesterday",         // "less than" 2 days        => yesterday
+            [timeUnits.week]:       getTimeAgo("day")    // during the past week      => ... days ago
+        };
+        const [, relativeDateString] = findFromObject(stringsMap);
+
+        return relativeDateString || absoluteTime(dateSeconds); // return absolute date if diff > 1 month
     }
 
     /**
-     * TODO: and about this one (how many Cthulhu are there?)
-     * @summary Format reputation string
-     * @param {number} r
+     * @summary Format reputation string, https://stackoverflow.com/a/17633552
+     * @param {number} reputationNumber
      * @returns {string}
      */
-    function repNumber(r: number) {
-        if (r < 1e4) return r.toString();
-        else if (r < 1e5) {
-            var d = Math.floor(Math.round(r / 100) / 10);
-            r = Math.round((r - d * 1e3) / 100);
-            return d + (r > 0 ? "." + r : "") + "k";
-        } else return Math.round(r / 1e3) + "k";
+    const shortenReputationNumber = (reputationNumber: number) => {
+        const ranges = [
+            { divider: 1e6, suffix: 'm' },
+            { divider: 1e3, suffix: 'k' },
+        ];
+
+        // https://chat.stackoverflow.com/transcript/message/52517093#52517093
+        const range = ranges.find(({ divider }) => reputationNumber >= divider);
+        return range
+            ? (reputationNumber / range.divider).toFixed(1) + range.suffix
+            : reputationNumber.toString();
     }
 
     /**
@@ -1468,7 +1494,7 @@ StackExchange.ready(() => {
      * @param {number} date
      * @returns {boolean}
      */
-    const isNewUser = (date: number) => Date.now() / 1000 - date < week;
+    const isNewUser = (date: number) => Date.now() / 1000 - date < timeUnits.week;
 
     /**
      * @summary get original poster username
@@ -1507,6 +1533,13 @@ StackExchange.ready(() => {
         strong.innerHTML = text;
         return strong;
     };
+
+    /**
+     * @summary Add font-weight: bold to passed element
+     * @param {HTMLElement} element The element
+     * @returns {void}
+     */
+    const makeB = (element: HTMLElement) => element.classList.add("fw-bold");
 
     /**
      * @summary creates an <a> element
@@ -1556,16 +1589,37 @@ StackExchange.ready(() => {
 
         empty(container);
 
+        const relativeTimeClass = "relativetime";
+        const [prettyCreation, prettyLastSeen] = [creation_date, last_access_date]
+            .map(date => {
+                const prettified = prettifyDate(date);
+
+                // SE automatically updates ".relativetime" spans every min
+                // see updateRelativeDates() in full.en.js
+                // spans need to have a title in the "YYYY-MM-DD HH:MM:SSZ" format
+                const isoString = new Date(date * 1000)
+                    .toISOString()
+                    .replace("T", " ")
+                    .replace(/\.\d{3}/, "");
+                const dateSpan = span(prettified, {
+                    classes: [ relativeTimeClass ],
+                    unsafe: true,
+                    title: isoString
+                });
+                makeB(dateSpan);
+                return dateSpan;
+            });
+
         container.append(
             capitalize(user_type),
             text(" user "),
             userLink,
-            text(", member "),
-            b(datespan(creation_date)),
+            text(", joined "),
+            prettyCreation,
             text(", last seen "),
-            b(lastseen(last_access_date)),
+            prettyLastSeen,
             text(", reputation "),
-            b(repNumber(reputation))
+            b(shortenReputationNumber(reputation))
         );
     };
 
