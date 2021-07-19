@@ -5,8 +5,7 @@
   "scripts": {
     "test": "mocha -r ts-node/register",
     "replace": "ts-node utils/replace.ts",
-    "clean": "rm -rf dist",
-    "build": "npm run clean && tsc && npm run replace && npm run headers-tm",
+    "build": "tsc && npm run replace && npm run headers-tm",
     "headers-tm": "bash ./scripts/headers.sh"
   },
   "repository": {
