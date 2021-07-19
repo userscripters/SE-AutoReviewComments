@@ -472,11 +472,7 @@ StackExchange.ready(() => {
             `.${arc}.popup .view textarea {
                     resize: vertical;
                 }`,
-            `.${arc}.popup .main{
-                    overflow:hidden
-                }`,
             `.${arc}.popup .main .view {
-                    overflow: auto;
                     padding: 1vh 1vw;
                 }`,
             `.${arc}.popup .main .userinfo{
@@ -488,12 +484,10 @@ StackExchange.ready(() => {
                     width: 100%;
                 }`,
             `.${arc}.popup .main .action-list{
-                    margin:0 0 7px 0 !important;
                     overflow-y:scroll;
                     max-height: 400px;
                 }`,
             `.${arc}.popup .main .action-list li{
-                    width:100%;
                     padding:0;
                     transition:.1s
                 }`,
