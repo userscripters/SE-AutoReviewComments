@@ -716,6 +716,7 @@ StackExchange.ready(() => {
      * {@link https://stackoverflow.design/product/components/checkbox/}
      *
      * @summary creates a Stacks checkbox
+     * @param {string} id input id (also sets the name)
      * @param {string} label checkbox label
      * @param {boolean} [state] initial checkbox state
      * @returns {[HTMLDivElement, HTMLInputElement]}
@@ -737,6 +738,34 @@ StackExchange.ready(() => {
         iwrap.append(input);
         fset.append(iwrap, lbl);
         return [fset, input] as const;
+    };
+
+    /**
+     * {@link https://stackoverflow.design/product/components/toggle-switch/}
+     *
+     * @summary creates a Stacks toggle
+     * @param {string} id input id (also sets the name)
+     * @param {string} label toggle label
+     * @param {boolean} [state] initial toggle state
+     * @returns {[HTMLDivElement, HTMLInputElement]}
+     */
+    const makeStacksToggle = (id: string, label: string, state = false) => {
+        const wrap = el("div", "d-flex", "ai-center", "gs8");
+
+        const lbl = el("label", "flex--item", "s-label");
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+
+        const iwrap = el("div", "flex--item", "s-toggle-switch");
+
+        const input = makeCheckbox(id, { checked: state });
+
+        const lever = el("div", "s-toggle-switch--indicator");
+
+        iwrap.append(input, lever);
+        wrap.append(lbl, iwrap);
+
+        return [wrap, input] as const;
     };
 
     /**
@@ -904,8 +933,17 @@ StackExchange.ready(() => {
     const makeSettingsView: ViewMaker = (popup, id, postType) => {
         if (makeSettingsView.view) return makeSettingsView.view;
 
-        const view = el("div", "view");
+        const view = el("div", "view", "d-flex", "fd-column", "gs16");
         view.id = id;
+
+        const generalWrap = el("div", "flex--item");
+        const dangerWrap = el("div", "flex--item");
+
+        const [descrToggle] = makeStacksToggle(
+            "toggleDescr",
+            "hide comment descriptions",
+            Store.load("hide-desc", false)
+        );
 
         const resetBtn = makeButton(
             "reset",
@@ -915,7 +953,10 @@ StackExchange.ready(() => {
             "s-btn__danger"
         );
 
-        view.append(resetBtn);
+        generalWrap.append(descrToggle);
+        dangerWrap.append(resetBtn);
+
+        view.append(generalWrap, dangerWrap);
 
         popup.addEventListener("click", ({ target }) => {
             runFromHashmap<PopupActionMap>(
@@ -924,6 +965,11 @@ StackExchange.ready(() => {
                         resetComments(commentDefaults);
                         updateComments(p, t);
                     },
+                    "#toggleDescr": (p) =>
+                        toggleDescriptionVisibility(
+                            p,
+                            Store.toggle("hide-desc")
+                        ),
                 },
                 (key) => (target as HTMLElement).matches(key),
                 popup,
@@ -965,13 +1011,7 @@ StackExchange.ready(() => {
             fadeTo(seeBtn.closest(".main")!, 1);
         });
 
-        const descrBtn = makeButton(
-            "show/hide desc",
-            "use this to hide/show all comments",
-            "popup-actions-toggledesc"
-        );
-
-        const actionsList = [seeBtn, descrBtn];
+        const actionsList = [seeBtn];
 
         actionsWrap.append(...actionsList);
         wrap.append(actionsWrap);
@@ -1391,12 +1431,6 @@ StackExchange.ready(() => {
                         viewSwitcher(makeImpExpView(p, "impexp-popup", t)),
                     ".popup-actions-filter": (p, t) =>
                         viewSwitcher(makeSearchView(p, "search-popup", t)),
-                    ".popup-actions-toggledesc": (p) => {
-                        const newVisibility = !Store.load("hide-desc");
-                        Store.save("hide-desc", newVisibility);
-                        toggleDescriptionVisibility(p, newVisibility);
-                    },
-
                     ".quick-insert": (p) => {
                         const selected = p.querySelector(".action-selected");
                         const descr = selected?.querySelector(".action-desc");
