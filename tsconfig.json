@@ -1,0 +1,10 @@
+{
+    "extends": "@tsconfig/recommended/tsconfig.json",
+    "compilerOptions": {
+        "types": ["mocha", "chai", "chai-as-promised"],
+        "lib": ["DOM", "DOM.Iterable", "ESNext"],
+        "moduleResolution": "node",
+        "outDir": "dist",
+        "declaration": true
+    }
+}
