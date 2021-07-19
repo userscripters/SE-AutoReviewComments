@@ -27,40 +27,25 @@ type Locator<T extends HTMLElement = HTMLElement> = (where: T) => Placement;
 
 type Actor = (...args: any[]) => any;
 
+type PopupActionMap = Record<
+    string,
+    (popup: HTMLElement, postType: PostType) => void
+>;
+
 type Injector = (
     injected: HTMLElement,
     placed: HTMLElement,
     action: Actor
 ) => void;
 
+type ViewMaker = {
+    view?: HTMLElement;
+    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
+};
+
 type WrapperPopupMaker = {
     popup?: HTMLElement;
     (target: HTMLInputElement, postType: PostType): HTMLElement;
-};
-
-type ActionsViewMaker = {
-    view?: HTMLElement;
-    (popup: HTMLElement, id: string): HTMLElement;
-};
-
-type SearchViewMaker = {
-    view?: HTMLElement;
-    (id: string): HTMLElement;
-};
-
-type WelcomeViewMaker = {
-    view?: HTMLElement;
-    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
-};
-
-type RemoteViewMaker = {
-    view?: HTMLElement;
-    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
-};
-
-type ImpExpViewMaker = {
-    view?: HTMLElement;
-    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
 };
 
 type UserType =
@@ -146,22 +131,14 @@ StackExchange.ready(() => {
      * @param {HTMLElement}
      * @returns {HTMLElement}
      */
-    const hide = (element: HTMLElement) => {
-        const { style } = element;
-        style.display = "none";
-        return element;
-    };
+    const hide = (element: HTMLElement) => element.classList.add("d-none");
 
     /**
      * @summary shows an element
      * @param {HTMLElement}
      * @returns {HTMLElement}
      */
-    const show = (element: HTMLElement) => {
-        const { style } = element;
-        style.display = "";
-        return element;
-    };
+    const show = (element: HTMLElement) => element.classList.remove("d-none");
 
     /**
      * @summary empties a node
@@ -218,6 +195,21 @@ StackExchange.ready(() => {
      * @param {number} count amount
      */
     const pluralise = (count: number) => count === 1 ? "" : "s";
+
+    /**
+     * @summary finds and runs a handler from a hashmap
+     * @param {Record<string, (...args: any[]) => any>} hashmap key -> val lookup
+     * @param {(key: string) => boolean} comparator comparator function
+     * @returns {any}
+     */
+    const runFromHashmap = <U extends Record<string, (...args: any[]) => any>>(
+        hashmap: U,
+        comparator: (key: keyof U) => boolean,
+        ...params: Parameters<U[keyof U]>
+    ): ReturnType<U[keyof U]> | void => {
+        const hash = Object.keys(hashmap).find(comparator);
+        return hash && hashmap[hash]?.(...params);
+    };
 
     const storageMap: Record<string, Storage> = {
         GM_setValue: {
@@ -342,7 +334,7 @@ StackExchange.ready(() => {
     const userLinkSel = ".post-signature .user-details[itemprop=author] a";
 
     //selects all views except actions
-    const viewsSel = ".main .view:not(:last-child)";
+    const viewsSel = ".main .view:not(:first-child)";
 
     /**
      * All the different "targets" a comment can be placed on.
@@ -470,8 +462,8 @@ StackExchange.ready(() => {
                     width:690px;
                     padding:15px 15px 10px;
                 }`,
-            `.${arc}.popup .throbber{
-                    display:none
+            `.${arc}.popup .svg-icon.mute-text a {
+                    color: var(--black-500);
                 }`,
             `.${arc}.popup>div>textarea{
                     width:100%;
@@ -551,13 +543,6 @@ StackExchange.ready(() => {
                     background-color:#222;
                     color:#fff
                 }`,
-            `.${arc}.popup .actions,.auto-review-comments.popup .main .actions{
-                    margin:6px
-                }`,
-            `.${arc}.popup .main .popup-submit{
-                    float:none;
-                    margin:0 0 5px 0;
-                }`,
             `.${arc}.announcement strong:first-child {
                     display: block;
                 }`,
@@ -626,6 +611,145 @@ StackExchange.ready(() => {
         return input;
     };
 
+    const el = <T extends keyof HTMLElementTagNameMap>(
+        tag: T,
+        ...classes: string[]
+    ): HTMLElementTagNameMap[T] => {
+        const el = document.createElement(tag);
+        el.classList.add(...classes);
+        return el;
+    };
+
+    type TextAreaOptions = {
+        value?: string;
+        label?: string;
+    };
+
+    /**
+     * {@link https://stackoverflow.design/product/components/textarea/}
+     *
+     * @summary creates a Stacks textarea
+     * @param {string} id textarea id (also sets the name)
+     * @param {TextAreaOptions} options textarea options
+     * @returns {[HTMLDivElement, HTMLTextAreaElement]}
+     */
+    const makeStacksTextArea = (
+        id: string,
+        { label = "", value = "" }: TextAreaOptions
+    ) => {
+        const wrap = el("div", "d-flex", "fd-column", "gs4", "gsy");
+
+        if (label) {
+            const lbl = el("label", "flex--item", "s-label");
+            lbl.htmlFor = id;
+            lbl.textContent = label;
+            wrap.append(lbl);
+        }
+
+        const area = el("textarea", "flex--item", "s-textarea");
+        area.id = area.name = id;
+        area.value = value;
+        wrap.append(area);
+
+        return [wrap, area] as const;
+    };
+
+    /**
+     * {@link https://stackoverflow.design/product/components/inputs/#input-fills}
+     *
+     * @summary creates a Stacks URL input
+     * @param {string} id input id (also sets the name)
+     * @param {string} schema URL schema (http://, https://, or custom)
+     * @param {string} label input label
+     * @param {string} [value] input value
+     * @returns {[HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLInputElement]}
+     */
+    const makeStacksURLInput = (
+        id: string,
+        schema: string,
+        label: string,
+        value?: string
+    ) => {
+        const wrap = el("div", "d-flex", "gs4", "gsy", "fd-column");
+
+        const lbl = el("label", "flex--item", "s-label");
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+
+        const iwrap = el("div", "d-flex");
+
+        const ischema = el("div", "flex--item", "s-input-fill", "order-first");
+        ischema.textContent = schema;
+
+        const iinput = el("div", "d-flex", "fl-grow1", "ps-relative");
+
+        const input = makeTextInput(id, {
+            value,
+            classes: ["flex--item", "s-input", "blr0"],
+        });
+
+        iinput.append(input);
+        iwrap.append(ischema, iinput);
+        wrap.append(lbl, iwrap);
+        return [wrap, iwrap, iinput, input] as const;
+    };
+
+    /**
+     * {@link https://stackoverflow.design/product/components/checkbox/}
+     *
+     * @summary creates a Stacks checkbox
+     * @param {string} id input id (also sets the name)
+     * @param {string} label checkbox label
+     * @param {boolean} [state] initial checkbox state
+     * @returns {[HTMLDivElement, HTMLInputElement]}
+     */
+    const makeStacksCheckbox = (id: string, label: string, state = false) => {
+        const fset = el("fieldset", "d-flex", "gs8");
+
+        const iwrap = el("div", "flex--item");
+
+        const lbl = el("label", "flex--item", "s-label", "fw-normal");
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+
+        const input = makeCheckbox(id, {
+            checked: state,
+            classes: ["s-checkbox"],
+        });
+
+        iwrap.append(input);
+        fset.append(iwrap, lbl);
+        return [fset, input] as const;
+    };
+
+    /**
+     * {@link https://stackoverflow.design/product/components/toggle-switch/}
+     *
+     * @summary creates a Stacks toggle
+     * @param {string} id input id (also sets the name)
+     * @param {string} label toggle label
+     * @param {boolean} [state] initial toggle state
+     * @returns {[HTMLDivElement, HTMLInputElement]}
+     */
+    const makeStacksToggle = (id: string, label: string, state = false) => {
+        const wrap = el("div", "d-flex", "ai-center", "gs8");
+
+        const lbl = el("label", "flex--item", "s-label");
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+
+        const iwrap = el("div", "flex--item", "s-toggle-switch");
+
+        const input = makeCheckbox(id, { checked: state });
+
+        const lever = el("div", "s-toggle-switch--indicator");
+
+        iwrap.append(input, lever);
+        wrap.append(lbl, iwrap);
+
+        return [wrap, input] as const;
+    };
+
     /**
      * @summary makes a button
      * @param {string} text
@@ -634,31 +758,10 @@ StackExchange.ready(() => {
      * @returns {HTMLAnchorElement}
      */
     const makeButton = (text: string, title: string, ...classes: string[]) => {
-        const cancelBtn = document.createElement("a");
-        cancelBtn.classList.add(...classes);
-        cancelBtn.innerHTML = text;
-        cancelBtn.title = title;
-        return cancelBtn;
-    };
-
-    /**
-     * @summary makes a link button
-     * @param {string} url
-     * @param {string} text
-     * @param {string} title
-     * @param {...string} classes
-     * @returns {HTMLAnchorElement}
-     */
-    const makeLinkButton = (
-        url: string,
-        text: string,
-        title: string,
-        ...classes: string[]
-    ) => {
-        const btn = makeButton(text, title, ...classes);
-        btn.href = url;
-        btn.target = "_blank";
-        return btn;
+        const button = el("button", "s-btn", ...classes);
+        button.innerHTML = text;
+        button.title = title;
+        return button;
     };
 
     /**
@@ -678,44 +781,185 @@ StackExchange.ready(() => {
     };
 
     /**
-     * @summary makes an image element
-     * @param {string} id
-     * @param {string} src
-     * @param {...string} classes
-     * @returns {HTMLImageElement}
+     * @summary makes an info button icon
+     * @param {string} url info URL
+     * @param {string} title link title
+     * @param {...string} classes classes to apply
+     * @returns {SVGSVGElement}
      */
-    const makeImage = (id: string, src: string, ...classes: string[]) => {
-        const img = document.createElement("img");
-        img.classList.add(...classes);
-        img.src = src;
-        img.id = id;
-        return img;
-    };
+    const makeInfoButton = (
+        url: string,
+        title: string,
+        ...classes: string[]
+    ) => {
+        const NS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(NS, "svg");
+        svg.classList.add("svg-icon", "iconInfo", ...classes);
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("width", "18");
+        svg.setAttribute("height", "18");
+        svg.setAttribute("viewBox", `0 0 18 18`);
 
-    /**
-     * @summary makes comment submit button
-     * @param {string} id
-     * @returns {HTMLElement}
-     */
-    const makeSubmitButton = (id: string) => {
-        const submitBtn = document.createElement("input");
-        submitBtn.classList.add("popup-submit");
-        submitBtn.type = "button";
-        submitBtn.value = "Insert";
-        submitBtn.id = id;
-        return submitBtn;
+        const anchor = document.createElementNS(NS, "a");
+        anchor.setAttribute("href", url);
+        anchor.setAttribute("target", "_blank");
+
+        const ttl = document.createElementNS(NS, "title");
+        ttl.textContent = title;
+
+        const path = document.createElementNS(NS, "path");
+        path.setAttribute(
+            "d",
+            "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z"
+        );
+
+        anchor.append(ttl, path);
+        svg.append(anchor);
+        return svg;
     };
 
     /**
      * @summary hides the rest of the views and shows the current one
-     * @param {HTMLElement} view current view
-     * @returns {HTMLElement}
+     * @param {string} viewsSel selector for views
+     * @returns {(view:HTMLElement) => HTMLElement}
      */
-    const switchToView = (view: HTMLElement) => {
+    const makeViewSwitcher = (viewsSel: string) => (view: HTMLElement) => {
         document.querySelectorAll<HTMLElement>(viewsSel).forEach(hide);
         show(view);
         Store.save("CurrentView", view.id);
         return view;
+    };
+
+    /**
+     * @summary makes tabs view
+     * @param {HTMLElement} popup wrapper popup
+     * @param {string} id actions wrapper id
+     * @param {PostType} postType parent post type
+     * @returns {HTMLElement}
+     */
+    const makeTabsView: ViewMaker = (_popup, id, _postType) => {
+        if (makeTabsView.view) return makeTabsView.view;
+
+        const wrap = el(
+            "div",
+            "view",
+            "d-flex",
+            "ai-center",
+            "jc-space-between"
+        );
+        wrap.id = id;
+
+        const btnGroup = el("div", "s-btn-group", "flex--item");
+
+        const btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
+
+        const buttons = [
+            makeButton(
+                "filter",
+                "filter",
+                ...btnGroupClasses,
+                "popup-actions-filter"
+            ),
+            makeButton(
+                "import/export",
+                "import/export all comments",
+                ...btnGroupClasses,
+                "popup-actions-impexp"
+            ),
+            makeButton(
+                "remote",
+                "setup remote source",
+                ...btnGroupClasses,
+                "popup-actions-remote"
+            ),
+            makeButton(
+                "welcome",
+                "configure welcome",
+                ...btnGroupClasses,
+                "popup-actions-welcome"
+            ),
+            makeButton(
+                "settings",
+                "configure ARC",
+                ...btnGroupClasses,
+                "popup-actions-settings"
+            ),
+        ];
+
+        btnGroup.append(...buttons);
+
+        btnGroup.addEventListener("click", ({ target }) => {
+            buttons.forEach(({ classList }) => classList.remove("is-selected"));
+            (target as HTMLElement).classList.add("is-selected");
+        });
+
+        const info = makeInfoButton(
+            GITHUB_URL,
+            `see info about this popup (v${VERSION})`,
+            "flex--item",
+            "mute-text"
+        );
+
+        wrap.append(btnGroup, info);
+
+        return (makeTabsView.view = wrap);
+    };
+
+    /**
+     * @summary makes popup settings view
+     * @param {HTMLElement} popup wrapper popup
+     * @param {string} id actions wrapper id
+     * @param {PostType} postType parent post type
+     * @returns {HTMLElement}
+     */
+    const makeSettingsView: ViewMaker = (popup, id, postType) => {
+        if (makeSettingsView.view) return makeSettingsView.view;
+
+        const view = el("div", "view", "d-flex", "fd-column", "gs16");
+        view.id = id;
+
+        const generalWrap = el("div", "flex--item");
+        const dangerWrap = el("div", "flex--item");
+
+        const [descrToggle] = makeStacksToggle(
+            "toggleDescr",
+            "hide comment descriptions",
+            Store.load("hide-desc", false)
+        );
+
+        const resetBtn = makeButton(
+            "reset",
+            "reset any custom comments",
+            "popup-actions-reset",
+            "s-btn__filled",
+            "s-btn__danger"
+        );
+
+        generalWrap.append(descrToggle);
+        dangerWrap.append(resetBtn);
+
+        view.append(generalWrap, dangerWrap);
+
+        popup.addEventListener("click", ({ target }) => {
+            runFromHashmap<PopupActionMap>(
+                {
+                    ".popup-actions-reset": (p, t) => {
+                        resetComments(commentDefaults);
+                        updateComments(p, t);
+                    },
+                    "#toggleDescr": (p) =>
+                        toggleDescriptionVisibility(
+                            p,
+                            Store.toggle("hide-desc")
+                        ),
+                },
+                (key) => (target as HTMLElement).matches(key),
+                popup,
+                Store.load("post_type", postType)
+            );
+        });
+
+        return (makeSettingsView.view = view);
     };
 
     /**
@@ -724,28 +968,14 @@ StackExchange.ready(() => {
      * @param {string} id actions wrapper id
      * @returns {HTMLElement}
      */
-    const makeActionsView: ActionsViewMaker = (popup, id) => {
+    const makeActionsView: ViewMaker = (popup, id) => {
+        if (makeActionsView.view) return makeActionsView.view;
+
         const wrap = document.createElement("div");
         wrap.classList.add("view");
         wrap.id = id;
 
-        const actionsWrap = document.createElement("div");
-        actionsWrap.classList.add("float-left", "actions");
-
-        const submitWrap = document.createElement("div");
-        submitWrap.classList.add("float-right");
-
-        const submitBtn = makeSubmitButton(`${Store.prefix}-submit`);
-        disable(submitBtn);
-
-        submitWrap.append(submitBtn);
-
-        const helpBtn = makeLinkButton(
-            GITHUB_URL,
-            "info",
-            `see info about this popup (v${VERSION})`,
-            "popup-actions-help"
-        );
+        const actionsWrap = el("div", "actipns");
 
         const seeBtn = makeButton(
             "see-through",
@@ -763,80 +993,20 @@ StackExchange.ready(() => {
             fadeTo(seeBtn.closest(".main")!, 1);
         });
 
-        const filterBtn = makeButton(
-            "filter",
-            "filter",
-            "popup-actions-filter"
-        );
-
-        const resetBtn = makeButton(
-            "reset",
-            "reset any custom comments",
-            "popup-actions-reset"
-        );
-
-        const importBtn = makeButton(
-            "import/export",
-            "use this to import/export all comments",
-            "popup-actions-impexp"
-        );
-
-        const descrBtn = makeButton(
-            "show/hide desc",
-            "use this to hide/show all comments",
-            "popup-actions-toggledesc"
-        );
-
-        const remoteBtn = makeButton(
-            "remote",
-            "setup remote source",
-            "popup-actions-remote"
-        );
-
-        const dotsImg = makeImage(
-            "throbber2",
-            "https://sstatic.net/img/progress-dots.gif", //TODO: make config
-            "throbber"
-        );
-
-        const welcomeBtn = makeButton(
-            "welcome",
-            "configure welcome",
-            "popup-actions-welcome"
-        );
-
-        const sep = makeSeparator();
-
-        const actionsList = [
-            helpBtn,
-            sep.cloneNode(),
-            seeBtn,
-            sep.cloneNode(),
-            filterBtn,
-            sep.cloneNode(),
-            resetBtn,
-            sep.cloneNode(),
-            importBtn,
-            sep.cloneNode(),
-            descrBtn,
-            sep.cloneNode(),
-            remoteBtn,
-            dotsImg,
-            sep.cloneNode(),
-            welcomeBtn,
-        ];
+        const actionsList = [seeBtn];
 
         actionsWrap.append(...actionsList);
-        wrap.append(actionsWrap, submitWrap);
-        return wrap;
+        wrap.append(actionsWrap);
+        return (makeActionsView.view = wrap);
     };
 
     /**
      * @summary makes the search view
+     * @param {HTMLElement} popup wrapper popup
      * @param {string} id view id
      * @returns {HTMLElement}
      */
-    const makeSearchView: SearchViewMaker = (id) => {
+    const makeSearchView: ViewMaker = (_popup, id) => {
         if (makeSearchView.view) return makeSearchView.view;
 
         const wrap = document.createElement("div");
@@ -875,12 +1045,11 @@ StackExchange.ready(() => {
      * @param {PostType} postType parent post type
      * @returns {HTMLElement}
      */
-    const makeWelcomeView: WelcomeViewMaker = (popup, id, postType) => {
+    const makeWelcomeView: ViewMaker = (popup, id, postType) => {
         if (makeWelcomeView.view) return makeWelcomeView.view;
 
-        const wrap = document.createElement("div");
-        wrap.classList.add("view");
-        wrap.id = id;
+        const view = el("div", "view");
+        view.id = id;
 
         const text = document.createTextNode(
             'Setup the "welcome" message (blank is none):'
@@ -888,10 +1057,9 @@ StackExchange.ready(() => {
 
         const welcomeWrap = document.createElement("div");
 
-        const input = document.createElement("input");
-        input.classList.add("customwelcome");
-        input.type = "text";
-        input.id = "customwelcome";
+        const input = makeTextInput("customwelcome", {
+            classes: ["customwelcome"],
+        });
 
         input.addEventListener("change", () =>
             Store.save("WelcomeMessage", input.value)
@@ -899,45 +1067,38 @@ StackExchange.ready(() => {
 
         welcomeWrap.append(input);
 
-        const actionsWrap = document.createElement("div");
-        actionsWrap.classList.add("float-right");
+        const actionsWrap = el("div", "float-right");
 
         const actions: Node[] = [
-            makeButton("force", "force", "welcome-force"),
-            makeSeparator(),
-            makeButton("cancel", "cancel", "welcome-cancel"),
+            makeButton("force", "force", "welcome-force", "s-btn__outlined"),
+            makeButton("cancel", "cancel", "welcome-cancel", "s-btn__danger"),
         ];
 
+        const viewSwitcher = makeViewSwitcher(viewsSel);
+
         popup.addEventListener("click", ({ target }) => {
-            const el = <HTMLElement>target;
-
-            const actionMap: Record<
-                string,
-                (p: HTMLElement, w: HTMLElement) => void
-            > = {
-                ".popup-actions-welcome": (_p, w) => {
-                    input.value ||= Store.load("WelcomeMessage");
-                    show(w);
+            runFromHashmap<PopupActionMap>(
+                {
+                    ".popup-actions-welcome": () => {
+                        input.value ||= Store.load("WelcomeMessage");
+                    },
+                    ".welcome-cancel": (p, t) =>
+                        viewSwitcher(makeSearchView(p, "search-popup", t)),
+                    ".welcome-force": (p, t) => {
+                        Store.save("ShowGreeting", true);
+                        updateComments(p, t);
+                    },
                 },
-                ".welcome-cancel": () =>
-                    switchToView(makeSearchView("search-popup")),
-                ".welcome-force": () => {
-                    Store.save("ShowGreeting", true);
-                    updateComments(popup, postType);
-                },
-            };
-
-            const [, action] =
-                Object.entries(actionMap).find(([key]) => el.matches(key)) ||
-                [];
-
-            action?.(popup, wrap);
+                (key) => (target as HTMLElement).matches(key),
+                popup,
+                Store.load("post_type", postType)
+            );
         });
 
         actionsWrap.append(...actions);
 
-        wrap.append(text, welcomeWrap, actionsWrap);
-        return (makeWelcomeView.view = wrap);
+        view.append(text, welcomeWrap, actionsWrap);
+        return (makeWelcomeView.view = view);
     };
 
     /**
@@ -966,39 +1127,47 @@ StackExchange.ready(() => {
      * @param {PostType} postType parent post type
      * @returns {HTMLElement}
      */
-    const makeImpExpView: ImpExpViewMaker = (popup, id, postType) => {
+    const makeImpExpView: ViewMaker = (popup, id, postType) => {
         if (makeImpExpView.view)
             return updateImpExpComments(makeImpExpView.view);
 
-        const view = document.createElement("div");
-        view.classList.add("view");
+        const view = el("div", "view");
         view.id = id;
 
-        const actionWrap = document.createElement("div");
-        actionWrap.classList.add("actions");
+        const actionWrap = el("div", "actions");
 
-        const txtArea = document.createElement("textarea");
+        const [areaWrap, area] = makeStacksTextArea("impexp", {
+            label: "Comment source",
+        });
 
-        txtArea.addEventListener("change", async () => {
-            doImport(txtArea.value);
+        area.addEventListener("change", async () => {
+            importComments(popup, area.value);
             updateComments(popup, postType);
         });
 
-        const jsonpBtn = makeButton("JSONP", "JSONP", "jsonp");
+        const jsonpBtn = makeButton(
+            "JSONP",
+            "JSONP",
+            "s-btn__outlined",
+            "jsonp"
+        );
 
         const cancelBtn = makeButton(
             "cancel",
             "cancel import/export",
+            "s-btn__danger",
             "cancel"
         );
 
+        const viewSwitcher = makeViewSwitcher(viewsSel);
+
         cancelBtn.addEventListener("click", () =>
-            switchToView(makeSearchView("search-popup"))
+            viewSwitcher(makeSearchView(popup, "search-popup", postType))
         );
 
-        actionWrap.append(jsonpBtn, makeSeparator(), cancelBtn);
+        actionWrap.append(jsonpBtn, cancelBtn);
 
-        view.append(txtArea, actionWrap);
+        view.append(areaWrap, actionWrap);
 
         const cbk = "callback";
         jsonpBtn.addEventListener("click", () => {
@@ -1009,7 +1178,7 @@ StackExchange.ready(() => {
                 .map((comment) => JSON.stringify(comment))
                 .join(",\n");
 
-            txtArea.value = `${cbk}([\n${content}\n])`;
+            area.value = `${cbk}([\n${content}\n])`;
 
             view.querySelector(".actions")?.remove();
         });
@@ -1018,19 +1187,48 @@ StackExchange.ready(() => {
     };
 
     /**
+     * @summary prepend schema to URL
+     * @param {string} url target URL
+     * @returns {string}
+     */
+    const scheme = (url: string) =>
+        /^https?:\/\//.test(url) ? url : `https://${url}`;
+
+    /**
+     * @summary remove schema from URL
+     * @param {string} url target URL
+     * @returns {string}
+     */
+    const unscheme = (url: string) => url.replace(/^https?:\/\//, "");
+
+    /**
      * @summary updates remote URL
      * @param {string} key store key for the remote URL
+     * @param {string} inputId id of the remote input
      * @returns {boolean}
      */
-    const updateRemoteURL = (key: string) => {
-        const remoteInput =
-            document.getElementById<HTMLInputElement>("remoteurl");
+    const updateRemoteURL = (key: string, inputId: string) => {
+        const input = document.getElementById<HTMLInputElement>(inputId);
+        if (!input) return false;
 
-        if (!remoteInput) return false;
-
-        remoteInput.value = Store.load(key);
+        input.value = unscheme(Store.load(key));
         return true;
     };
+
+    /**
+     * @summary factory for remote change listeners
+     * @param {string} storeKey key to store URL under
+     * @param {HTMLInputElement} input URL input to get value from
+     * @returns {EventListener}
+     */
+    const makeOnRemoteChange =
+        (storeKey: string, input: HTMLInputElement): EventListener =>
+        () => {
+            const { value } = input;
+            //unscheme -> scheme is for foolproofing
+            Store.save(storeKey, scheme(unscheme(value)));
+            input.value = unscheme(value);
+        };
 
     /**
      * @summary makes the remote view
@@ -1039,86 +1237,117 @@ StackExchange.ready(() => {
      * @param {PostType} postType parent post type
      * @returns {HTMLElement}
      */
-    const makeRemoteView: RemoteViewMaker = (popup, id, postType) => {
-        const storeKeyRemote = "RemoteUrl"; //TODO: move to config
-        const storeKeyAuto = "AutoRemote";
+    const makeRemoteView: ViewMaker = (popup, id, postType) => {
+        const storeKeyJSON = "remote_json";
+        const storeKeyJSONauto = "remote_json_auto";
+
+        const storeKeyJSONP = "RemoteUrl"; //TODO: move to config
+        const storeKeyJSONPauto = "AutoRemote";
 
         if (makeRemoteView.view) {
             const { view } = makeRemoteView;
-            updateRemoteURL(storeKeyRemote);
+            //TODO: default id to store key
+            updateRemoteURL(storeKeyJSON, storeKeyJSON);
+            updateRemoteURL(storeKeyJSONP, storeKeyJSONP);
             return view;
         }
 
-        const wrap = document.createElement("div");
-        wrap.classList.add("view");
+        const wrap = el("div", "view");
         wrap.id = id;
 
-        const text = document.createTextNode("JSONP Remote source of comments");
+        const initialScheme = "https://";
+        const initialURL = unscheme(Store.load(storeKeyJSONP));
 
-        const remoteInput = makeTextInput("remoteurl", {
-            classes: ["remoteurl"],
-            value: Store.load(storeKeyRemote),
-        });
+        const inputWrap = el("div", "d-flex", "fd-column", "gs8");
 
-        remoteInput.addEventListener("change", () => {
-            Store.save(storeKeyRemote, remoteInput.value);
-        });
-
-        const image = makeImage(
-            "throbber1",
-            "https://sstatic.net/img/progress-dots.gif",
-            "throbber"
+        const [jsonWrap, , jsonIWrap, jsonInput] = makeStacksURLInput(
+            storeKeyJSON,
+            initialScheme,
+            "JSON source",
+            initialURL
         );
 
-        const autoWrap = document.createElement("div");
-        autoWrap.classList.add("float-left");
+        const [jsonpWrap, , jsonpIWrap, jsonpInput] = makeStacksURLInput(
+            storeKeyJSONP,
+            initialScheme,
+            "JSONP source",
+            initialURL
+        );
 
-        const autoInput = makeCheckbox("remoteauto", {
-            checked: Store.load(storeKeyAuto, false),
-        });
+        jsonInput.addEventListener(
+            "change",
+            makeOnRemoteChange(storeKeyJSON, jsonInput)
+        );
+        jsonpInput.addEventListener(
+            "change",
+            makeOnRemoteChange(storeKeyJSONP, jsonpInput)
+        );
 
-        autoInput.addEventListener("change", () => Store.toggle(storeKeyAuto));
+        const autoWrap = el("div", "float-left");
 
-        const autoLabel = document.createElement("label");
-        autoLabel.title = "get from remote on every page refresh";
-        autoLabel.htmlFor = autoInput.id;
-        autoLabel.textContent = "auto-get";
+        const toggleText = "auto get";
 
-        autoWrap.append(autoInput, autoLabel);
+        const [autoJSONwrap, autoJSONcbx] = makeStacksCheckbox(
+            storeKeyJSONauto,
+            toggleText,
+            Store.load(storeKeyJSONauto, false)
+        );
 
-        const actionsWrap = document.createElement("div");
-        actionsWrap.classList.add("float-right");
+        const [autoJSONPwrap, autoJSONPcbx] = makeStacksCheckbox(
+            storeKeyJSONPauto,
+            toggleText,
+            Store.load(storeKeyJSONPauto, false)
+        );
 
-        const actions: Node[] = [
-            makeButton("get now", "get remote", "remote-get"),
-            makeSeparator(),
-            makeButton("cancel", "cancel remote", "remote-cancel"),
-        ];
+        autoJSONcbx.addEventListener("change", () =>
+            Store.toggle(storeKeyJSONauto)
+        );
+        autoJSONPcbx.addEventListener("change", () =>
+            Store.toggle(storeKeyJSONPauto)
+        );
+
+        const getNowText = "get now";
+        const commonBtnClasses = ["s-btn__muted", "s-btn__outlined", "ml8"];
+
+        const getJSONbtn = makeButton(
+            getNowText,
+            "get JSON remote",
+            "remote-json-get",
+            ...commonBtnClasses
+        );
+        const getJSONPbtn = makeButton(
+            getNowText,
+            "get JSONP remote",
+            "remote-jsonp-get",
+            ...commonBtnClasses
+        );
 
         popup.addEventListener("click", ({ target }) => {
-            const el = <HTMLElement>target;
-
-            const actionMap = {
-                ".remote-cancel": () =>
-                    switchToView(makeSearchView("search-popup")),
-                ".remote-get": async () => {
-                    show(image);
-                    await loadFromRemote(remoteInput.value);
-                    updateComments(popup, postType);
-                    hide(image);
+            runFromHashmap(
+                {
+                    ".remote-json-get": async () => {
+                        getJSONbtn.classList.add("is-loading");
+                        await fetchFromRemote(scheme(jsonInput.value));
+                        updateComments(popup, postType);
+                        getJSONbtn.classList.remove("is-loading");
+                    },
+                    ".remote-jsonp-get": async () => {
+                        getJSONPbtn.classList.add("is-loading");
+                        await fetchFromRemote(scheme(jsonpInput.value), true);
+                        updateComments(popup, postType);
+                        getJSONPbtn.classList.remove("is-loading");
+                    },
                 },
-            };
-
-            const [, action] =
-                Object.entries(actionMap).find(([key]) => el.matches(key)) ||
-                [];
-
-            action?.();
+                (key) => (target as HTMLElement).matches(key)
+            );
         });
 
-        actionsWrap.append(...actions);
-
-        wrap.append(text, remoteInput, image, autoWrap, actionsWrap);
+        inputWrap.append(jsonWrap, jsonpWrap);
+        jsonWrap.append(autoJSONwrap);
+        jsonpWrap.append(autoJSONPwrap);
+        jsonIWrap.after(getJSONbtn);
+        jsonpIWrap.after(getJSONPbtn);
+        wrap.append(inputWrap, autoWrap);
 
         return (makeRemoteView.view = wrap);
     };
@@ -1150,7 +1379,7 @@ StackExchange.ready(() => {
      * @summary creates the popup markup
      * @description memoizable popup maker
      * @param {HTMLInputElement} input target comment input
-     * @param {PostType} postType
+     * @param {PostType} postType initial post type
      * @returns {HTMLElement}
      */
     const makePopup: WrapperPopupMaker = (input, postType) => {
@@ -1169,68 +1398,65 @@ StackExchange.ready(() => {
         main.classList.add("main");
         main.id = "main";
 
+        const viewSwitcher = makeViewSwitcher(viewsSel);
+
         popup.addEventListener("click", ({ target }) => {
-            const actionMap: Record<
-                string,
-                (popup: HTMLElement, postType: PostType) => void
-            > = {
-                ".popup-actions-welcome": (p, t) =>
-                    switchToView(makeWelcomeView(p, "welcome-popup", t)),
-                ".popup-actions-remote": (p, t) =>
-                    switchToView(makeRemoteView(p, "remote-popup", t)),
-                ".popup-actions-impexp": (p, t) =>
-                    switchToView(makeImpExpView(p, "impexp-popup", t)),
-                ".popup-actions-filter": () =>
-                    switchToView(makeSearchView("search-popup")),
-                ".popup-actions-reset": (p, t) => {
-                    resetComments(commentDefaults);
-                    updateComments(p, t);
+            runFromHashmap<PopupActionMap>(
+                {
+                    ".popup-actions-welcome": (p, t) =>
+                        viewSwitcher(makeWelcomeView(p, "welcome-popup", t)),
+                    ".popup-actions-remote": (p, t) =>
+                        viewSwitcher(makeRemoteView(p, "remote-popup", t)),
+                    ".popup-actions-settings": (p, t) =>
+                        viewSwitcher(makeSettingsView(p, "settings-popup", t)),
+                    ".popup-actions-impexp": (p, t) =>
+                        viewSwitcher(makeImpExpView(p, "impexp-popup", t)),
+                    ".popup-actions-filter": (p, t) =>
+                        viewSwitcher(makeSearchView(p, "search-popup", t)),
+                    ".quick-insert": (p) => {
+                        const selected = p.querySelector(".action-selected");
+                        const descr = selected?.querySelector(".action-desc");
+
+                        if (!descr || !selected)
+                            return notify(
+                                p,
+                                "Nothing selected",
+                                "please select a comment"
+                            );
+
+                        const op = getOP();
+
+                        debugLogger.log({ op });
+
+                        insertComment(input, descr.innerHTML, op);
+                        fadeOut(p);
+                        hide(p);
+                    },
                 },
-
-                ".popup-actions-toggledesc": (p) => {
-                    const newVisibility = !Store.load("hide-desc");
-                    Store.save("hide-desc", newVisibility);
-                    toggleDescriptionVisibility(p, newVisibility);
-                },
-
-                ".popup-submit": (p) => {
-                    const selected = p.querySelector(".action-selected");
-                    const descr = selected?.querySelector(".action-desc");
-
-                    if (!descr || !selected)
-                        return notify(
-                            p,
-                            "Nothing selected",
-                            "please select a comment"
-                        );
-
-                    const op = getOP();
-
-                    debugLogger.log({ op });
-
-                    insertComment(input, descr.innerHTML, op);
-                    fadeOut(p);
-                    hide(p);
-                },
-            };
-
-            const [, action] =
-                Object.entries(actionMap).find(([selector]) =>
-                    (<HTMLElement>target).matches(selector)
-                ) || [];
-
-            action?.(popup, postType);
+                (sel) => (target as HTMLElement).matches(sel),
+                popup,
+                Store.load("post_type", "question")
+            );
         });
 
         const commentViewId = "search-popup";
 
-        const views: HTMLElement[] = [
-            makeSearchView(commentViewId),
-            makeRemoteView(popup, "remote-popup", postType),
-            makeWelcomeView(popup, "welcome-popup", postType),
-            makeImpExpView(popup, "impexp-popup", postType),
-            makeActionsView(popup, "popup-actions"),
-        ];
+        const viewsMap = [
+            ["tabs-popup", makeTabsView],
+            [commentViewId, makeSearchView],
+            ["remote-popup", makeRemoteView],
+            ["welcome-popup", makeWelcomeView],
+            ["impexp-popup", makeImpExpView],
+            ["settings-popup", makeSettingsView],
+            ["popup-actions", makeActionsView],
+        ] as const;
+
+        const initPostType = Store.load("post_type", postType);
+        debugLogger.log({ initPostType, postType });
+
+        const views = viewsMap.map(([id, maker]) =>
+            maker(popup, id, initPostType)
+        );
 
         const hidden = views.slice(1, -1);
         hidden.forEach(hide);
@@ -1239,8 +1465,9 @@ StackExchange.ready(() => {
         popup.append(close, main);
 
         setupCommentHandlers(popup, commentViewId);
-        setupSearchHandlers(popup, ".popup-actions-filter");
-        switchToView(views[0]);
+        setupSearchHandlers(popup);
+
+        makeViewSwitcher(viewsSel)(views[0]);
 
         return (makePopup.popup = popup);
     };
@@ -1564,18 +1791,19 @@ StackExchange.ready(() => {
 
     /**
      * @summary adds user info to the UI
-     * @param {HTMLElement} container
+     * @param {UserInfo} userInfo
      * @returns {void}
      */
-    const addUserInfo = (container: HTMLElement, userInfo: UserInfo) => {
-        const {
-            user_id,
-            creation_date,
-            display_name,
-            last_access_date,
-            reputation,
-            user_type,
-        } = userInfo;
+    const addUserInfo = ({
+        user_id,
+        creation_date,
+        display_name,
+        last_access_date,
+        reputation,
+        user_type,
+    }: UserInfo) => {
+        const container = document.getElementById("userinfo");
+        if (!container) return;
 
         if (isNewUser(creation_date)) {
             Store.save("ShowGreeting", true);
@@ -1659,35 +1887,48 @@ StackExchange.ready(() => {
         return lsep;
     };
 
-    //Import complete text into comments
-    function doImport(text: string) {
-        //clear out any existing stuff
+    /**
+     * @summary imports comments given text
+     * @param {HTMLElement} popup parent popup
+     * @param {string} text comment text to parse
+     * @returns {void}
+     */
+    const importComments = (popup: HTMLElement, text: string) => {
         Store.clear("name-");
         Store.clear("desc-");
-        const arr = text.split("\n");
-        let nameIndex = 0;
-        let descIndex = 0;
-        arr.forEach((untrimmed) => {
-            const line = untrimmed.trim();
 
-            //TODO: rework
+        const lines = text.split("\n");
 
-            if (line.indexOf("#") == 0) {
-                var name = line.replace(/^#+/g, "");
-                Store.save("name-" + nameIndex, name);
-                nameIndex++;
-            }
+        const names: string[] = [];
+        const descs: string[] = [];
 
-            if (line.length > 0) {
-                var desc = markdownToHTML(line);
-                Store.save("desc-" + descIndex, tag(desc));
-                descIndex++;
-            }
+        lines.forEach((line) => {
+            const ln = line.trim();
+
+            if (ln.startsWith("#")) return names.push(ln.replace(/^#+/g, ""));
+
+            if (ln) return descs.push(tag(markdownToHTML(ln)));
         });
 
-        //This is de-normalised, but I don't care.
-        Store.save("commentcount", Math.min(nameIndex, descIndex));
-    }
+        const { length: numNames } = names;
+        const { length: numDescs } = descs;
+
+        debugLogger.log({ numNames, numDescs });
+
+        if (numNames !== numDescs)
+            return notify(
+                popup,
+                "Failed to import",
+                "Titles and descriptions do not match"
+            );
+
+        names.forEach((name, idx) => {
+            Store.save(`name-${idx}`, name);
+            Store.save(`desc-${idx}`, descs[idx]);
+        });
+
+        Store.save("commentcount", numNames);
+    };
 
     // From https://stackoverflow.com/a/12034334/259953
     const entityMapToHtml: Record<string, string> = {
@@ -1774,28 +2015,6 @@ StackExchange.ready(() => {
             .replace(reguid, "/$MYUSERID$)");
     };
 
-    type MaybeBtn = string | HTMLButtonElement | HTMLInputElement;
-
-    /**
-     * @summary disables an element
-     * @param {MaybeBtn} elOrQuery
-     */
-    const disable = (elOrQuery: MaybeBtn) =>
-        ((typeof elOrQuery === "string"
-            ? document.querySelector<HTMLButtonElement>(elOrQuery)!
-            : elOrQuery
-        ).disabled = true);
-
-    /**
-     * @summary enables an element
-     * @param {MaybeBtn} elOrQuery
-     */
-    const enable = (elOrQuery: MaybeBtn) =>
-        ((typeof elOrQuery === "string"
-            ? document.querySelector<HTMLButtonElement>(elOrQuery)!
-            : elOrQuery
-        ).disabled = false);
-
     /**
      * @summary Save textarea contents, replace element html with new edited content
      * @param {string} id
@@ -1821,7 +2040,6 @@ StackExchange.ready(() => {
         empty(commentElem);
         commentElem.innerHTML = value;
         commentElem.closest("li")!.querySelector("input")!.disabled = false;
-        enable(`#${Store.prefix}-submit`);
         dataset.mode = "insert";
     };
 
@@ -1851,18 +2069,9 @@ StackExchange.ready(() => {
         preview.classList.add("d-inline-block", "p8"); //TODO: config
         preview.innerHTML = html;
 
-        const area = document.createElement("textarea");
-        area.value = HTMLtoMarkdown(html);
-        area.id = area.name = commentElem.id;
-
-        // Disable comment input while editing
-        commentElem.closest("li")!.querySelector("input")!.disabled = true;
-
-        // Disable quick-insert while editing.
-        popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(hide);
-
-        // Disable insert while editing.
-        disable(`#${Store.prefix}-submit`);
+        const [areaWrap, area] = makeStacksTextArea(commentElem.id, {
+            value: HTMLtoMarkdown(html),
+        });
 
         area.addEventListener("input", ({ target }) => {
             const { value } = <HTMLTextAreaElement>target;
@@ -1873,6 +2082,12 @@ StackExchange.ready(() => {
             const { id, value } = <HTMLTextAreaElement>target;
             closeEditMode(commentElem, saveComment(id, value));
         });
+
+        // Disable comment input while editing
+        commentElem.closest("li")!.querySelector("input")!.disabled = true;
+
+        // Disable quick-insert while editing.
+        popup.querySelectorAll<HTMLElement>(".quick-insert").forEach(hide);
 
         // save/cancel links to add to textarea
         const actions = document.createElement("div");
@@ -1885,7 +2100,7 @@ StackExchange.ready(() => {
         });
 
         actions.append(cancel);
-        commentElem.append(preview, area, actions);
+        commentElem.append(preview, areaWrap, actions);
 
         dataset.mode = "edit";
     };
@@ -1952,7 +2167,6 @@ StackExchange.ready(() => {
             const descr = action.querySelector<HTMLElement>(".action-desc")!;
 
             show(descr);
-            enable(`#${Store.prefix}-submit`);
         };
 
     /**
@@ -1974,10 +2188,7 @@ StackExchange.ready(() => {
                 return notify(popup, "Problem", "something went wrong");
 
             action.classList.add("action-selected");
-
             radio.checked = true;
-
-            document.getElementById(`${Store.prefix}-submit`)?.click();
         };
 
     /**
@@ -1999,16 +2210,10 @@ StackExchange.ready(() => {
         const selectHandler = makeCommentClickHandler(popup);
 
         popup.addEventListener("click", (event) => {
-            debugLogger.log({ currView, viewId, event });
+            debugLogger.log({ currView, viewId });
             if (currView !== viewId) return;
             insertHandler(event);
             selectHandler(event);
-        });
-
-        popup.addEventListener("keyup", (event) => {
-            if (event.code !== "Enter") return;
-            event.preventDefault();
-            document.getElementById(`${Store.prefix}-submit`)?.click();
         });
     };
 
@@ -2114,37 +2319,15 @@ StackExchange.ready(() => {
     /**
      * @summary sets up search event handlers
      * @param {HTMLElement} popup wrapper popup
-     * @param {string} filterSel filter button selector
      * @returns {void}
      */
-    const setupSearchHandlers = (popup: HTMLElement, filterSel: string) => {
+    const setupSearchHandlers = (popup: HTMLElement) => {
+        const filterSel = ".searchfilter";
+
         const sbox = popup.querySelector<HTMLElement>(".searchbox")!;
-        const stext = sbox.querySelector<HTMLInputElement>(".searchfilter")!;
-        const kicker = popup.querySelector(filterSel)!;
-        const storageKey = "showFilter";
 
-        const showHideFilter = () => {
-            const shown = Store.load(storageKey, false);
-
-            if (shown) {
-                show(sbox);
-                stext.focus();
-            } else {
-                hide(sbox);
-                stext.innerHTML = "";
-                filterOn(popup, "");
-            }
-
-            Store.save(storageKey, shown);
-        };
-
-        showHideFilter();
-
-        kicker.addEventListener("click", () => {
-            Store.toggle(storageKey);
-            showHideFilter();
-            return false;
-        });
+        const stext = sbox.querySelector<HTMLInputElement>(filterSel);
+        if (!stext) return debugLogger.log(`missing filter: ${filterSel}`);
 
         const callback: EventListener = ({ target }) =>
             setTimeout(() => {
@@ -2220,18 +2403,15 @@ StackExchange.ready(() => {
     /**
      * @summary loads comments from a remote source
      * @param {string} url remore URL to fetch from
+     * @param {boolean} [isJSONP] JSONP switch
      * @returns {Promise<void>}
      */
-    const loadFromRemote = async (url: string) => {
-        const isJSONP = /jsonp-data/.test(url);
-
+    const fetchFromRemote = async (url: string, isJSONP = false) => {
         debugLogger.log({ isJSONP });
 
         const fetcher = isJSONP ? getJSONP : getJSON;
 
         const comments: CommentInfo[] = await fetcher(url);
-
-        debugLogger.log({ comments });
 
         Store.save("commentcount", comments.length);
         Store.clear("name-");
@@ -2264,22 +2444,26 @@ StackExchange.ready(() => {
         target: HTMLInputElement,
         postType: PostType
     ) => {
+        Store.save("post_type", postType);
+
         const popup = makePopup(target, postType);
 
         if (!popup.isConnected) document.body.append(popup);
 
         showPopup(popup);
 
-        updateComments(popup, postType);
-
-        //Auto-load from remote if required
+        //Auto-load from JSONP remote if enabled
         if (Store.load("AutoRemote")) {
-            const throbber = document.getElementById("throbber2")!;
-            show(throbber);
-            await loadFromRemote(Store.load("RemoteUrl"));
-            updateComments(popup, postType);
-            hide(throbber);
+            debugLogger.log(`autofetching JSONP remote`);
+            await fetchFromRemote(Store.load("RemoteUrl"), true);
         }
+
+        if (Store.load("remote_json_auto")) {
+            debugLogger.log(`autofetching JSON remote`);
+            await fetchFromRemote(Store.load("remote_json"));
+        }
+
+        updateComments(popup, postType);
 
         center(popup);
 
@@ -2288,15 +2472,11 @@ StackExchange.ready(() => {
         //Get user info and inject
         const userid = getUserId(target);
 
-        const userInfoEl = document.getElementById("userinfo")!;
-
-        const uinfo = await getUserInfo(userid);
-
-        debugLogger.log({ uinfo, userid });
-
-        if (!uinfo) return fadeOut(userInfoEl);
-
-        addUserInfo(userInfoEl, uinfo);
+        if (userid) {
+            const uinfo = await getUserInfo(userid);
+            debugLogger.log({ userid, uinfo });
+            if (uinfo) addUserInfo(uinfo);
+        }
     };
 
     /**
