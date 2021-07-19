@@ -129,22 +129,14 @@ StackExchange.ready(() => {
      * @param {HTMLElement}
      * @returns {HTMLElement}
      */
-    const hide = (element: HTMLElement) => {
-        const { style } = element;
-        style.display = "none";
-        return element;
-    };
+    const hide = (element: HTMLElement) => element.classList.add("d-none");
 
     /**
      * @summary shows an element
      * @param {HTMLElement}
      * @returns {HTMLElement}
      */
-    const show = (element: HTMLElement) => {
-        const { style } = element;
-        style.display = "";
-        return element;
-    };
+    const show = (element: HTMLElement) => element.classList.remove("d-none");
 
     /**
      * @summary empties a node
