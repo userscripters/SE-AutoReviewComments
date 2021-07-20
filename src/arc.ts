@@ -1205,7 +1205,7 @@ StackExchange.ready(() => {
         const input = document.getElementById<HTMLInputElement>(inputId);
         if (!input) return false;
 
-        input.value = unscheme(Store.load(key));
+        input.value = unscheme(Store.load(key) || "");
         return true;
     };
 
@@ -1250,7 +1250,7 @@ StackExchange.ready(() => {
         wrap.id = id;
 
         const initialScheme = "https://";
-        const initialURL = unscheme(Store.load(storeKeyJSONP));
+        const initialURL = unscheme(Store.load(storeKeyJSONP) || "");
 
         const inputWrap = el("div", "d-flex", "fd-column", "gs8");
 
