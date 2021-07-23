@@ -1,29 +1,46 @@
 {
-  "name": "se-autoreviewcomments",
+  "name": "autoreviewcomments",
   "version": "1.4.7",
   "description": "No more re-typing the same comments over and over!",
   "scripts": {
-    "test": "mocha -r ts-node/register"
+    "test": "mocha -r ts-node/register",
+    "replace": "ts-node utils/replace.ts",
+    "build": "tsc && npm run replace && npm run headers-tm",
+    "headers-tm": "bash ./scripts/headers.sh"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/userscripters/SE-AutoReviewComments.git"
   },
   "author": "benjol",
+  "contributors": [
+    {
+      "name": "double beep",
+      "url": "https://github.com/double-beep"
+    },
+    {
+      "name": "Oleg Valter",
+      "url": "https://github.com/Oaphi"
+    }
+  ],
   "bugs": {
     "url": "https://github.com/userscripters/SE-AutoReviewComments/issues"
   },
   "homepage": "https://github.com/userscripters/SE-AutoReviewComments#readme",
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",
-    "@types/chai": "^4.2.18",
+    "@types/chai": "^4.2.21",
     "@types/chai-as-promised": "^7.1.4",
-    "@types/mocha": "^8.2.2",
+    "@types/greasemonkey": "^4.0.2",
+    "@types/mocha": "^8.2.3",
+    "@types/node": "^16.3.3",
+    "@types/tampermonkey": "^4.0.2",
+    "@userscripters/generate-headers": "^1.6.4",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^7.28.0",
-    "mocha": "^9.0.0",
-    "ts-node": "^10.0.0",
-    "typescript": "^4.3.2"
+    "eslint": "^7.31.0",
+    "mocha": "^9.0.2",
+    "ts-node": "^10.1.0",
+    "typescript": "^4.3.5"
   }
 }

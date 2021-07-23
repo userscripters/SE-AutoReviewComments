@@ -1,10 +1,24 @@
 {
     "extends": "@tsconfig/recommended/tsconfig.json",
     "compilerOptions": {
-        "types": ["mocha", "chai", "chai-as-promised"],
+        "types": [
+            "mocha",
+            "chai",
+            "chai-as-promised",
+            "node",
+            "greasemonkey",
+            "tampermonkey"
+        ],
         "lib": ["DOM", "DOM.Iterable", "ESNext"],
         "moduleResolution": "node",
-        "outDir": "dist",
-        "declaration": true
-    }
+        "declaration": false,
+        "target": "es5",
+        "downlevelIteration": true,
+        "removeComments": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "outFile": "dist/autoreviewcomments.user.js",
+        "module": "none"
+    },
+    "exclude": ["utils", "test"]
 }
