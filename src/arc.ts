@@ -104,6 +104,11 @@ type CheckboxOptions = {
     classes?: string[];
 };
 
+type IconButtonOptions = {
+    url?: string;
+    classes?: string[];
+};
+
 type CommentInfo = { name: string; description: string; targets: string[] };
 
 type TimeAgo = "sec" | "min" | "hour" | "day";
@@ -194,7 +199,7 @@ StackExchange.ready(() => {
      * @summary Return "s" if the word should be pluralised
      * @param {number} count amount
      */
-    const pluralise = (count: number) => count === 1 ? "" : "s";
+    const pluralise = (count: number) => (count === 1 ? "" : "s");
 
     /**
      * @summary finds and runs a handler from a hashmap
@@ -776,39 +781,42 @@ StackExchange.ready(() => {
 
     /**
      * @summary makes an info button icon
-     * @param {string} url info URL
+     * @param {string} icon icon class name
      * @param {string} title link title
-     * @param {...string} classes classes to apply
+     * @param {string} path icon path
+     * @param {IconButtonOptions} options button creation options
      * @returns {SVGSVGElement}
      */
-    const makeInfoButton = (
-        url: string,
+    const makeStacksIconButton = (
+        icon: string,
         title: string,
-        ...classes: string[]
+        path: string,
+        { url, classes = [] }: IconButtonOptions
     ) => {
         const NS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(NS, "svg");
-        svg.classList.add("svg-icon", "iconInfo", ...classes);
+        svg.classList.add("svg-icon", icon, ...classes);
         svg.setAttribute("aria-hidden", "true");
         svg.setAttribute("width", "18");
         svg.setAttribute("height", "18");
         svg.setAttribute("viewBox", `0 0 18 18`);
 
-        const anchor = document.createElementNS(NS, "a");
-        anchor.setAttribute("href", url);
-        anchor.setAttribute("target", "_blank");
-
         const ttl = document.createElementNS(NS, "title");
         ttl.textContent = title;
 
-        const path = document.createElementNS(NS, "path");
-        path.setAttribute(
-            "d",
-            "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z"
-        );
+        const d = document.createElementNS(NS, "path");
+        d.setAttribute("d", path);
 
-        anchor.append(ttl, path);
-        svg.append(anchor);
+        if (url) {
+            const anchor = document.createElementNS(NS, "a");
+            anchor.setAttribute("href", url);
+            anchor.setAttribute("target", "_blank");
+            anchor.append(ttl, d);
+            svg.append(anchor);
+            return svg;
+        }
+
+        svg.append(ttl, d);
         return svg;
     };
 
@@ -831,7 +839,7 @@ StackExchange.ready(() => {
      * @param {PostType} postType parent post type
      * @returns {HTMLElement}
      */
-    const makeTabsView: ViewMaker = (_popup, id, _postType) => {
+    const makeTabsView: ViewMaker = (popup, id, _postType) => {
         if (makeTabsView.view) return makeTabsView.view;
 
         const wrap = el(
@@ -843,7 +851,7 @@ StackExchange.ready(() => {
         );
         wrap.id = id;
 
-        const btnGroup = el("div", "s-btn-group", "flex--item");
+        const tabGroup = el("div", "s-btn-group", "flex--item");
 
         const btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
 
@@ -880,21 +888,52 @@ StackExchange.ready(() => {
             ),
         ];
 
-        btnGroup.append(...buttons);
+        tabGroup.append(...buttons);
 
-        btnGroup.addEventListener("click", ({ target }) => {
+        tabGroup.addEventListener("click", ({ target }) => {
             buttons.forEach(({ classList }) => classList.remove("is-selected"));
             (target as HTMLElement).classList.add("is-selected");
         });
 
-        const info = makeInfoButton(
-            GITHUB_URL,
-            `see info about this popup (v${VERSION})`,
+        const iconGroup = el(
+            "div",
+            "d-flex",
             "flex--item",
-            "mute-text"
+            "gs8",
+            "ba",
+            "bar-pill",
+            "bc-black-300"
+        );
+        const iconClasses = ["flex--item", "mute-text"];
+
+        const seeBtn = makeStacksIconButton(
+            "iconEye",
+            "see through",
+            `M9.06 3C4 3 1 9 1 9s3 6 8.06 6C14 15 17 9 17 9s-3-6-7.94-6zM9
+             13a4 4 0 110-8 4 4 0 0 1 0 8zm0-2a2 2 0 002-2 2 2 0 0 0-2-2 2
+             2 0 0 0-2 2 2 2 0 0 0 2 2z`,
+            { classes: iconClasses }
         );
 
-        wrap.append(btnGroup, info);
+        seeBtn.addEventListener("mouseenter", () => {
+            fadeTo(popup, 0.4);
+            fadeOut(seeBtn.closest(".main")!);
+        });
+
+        seeBtn.addEventListener("mouseleave", () => {
+            fadeTo(popup, 1.0);
+            fadeTo(seeBtn.closest(".main")!, 1);
+        });
+
+        const info = makeStacksIconButton(
+            "iconInfo",
+            `see info about ARC (v${VERSION})`,
+            "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z",
+            { url: GITHUB_URL, classes: iconClasses }
+        );
+
+        iconGroup.append(seeBtn, info);
+        wrap.append(tabGroup, iconGroup);
 
         return (makeTabsView.view = wrap);
     };
@@ -954,44 +993,6 @@ StackExchange.ready(() => {
         });
 
         return (makeSettingsView.view = view);
-    };
-
-    /**
-     * @summary makes popup action view
-     * @param {HTMLElement} popup wrapper popup
-     * @param {string} id actions wrapper id
-     * @returns {HTMLElement}
-     */
-    const makeActionsView: ViewMaker = (popup, id) => {
-        if (makeActionsView.view) return makeActionsView.view;
-
-        const wrap = document.createElement("div");
-        wrap.classList.add("view");
-        wrap.id = id;
-
-        const actionsWrap = el("div", "actipns");
-
-        const seeBtn = makeButton(
-            "see-through",
-            "see through",
-            "popup-actions-see"
-        );
-
-        seeBtn.addEventListener("mouseenter", () => {
-            fadeTo(popup, 0.4);
-            fadeOut(seeBtn.closest(".main")!);
-        });
-
-        seeBtn.addEventListener("mouseleave", () => {
-            fadeTo(popup, 1.0);
-            fadeTo(seeBtn.closest(".main")!, 1);
-        });
-
-        const actionsList = [seeBtn];
-
-        actionsWrap.append(...actionsList);
-        wrap.append(actionsWrap);
-        return (makeActionsView.view = wrap);
     };
 
     /**
@@ -1442,7 +1443,6 @@ StackExchange.ready(() => {
             ["welcome-popup", makeWelcomeView],
             ["impexp-popup", makeImpExpView],
             ["settings-popup", makeSettingsView],
-            ["popup-actions", makeActionsView],
         ] as const;
 
         const initPostType = Store.load("post_type", postType);
@@ -1471,11 +1471,10 @@ StackExchange.ready(() => {
      * @param {string} text
      * @param {{ unsafe ?: boolean, classes ?: string[] }} options
      */
-    const span = (text: string, {
-        classes = [] as string[],
-        unsafe = false,
-        title = ""
-    }) => {
+    const span = (
+        text: string,
+        { classes = [] as string[], unsafe = false, title = "" }
+    ) => {
         const el = document.createElement("span");
         el.classList.add(...classes);
         unsafe ? (el.innerHTML = text) : (el.innerText = text);
@@ -1553,28 +1552,42 @@ StackExchange.ready(() => {
     };
 
     type TimeUnits = { [key in Partial<Intl.RelativeTimeFormatUnit>]: number };
-    const timeUnits = { // in seconds
+    const timeUnits = {
+        // in seconds
         second: 1,
         get minute() {
-            return this.second * 60
+            return this.second * 60;
         },
         get hour() {
-            return this.minute * 60
+            return this.minute * 60;
         },
         get day() {
-            return this.hour * 24
+            return this.hour * 24;
         },
         get week() {
-            return this.day * 7
+            return this.day * 7;
         },
         get month() {
-            return this.day * 30
+            return this.day * 30;
         },
         get year() {
-            return this.month * 12
+            return this.month * 12;
         },
     } as TimeUnits;
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ];
 
     /**
      * @summmary Get the absolute date, inspired from friendlyTime, https://dev.stackoverflow.com/content/Js/full.en.js
@@ -1582,23 +1595,23 @@ StackExchange.ready(() => {
      * @returns {string}
      */
     const absoluteTime = (epochSeconds: number) => {
-        const pad = (number: number) => number < 10 ? `0${number}` : number;
+        const pad = (number: number) => (number < 10 ? `0${number}` : number);
         const date = new Date(epochSeconds * 1000);
         const thisYear = new Date().getUTCFullYear();
         const thatDateShortYear = date.getUTCFullYear().toString().substring(2);
 
-        return [
-            months[date.getUTCMonth()],
-            date.getUTCDate(),
-            date.getUTCFullYear() !== thisYear ? `'${thatDateShortYear}` : "",
-            "at",
+        return (
             [
-                date.getUTCHours(),
-                ":",
-                pad(date.getUTCMinutes())
-            ].join("")
-        ].join(" ") || ""; // e.g. Jan 23 at 3:19
-    }
+                months[date.getUTCMonth()],
+                date.getUTCDate(),
+                date.getUTCFullYear() !== thisYear
+                    ? `'${thatDateShortYear}`
+                    : "",
+                "at",
+                [date.getUTCHours(), ":", pad(date.getUTCMinutes())].join(""),
+            ].join(" ") || ""
+        ); // e.g. Jan 23 at 3:19
+    };
 
     /**
      * @summary Calculate and format datespan for "Last seen ..." and "joined ...",
@@ -1610,35 +1623,41 @@ StackExchange.ready(() => {
         const diff = new Date().getTime() / 1000 - dateSeconds;
         if (isNaN(diff) || diff < 0) return "";
 
-        const findFromObject = <T>(object: T) => Object.entries(object)
-            .sort(([a], [b]) => Number(a) - Number(b)) // should not depend on key order
-            .find(([timeUnitSecs]) => diff < Number(timeUnitSecs)) || [, ""];
+        const findFromObject = <T>(object: T) =>
+            Object.entries(object)
+                .sort(([a], [b]) => Number(a) - Number(b)) // should not depend on key order
+                .find(([timeUnitSecs]) => diff < Number(timeUnitSecs)) || [
+                ,
+                "",
+            ];
 
-        const divideByMap = { // key: a time unit, value: the time unit before
+        const divideByMap = {
+            // key: a time unit, value: the time unit before
             [timeUnits.minute]: timeUnits.second,
             [timeUnits.hour]: timeUnits.minute,
             [timeUnits.day / 2]: timeUnits.hour,
-            [timeUnits.week]: timeUnits.day
+            [timeUnits.week]: timeUnits.day,
         };
         const [, divideBy] = findFromObject(divideByMap);
 
         const unitElapsed = Math.floor(diff / divideBy);
         const pluralS = pluralise(unitElapsed);
-        const getTimeAgo = (type: TimeAgo) => `${unitElapsed} ${type}${pluralS} ago`;
+        const getTimeAgo = (type: TimeAgo) =>
+            `${unitElapsed} ${type}${pluralS} ago`;
 
         const stringsMap = {
             [timeUnits.second * 2]: "just now",
-            [timeUnits.minute]:     getTimeAgo("sec"),   // less than a min           => ... secs ago
-            [timeUnits.hour]:       getTimeAgo("min"),   // less than an hour         => ... mins ago
-            [timeUnits.day / 2]:    getTimeAgo("hour"),  // less than 12 hours        => ... hours ago
-            [timeUnits.day]:        "today",             // during the last 12 hours  => today
-            [timeUnits.day * 2]:    "yesterday",         // "less than" 2 days        => yesterday
-            [timeUnits.week]:       getTimeAgo("day")    // during the past week      => ... days ago
+            [timeUnits.minute]: getTimeAgo("sec"), // less than a min           => ... secs ago
+            [timeUnits.hour]: getTimeAgo("min"), // less than an hour         => ... mins ago
+            [timeUnits.day / 2]: getTimeAgo("hour"), // less than 12 hours        => ... hours ago
+            [timeUnits.day]: "today", // during the last 12 hours  => today
+            [timeUnits.day * 2]: "yesterday", // "less than" 2 days        => yesterday
+            [timeUnits.week]: getTimeAgo("day"), // during the past week      => ... days ago
         };
         const [, relativeDateString] = findFromObject(stringsMap);
 
         return relativeDateString || absoluteTime(dateSeconds); // return absolute date if diff > 1 month
-    }
+    };
 
     /**
      * @summary Format reputation string, https://stackoverflow.com/a/17633552
@@ -1647,8 +1666,8 @@ StackExchange.ready(() => {
      */
     const shortenReputationNumber = (reputationNumber: number) => {
         const ranges = [
-            { divider: 1e6, suffix: 'm' },
-            { divider: 1e3, suffix: 'k' },
+            { divider: 1e6, suffix: "m" },
+            { divider: 1e3, suffix: "k" },
         ];
 
         // https://chat.stackoverflow.com/transcript/message/52517093#52517093
@@ -1656,7 +1675,7 @@ StackExchange.ready(() => {
         return range
             ? (reputationNumber / range.divider).toFixed(1) + range.suffix
             : reputationNumber.toString();
-    }
+    };
 
     /**
      * @summary Get the Id of the logged-in user
@@ -1715,7 +1734,8 @@ StackExchange.ready(() => {
      * @param {number} date
      * @returns {boolean}
      */
-    const isNewUser = (date: number) => Date.now() / 1000 - date < timeUnits.week;
+    const isNewUser = (date: number) =>
+        Date.now() / 1000 - date < timeUnits.week;
 
     /**
      * @summary get original poster username
@@ -1812,25 +1832,27 @@ StackExchange.ready(() => {
         empty(container);
 
         const relativeTimeClass = "relativetime";
-        const [prettyCreation, prettyLastSeen] = [creation_date, last_access_date]
-            .map(date => {
-                const prettified = prettifyDate(date);
+        const [prettyCreation, prettyLastSeen] = [
+            creation_date,
+            last_access_date,
+        ].map((date) => {
+            const prettified = prettifyDate(date);
 
-                // SE automatically updates ".relativetime" spans every min
-                // see updateRelativeDates() in full.en.js
-                // spans need to have a title in the "YYYY-MM-DD HH:MM:SSZ" format
-                const isoString = new Date(date * 1000)
-                    .toISOString()
-                    .replace("T", " ")
-                    .replace(/\.\d{3}/, "");
-                const dateSpan = span(prettified, {
-                    classes: [ relativeTimeClass ],
-                    unsafe: true,
-                    title: isoString
-                });
-                makeB(dateSpan);
-                return dateSpan;
+            // SE automatically updates ".relativetime" spans every min
+            // see updateRelativeDates() in full.en.js
+            // spans need to have a title in the "YYYY-MM-DD HH:MM:SSZ" format
+            const isoString = new Date(date * 1000)
+                .toISOString()
+                .replace("T", " ")
+                .replace(/\.\d{3}/, "");
+            const dateSpan = span(prettified, {
+                classes: [relativeTimeClass],
+                unsafe: true,
+                title: isoString,
             });
+            makeB(dateSpan);
+            return dateSpan;
+        });
 
         container.append(
             capitalize(user_type),
