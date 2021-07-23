@@ -759,7 +759,7 @@ StackExchange.ready(() => {
     const makeButton = (text: string, title: string, ...classes: string[]) => {
         const button = el("button", "s-btn", ...classes);
         button.innerHTML = text;
-        button.title = title;
+        if (title) button.title = title;
         return button;
     };
 
@@ -773,7 +773,14 @@ StackExchange.ready(() => {
         close.classList.add("popup-close");
         close.id = id;
 
-        const btn = makeButton("×", "close this popup (or hit Esc)");
+        // https://stackoverflow.design/product/resources/icons/#clear
+        const clearSvg = makeStacksIconButton(
+            "iconClear",
+            "Close popup",
+            "M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9 15 4.41z",
+            {}
+        );
+        const btn = makeButton(clearSvg.outerHTML, "", "s-btn__muted");
 
         close.append(btn);
         return close;
