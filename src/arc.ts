@@ -1,4 +1,5 @@
-declare var StackExchange: {
+type ToastTypes = 'success' | 'warning' | 'danger';
+declare const StackExchange: {
     options: {
         user: { userId: string };
         site: {
@@ -7,6 +8,7 @@ declare var StackExchange: {
     };
     helpers: {
         bindMovablePopups(): void;
+        showToast(message: string, info: { type: ToastTypes, transientTimeout?: number }): void;
     };
     ready(cbk: (...args: any[]) => any): void;
 };
@@ -1143,7 +1145,7 @@ StackExchange.ready(() => {
         });
 
         area.addEventListener("change", async () => {
-            importComments(popup, area.value);
+            importComments(area.value);
             updateComments(popup, postType);
         });
 
@@ -1415,11 +1417,7 @@ StackExchange.ready(() => {
                         const descr = selected?.querySelector(".action-desc");
 
                         if (!descr || !selected)
-                            return notify(
-                                p,
-                                "Nothing selected",
-                                "please select a comment"
-                            );
+                            return notify("Nothing selected, please select a comment", "warning");
 
                         const op = getOP();
 
@@ -1482,35 +1480,6 @@ StackExchange.ready(() => {
         unsafe ? (el.innerHTML = text) : (el.innerText = text);
         if (title) el.title = title;
         return el;
-    };
-
-    /**
-     * @summary makes a notification announcement
-     * @param {string} title
-     * @param {string} message
-     * @param  {boolean} [unsafe]
-     * @returns {HTMLElement}
-     */
-    const makeAnnouncement = (
-        title: string,
-        message: string,
-        unsafe = false
-    ) => {
-        const wrap = document.createElement("div");
-        wrap.classList.add("auto-review-comments", "announcement");
-        wrap.id = "announcement";
-
-        const close = document.createElement("span");
-        close.classList.add("notify-close");
-
-        const dismissal = makeButton("x", "dismiss this notification");
-
-        close.append(dismissal);
-
-        const txt = unsafe ? span(message, { unsafe }) : text(message);
-
-        wrap.append(b(title), txt, close);
-        return wrap;
     };
 
     /**
@@ -1689,29 +1658,15 @@ StackExchange.ready(() => {
 
     /**
      * @summary shows a message
-     * @param {HTMLElement} popup
-     * @param {string} title
-     * @param {string} body
-     * @param {Function} [callback]
+     * @param {string} toastBody
+     * @param {ToastTypes} type
      * @returns {void}
      */
     const notify = (
-        popup: HTMLElement,
-        title: string,
-        body: string,
-        callback?: () => void
+        toastBody: string,
+        type: ToastTypes
     ) => {
-        const message = makeAnnouncement(title, body, true);
-
-        message.addEventListener("click", ({ target }) => {
-            if (!(<HTMLElement>target).matches(".notify-close a")) return;
-            fadeOut(message);
-            message.remove();
-            typeof callback === "function" && callback();
-        });
-
-        popup.prepend(message);
-        return message;
+        StackExchange.helpers.showToast(toastBody, { type });
     };
 
     /**
@@ -1911,7 +1866,7 @@ StackExchange.ready(() => {
      * @param {string} text comment text to parse
      * @returns {void}
      */
-    const importComments = (popup: HTMLElement, text: string) => {
+    const importComments = (text: string) => {
         Store.clear("name-");
         Store.clear("desc-");
 
@@ -1935,9 +1890,8 @@ StackExchange.ready(() => {
 
         if (numNames !== numDescs)
             return notify(
-                popup,
-                "Failed to import",
-                "Titles and descriptions do not match"
+                "Failed to import: titles and descriptions do not match",
+                "danger"
             );
 
         names.forEach((name, idx) => {
@@ -2193,7 +2147,7 @@ StackExchange.ready(() => {
      * @returns {EventListener}
      */
     const makeQuickInsertHandler =
-        (popup: HTMLElement): EventListener =>
+        (): EventListener =>
         ({ target }) => {
             const el = <HTMLElement>target;
 
@@ -2203,7 +2157,7 @@ StackExchange.ready(() => {
             const radio = action?.querySelector("input");
 
             if (!action || !radio)
-                return notify(popup, "Problem", "something went wrong");
+                return notify("Something went wrong", "danger");
 
             action.classList.add("action-selected");
             radio.checked = true;
@@ -2224,7 +2178,7 @@ StackExchange.ready(() => {
             openEditMode(el, popup);
         });
 
-        const insertHandler = makeQuickInsertHandler(popup);
+        const insertHandler = makeQuickInsertHandler();
         const selectHandler = makeCommentClickHandler(popup);
 
         popup.addEventListener("click", (event) => {
