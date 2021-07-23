@@ -472,13 +472,6 @@ StackExchange.ready(() => {
             `.${arc}.popup .svg-icon.mute-text a {
                     color: var(--black-500);
                 }`,
-            `.${arc}.popup>div>textarea{
-                    width:100%;
-                    height:442px;
-                }`,
-            `.${arc}.popup .view textarea {
-                    resize: vertical;
-                }`,
             `.${arc}.popup .main .view {
                     padding: 1vh 1vw;
                 }`,
@@ -650,6 +643,7 @@ StackExchange.ready(() => {
         const area = el("textarea", "flex--item", "s-textarea");
         area.id = area.name = id;
         area.value = value;
+        area.rows = 20;
         wrap.append(area);
 
         return [wrap, area] as const;
@@ -1137,8 +1131,8 @@ StackExchange.ready(() => {
 
         const view = el("div", "view");
         view.id = id;
-
-        const actionWrap = el("div", "actions");
+        // because it will include the textarea and the buttons:
+        view.classList.add("d-flex", "gs8", "gsy", "fd-column");
 
         const [areaWrap, area] = makeStacksTextArea("impexp", {
             label: "Comment source",
@@ -1149,27 +1143,35 @@ StackExchange.ready(() => {
             updateComments(popup, postType);
         });
 
+        const actionWrap = el("div", "actions", "flex--item");
+        const buttonsWrap = el("div", "d-flex", "gs8", "gsx");
+
         const toJsonBtn = makeButton(
             "JSON",
             "Convert to JSON",
-            "s-btn__primary"
+            "s-btn__primary", "flex--item"
         );
-
         const cancelBtn = makeButton(
             "cancel",
             "cancel import/export",
-            "s-btn__danger"
+            "s-btn__danger", "flex--item"
         );
 
         const viewSwitcher = makeViewSwitcher(viewsSel);
-
         cancelBtn.addEventListener("click", () =>
             viewSwitcher(makeSearchView(popup, "search-popup", postType))
         );
 
-        actionWrap.append(toJsonBtn, cancelBtn);
+        buttonsWrap.append(toJsonBtn, cancelBtn);
+        actionWrap.append(buttonsWrap);
 
-        view.append(areaWrap, actionWrap);
+        const flexItemTextareaWrapper = el("div", "flex--item");
+        const flexItemActionWrap = el("div", "flex--item");
+
+        flexItemTextareaWrapper.append(areaWrap);
+        flexItemActionWrap.append(actionWrap);
+
+        view.append(flexItemTextareaWrapper, flexItemActionWrap);
 
         toJsonBtn.addEventListener("click", () => {
             const numComments = Store.load<number>("commentcount");
