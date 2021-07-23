@@ -1147,18 +1147,16 @@ StackExchange.ready(() => {
             updateComments(popup, postType);
         });
 
-        const jsonpBtn = makeButton(
-            "JSONP",
-            "JSONP",
-            "s-btn__outlined",
-            "jsonp"
+        const toJsonBtn = makeButton(
+            "JSON",
+            "Convert to JSON",
+            "s-btn__primary"
         );
 
         const cancelBtn = makeButton(
             "cancel",
             "cancel import/export",
-            "s-btn__danger",
-            "cancel"
+            "s-btn__danger"
         );
 
         const viewSwitcher = makeViewSwitcher(viewsSel);
@@ -1167,21 +1165,18 @@ StackExchange.ready(() => {
             viewSwitcher(makeSearchView(popup, "search-popup", postType))
         );
 
-        actionWrap.append(jsonpBtn, cancelBtn);
+        actionWrap.append(toJsonBtn, cancelBtn);
 
         view.append(areaWrap, actionWrap);
 
-        const cbk = "callback";
-        jsonpBtn.addEventListener("click", () => {
+        toJsonBtn.addEventListener("click", () => {
             const numComments = Store.load<number>("commentcount");
 
             const loaded = loadComments(numComments);
-            const content = loaded
-                .map((comment) => JSON.stringify(comment))
-                .join(",\n");
+            const content = JSON.stringify(loaded, null, 4);
+            area.value = content;
 
-            area.value = `${cbk}([\n${content}\n])`;
-
+            view.querySelector("textarea")?.classList.add("ff-mono"); // like a pre
             view.querySelector(".actions")?.remove();
         });
 
