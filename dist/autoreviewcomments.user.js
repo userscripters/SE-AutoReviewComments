@@ -117,7 +117,7 @@ StackExchange.ready(function () {
         if (speed === void 0) { speed = 200; }
         return fadeTo(el, 0, speed);
     };
-    var pluralise = function (count) { return count === 1 ? "" : "s"; };
+    var pluralise = function (count) { return (count === 1 ? "" : "s"); };
     var runFromHashmap = function (hashmap, comparator) {
         var _a;
         var params = [];
@@ -304,12 +304,11 @@ StackExchange.ready(function () {
             "." + arc + ".popup .svg-icon.mute-text a {\n                    color: var(--black-500);\n                }",
             "." + arc + ".popup>div>textarea{\n                    width:100%;\n                    height:442px;\n                }",
             "." + arc + ".popup .view textarea {\n                    resize: vertical;\n                }",
-            "." + arc + ".popup .main{\n                    overflow:hidden\n                }",
-            "." + arc + ".popup .main .view {\n                    overflow: auto;\n                    padding: 1vh 1vw;\n                }",
+            "." + arc + ".popup .main .view {\n                    padding: 1vh 1vw;\n                }",
             "." + arc + ".popup .main .userinfo{\n                    padding:5px;\n                    margin-bottom:7px;\n                }",
             "." + arc + ".popup .main .remoteurl, ." + arc + ".popup .main .customwelcome {\n                    display: block;\n                    width: 100%;\n                }",
-            "." + arc + ".popup .main .action-list{\n                    margin:0 0 7px 0 !important;\n                    overflow-y:scroll;\n                    max-height: 400px;\n                }",
-            "." + arc + ".popup .main .action-list li{\n                    width:100%;\n                    padding:0;\n                    transition:.1s\n                }",
+            "." + arc + ".popup .main .action-list{\n                    overflow-y:scroll;\n                    max-height: 400px;\n                }",
+            "." + arc + ".popup .main .action-list li{\n                    padding:0;\n                    transition:.1s\n                }",
             "." + arc + ".popup .main .action-list li:hover{\n                    background-color:#f2f2f2\n                }",
             "." + arc + ".popup .main .action-list li.action-selected:hover{\n                    background-color:#e6e6e6\n                }",
             "." + arc + ".popup .main .action-list li label{\n                    position:relative;\n                    display:block;\n                    padding:10px;\n                }",
@@ -434,28 +433,29 @@ StackExchange.ready(function () {
         close.append(btn);
         return close;
     };
-    var makeInfoButton = function (url, title) {
-        var _a;
-        var classes = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            classes[_i - 2] = arguments[_i];
-        }
+    var makeStacksIconButton = function (icon, title, path, _a) {
+        var _b;
+        var url = _a.url, _c = _a.classes, classes = _c === void 0 ? [] : _c;
         var NS = "http://www.w3.org/2000/svg";
         var svg = document.createElementNS(NS, "svg");
-        (_a = svg.classList).add.apply(_a, __spreadArray(["svg-icon", "iconInfo"], __read(classes)));
+        (_b = svg.classList).add.apply(_b, __spreadArray(["svg-icon", icon], __read(classes)));
         svg.setAttribute("aria-hidden", "true");
         svg.setAttribute("width", "18");
         svg.setAttribute("height", "18");
         svg.setAttribute("viewBox", "0 0 18 18");
-        var anchor = document.createElementNS(NS, "a");
-        anchor.setAttribute("href", url);
-        anchor.setAttribute("target", "_blank");
         var ttl = document.createElementNS(NS, "title");
         ttl.textContent = title;
-        var path = document.createElementNS(NS, "path");
-        path.setAttribute("d", "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z");
-        anchor.append(ttl, path);
-        svg.append(anchor);
+        var d = document.createElementNS(NS, "path");
+        d.setAttribute("d", path);
+        if (url) {
+            var anchor = document.createElementNS(NS, "a");
+            anchor.setAttribute("href", url);
+            anchor.setAttribute("target", "_blank");
+            anchor.append(ttl, d);
+            svg.append(anchor);
+            return svg;
+        }
+        svg.append(ttl, d);
         return svg;
     };
     var makeViewSwitcher = function (viewsSel) { return function (view) {
@@ -464,12 +464,12 @@ StackExchange.ready(function () {
         Store.save("CurrentView", view.id);
         return view;
     }; };
-    var makeTabsView = function (_popup, id, _postType) {
+    var makeTabsView = function (popup, id, _postType) {
         if (makeTabsView.view)
             return makeTabsView.view;
         var wrap = el("div", "view", "d-flex", "ai-center", "jc-space-between");
         wrap.id = id;
-        var btnGroup = el("div", "s-btn-group", "flex--item");
+        var tabGroup = el("div", "s-btn-group", "flex--item");
         var btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
         var buttons = [
             makeButton.apply(void 0, __spreadArray(__spreadArray(["filter",
@@ -483,8 +483,8 @@ StackExchange.ready(function () {
             makeButton.apply(void 0, __spreadArray(__spreadArray(["settings",
                 "configure ARC"], __read(btnGroupClasses)), ["popup-actions-settings"])),
         ];
-        btnGroup.append.apply(btnGroup, __spreadArray([], __read(buttons)));
-        btnGroup.addEventListener("click", function (_a) {
+        tabGroup.append.apply(tabGroup, __spreadArray([], __read(buttons)));
+        tabGroup.addEventListener("click", function (_a) {
             var target = _a.target;
             buttons.forEach(function (_a) {
                 var classList = _a.classList;
@@ -492,8 +492,20 @@ StackExchange.ready(function () {
             });
             target.classList.add("is-selected");
         });
-        var info = makeInfoButton(GITHUB_URL, "see info about this popup (v" + VERSION + ")", "flex--item", "mute-text");
-        wrap.append(btnGroup, info);
+        var iconGroup = el("div", "d-flex", "flex--item", "gs8", "ba", "bar-pill", "bc-black-300");
+        var iconClasses = ["flex--item", "mute-text"];
+        var seeBtn = makeStacksIconButton("iconEye", "see through", "M9.06 3C4 3 1 9 1 9s3 6 8.06 6C14 15 17 9 17 9s-3-6-7.94-6zM9\n             13a4 4 0 110-8 4 4 0 0 1 0 8zm0-2a2 2 0 002-2 2 2 0 0 0-2-2 2\n             2 0 0 0-2 2 2 2 0 0 0 2 2z", { classes: iconClasses });
+        seeBtn.addEventListener("mouseenter", function () {
+            fadeTo(popup, 0.4);
+            fadeOut(seeBtn.closest(".main"));
+        });
+        seeBtn.addEventListener("mouseleave", function () {
+            fadeTo(popup, 1.0);
+            fadeTo(seeBtn.closest(".main"), 1);
+        });
+        var info = makeStacksIconButton("iconInfo", "see info about ARC (v" + VERSION + ")", "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z", { url: GITHUB_URL, classes: iconClasses });
+        iconGroup.append(seeBtn, info);
+        wrap.append(tabGroup, iconGroup);
         return (makeTabsView.view = wrap);
     };
     var makeSettingsView = function (popup, id, postType) {
@@ -521,27 +533,6 @@ StackExchange.ready(function () {
             }, function (key) { return target.matches(key); }, popup, Store.load("post_type", postType));
         });
         return (makeSettingsView.view = view);
-    };
-    var makeActionsView = function (popup, id) {
-        if (makeActionsView.view)
-            return makeActionsView.view;
-        var wrap = document.createElement("div");
-        wrap.classList.add("view");
-        wrap.id = id;
-        var actionsWrap = el("div", "actipns");
-        var seeBtn = makeButton("see-through", "see through", "popup-actions-see");
-        seeBtn.addEventListener("mouseenter", function () {
-            fadeTo(popup, 0.4);
-            fadeOut(seeBtn.closest(".main"));
-        });
-        seeBtn.addEventListener("mouseleave", function () {
-            fadeTo(popup, 1.0);
-            fadeTo(seeBtn.closest(".main"), 1);
-        });
-        var actionsList = [seeBtn];
-        actionsWrap.append.apply(actionsWrap, __spreadArray([], __read(actionsList)));
-        wrap.append(actionsWrap);
-        return (makeActionsView.view = wrap);
     };
     var makeSearchView = function (_popup, id) {
         if (makeSearchView.view)
@@ -817,7 +808,6 @@ StackExchange.ready(function () {
             ["welcome-popup", makeWelcomeView],
             ["impexp-popup", makeImpExpView],
             ["settings-popup", makeSettingsView],
-            ["popup-actions", makeActionsView],
         ];
         var initPostType = Store.load("post_type", postType);
         debugLogger.log({ initPostType: initPostType, postType: postType });
@@ -903,39 +893,55 @@ StackExchange.ready(function () {
             return this.month * 12;
         },
     };
-    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ];
     var absoluteTime = function (epochSeconds) {
-        var pad = function (number) { return number < 10 ? "0" + number : number; };
+        var pad = function (number) { return (number < 10 ? "0" + number : number); };
         var date = new Date(epochSeconds * 1000);
         var thisYear = new Date().getUTCFullYear();
         var thatDateShortYear = date.getUTCFullYear().toString().substring(2);
-        return [
+        return ([
             months[date.getUTCMonth()],
             date.getUTCDate(),
-            date.getUTCFullYear() !== thisYear ? "'" + thatDateShortYear : "",
+            date.getUTCFullYear() !== thisYear
+                ? "'" + thatDateShortYear
+                : "",
             "at",
-            [
-                date.getUTCHours(),
-                ":",
-                pad(date.getUTCMinutes())
-            ].join("")
-        ].join(" ") || "";
+            [date.getUTCHours(), ":", pad(date.getUTCMinutes())].join(""),
+        ].join(" ") || "");
     };
     var prettifyDate = function (dateSeconds) {
         var _a, _b;
         var diff = new Date().getTime() / 1000 - dateSeconds;
         if (isNaN(diff) || diff < 0)
             return "";
-        var findFromObject = function (object) { return Object.entries(object)
-            .sort(function (_a, _b) {
-            var _c = __read(_a, 1), a = _c[0];
-            var _d = __read(_b, 1), b = _d[0];
-            return Number(a) - Number(b);
-        })
-            .find(function (_a) {
-            var _b = __read(_a, 1), timeUnitSecs = _b[0];
-            return diff < Number(timeUnitSecs);
-        }) || [, ""]; };
+        var findFromObject = function (object) {
+            return Object.entries(object)
+                .sort(function (_a, _b) {
+                var _c = __read(_a, 1), a = _c[0];
+                var _d = __read(_b, 1), b = _d[0];
+                return Number(a) - Number(b);
+            })
+                .find(function (_a) {
+                var _b = __read(_a, 1), timeUnitSecs = _b[0];
+                return diff < Number(timeUnitSecs);
+            }) || [
+                ,
+                "",
+            ];
+        };
         var divideByMap = (_a = {},
             _a[timeUnits.minute] = timeUnits.second,
             _a[timeUnits.hour] = timeUnits.minute,
@@ -945,7 +951,9 @@ StackExchange.ready(function () {
         var _c = __read(findFromObject(divideByMap), 2), divideBy = _c[1];
         var unitElapsed = Math.floor(diff / divideBy);
         var pluralS = pluralise(unitElapsed);
-        var getTimeAgo = function (type) { return unitElapsed + " " + type + pluralS + " ago"; };
+        var getTimeAgo = function (type) {
+            return unitElapsed + " " + type + pluralS + " ago";
+        };
         var stringsMap = (_b = {},
             _b[timeUnits.second * 2] = "just now",
             _b[timeUnits.minute] = getTimeAgo("sec"),
@@ -960,8 +968,8 @@ StackExchange.ready(function () {
     };
     var shortenReputationNumber = function (reputationNumber) {
         var ranges = [
-            { divider: 1e6, suffix: 'm' },
-            { divider: 1e3, suffix: 'k' },
+            { divider: 1e6, suffix: "m" },
+            { divider: 1e3, suffix: "k" },
         ];
         var range = ranges.find(function (_a) {
             var divider = _a.divider;
@@ -998,7 +1006,9 @@ StackExchange.ready(function () {
         var _a = __read(/users\/(\d+)\//.exec(href) || [], 2), uid = _a[1];
         return uid || "";
     };
-    var isNewUser = function (date) { return Date.now() / 1000 - date < timeUnits.week; };
+    var isNewUser = function (date) {
+        return Date.now() / 1000 - date < timeUnits.week;
+    };
     var getOP = function (refresh) {
         if (refresh === void 0) { refresh = false; }
         if (getOP.op && !refresh)
@@ -1043,8 +1053,10 @@ StackExchange.ready(function () {
         userLink.append(b(display_name));
         empty(container);
         var relativeTimeClass = "relativetime";
-        var _c = __read([creation_date, last_access_date]
-            .map(function (date) {
+        var _c = __read([
+            creation_date,
+            last_access_date,
+        ].map(function (date) {
             var prettified = prettifyDate(date);
             var isoString = new Date(date * 1000)
                 .toISOString()
@@ -1053,7 +1065,7 @@ StackExchange.ready(function () {
             var dateSpan = span(prettified, {
                 classes: [relativeTimeClass],
                 unsafe: true,
-                title: isoString
+                title: isoString,
             });
             makeB(dateSpan);
             return dateSpan;
