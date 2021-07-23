@@ -2400,6 +2400,7 @@ StackExchange.ready(() => {
      * @returns {void}
      */
     const showPopup = (popup: HTMLElement) => {
+        show(popup);
         fadeTo(popup, 1);
         const { style, classList } = popup;
         style.display = "";
