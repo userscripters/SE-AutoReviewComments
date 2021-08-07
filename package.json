@@ -33,7 +33,7 @@
     "@types/chai-as-promised": "^7.1.4",
     "@types/greasemonkey": "^4.0.2",
     "@types/mocha": "^8.2.3",
-    "@types/node": "^16.3.3",
+    "@types/node": "^16.4.13",
     "@types/tampermonkey": "^4.0.2",
     "@userscripters/generate-headers": "^1.6.4",
     "chai": "^4.3.4",
