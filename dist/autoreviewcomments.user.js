@@ -1213,16 +1213,21 @@ window.addEventListener("load", function () {
             var html = tag(backup.replace(Store.load("WelcomeMessage", ""), ""));
             debugLogger.log({ backup: backup, html: html });
             empty(commentElem);
-            var preview = document.createElement("span");
-            preview.classList.add("d-inline-block", "p8");
-            preview.innerHTML = html;
+            var replaceVars = makeVariableReplacer({
+                site: site,
+                sitename: sitename,
+                myId: getLoggedInUserId(StackExchange),
+                opName: getOP(),
+            });
+            var preview = el("span", "d-inline-block", "p8");
+            preview.innerHTML = replaceVars(html);
             var _b = __read(makeStacksTextArea(commentElem.id, {
                 value: HTMLtoMarkdown(html),
             }), 2), areaWrap = _b[0], area = _b[1];
             area.addEventListener("input", function (_a) {
                 var target = _a.target;
                 var value = target.value;
-                preview.innerHTML = markdownToHTML(untag(value));
+                preview.innerHTML = markdownToHTML(replaceVars(value));
             });
             area.addEventListener("change", function (_a) {
                 var target = _a.target;

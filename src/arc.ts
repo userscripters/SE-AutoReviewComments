@@ -2108,9 +2108,15 @@ window.addEventListener("load", () => {
 
             empty(commentElem);
 
-            const preview = document.createElement("span");
-            preview.classList.add("d-inline-block", "p8"); //TODO: config
-            preview.innerHTML = html;
+            const replaceVars = makeVariableReplacer({
+                site,
+                sitename,
+                myId: getLoggedInUserId(StackExchange),
+                opName: getOP(),
+            });
+
+            const preview = el("span", "d-inline-block", "p8");
+            preview.innerHTML = replaceVars(html);
 
             const [areaWrap, area] = makeStacksTextArea(commentElem.id, {
                 value: HTMLtoMarkdown(html),
@@ -2118,7 +2124,7 @@ window.addEventListener("load", () => {
 
             area.addEventListener("input", ({ target }) => {
                 const { value } = <HTMLTextAreaElement>target;
-                preview.innerHTML = markdownToHTML(untag(value));
+                preview.innerHTML = markdownToHTML(replaceVars(value));
             });
 
             area.addEventListener("change", ({ target }) => {
