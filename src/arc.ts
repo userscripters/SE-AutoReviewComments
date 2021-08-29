@@ -1,20 +1,4 @@
 type ToastTypes = "success" | "warning" | "danger";
-declare const StackExchange: {
-    options: {
-        user: { userId: string };
-        site: {
-            name?: string;
-        };
-    };
-    helpers: {
-        bindMovablePopups(): void;
-        showToast(
-            message: string,
-            info: { type: ToastTypes; transientTimeout?: number }
-        ): void;
-    };
-    ready(cbk: (...args: any[]) => any): void;
-};
 
 interface Window {
     [x: string]: unknown;
@@ -1726,7 +1710,7 @@ window.addEventListener("load", () => {
          * @returns {string}
          */
         const getLoggedInUserId = (se: typeof StackExchange) =>
-            se.options.user.userId || "";
+            se.options.user.userId?.toString() || "";
 
         /**
          * @summary shows a message
@@ -2554,6 +2538,7 @@ window.addEventListener("load", () => {
 
             center(popup);
 
+            //@ts-expect-error TODO: add to package
             StackExchange.helpers.bindMovablePopups();
 
             //Get user info and inject

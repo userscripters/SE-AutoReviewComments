@@ -7,7 +7,8 @@
             "chai-as-promised",
             "node",
             "greasemonkey",
-            "tampermonkey"
+            "tampermonkey",
+            "@userscripters/stackexchange-global-types"
         ],
         "lib": ["DOM", "DOM.Iterable", "ESNext"],
         "moduleResolution": "node",
