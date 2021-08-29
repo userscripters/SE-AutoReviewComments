@@ -22,6 +22,10 @@
 // ==/UserScript==
 
 "use strict";
+var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
+    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+    return cooked;
+};
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -259,6 +263,9 @@ window.addEventListener("load", function () {
             return "<a href=\"" + url + "\" target=\"_blank\">" + label + "</a>";
         };
         var htmlem = function (text) { return "<em>" + text + "</em>"; };
+        var htmlstrong = function (text) {
+            return "<strong>" + text + "</strong>";
+        };
         var commentDefaults = [
             {
                 targets: [Target.CommentQuestion],
@@ -288,7 +295,7 @@ window.addEventListener("load", function () {
             {
                 targets: [Target.CommentAnswer],
                 name: "OP using an answer for further information",
-                description: "Please use the " + htmlem("Post answer") + " button only for actual answers. You should modify your original question to add additional information.",
+                description: "Please use the " + htmlem(__makeTemplateObject(["Post answer"], ["Post answer"])) + " button only for actual answers. You should modify your original question to add additional information.",
             },
             {
                 targets: [Target.CommentAnswer],
@@ -298,7 +305,7 @@ window.addEventListener("load", function () {
             {
                 targets: [Target.CommentAnswer],
                 name: 'Another user adding a "Me too!"',
-                description: "If you have a " + htmlem("new") + " question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button. If you have sufficient reputation, " + htmllink("/privileges/vote-up", "you may upvote") + " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers.",
+                description: "If you have a " + htmlem(__makeTemplateObject(["new"], ["new"])) + " question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button. If you have sufficient reputation, " + htmllink("/privileges/vote-up", "you may upvote") + " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers.",
             },
             {
                 targets: [Target.Closure],
@@ -1160,10 +1167,16 @@ window.addEventListener("load", function () {
                 .replace(/<strong>(.+?)<\/strong>/g, "**$1**"));
         };
         var markdownToHTML = function (markdown) {
-            return escapeHtml(markdown)
-                .replace(/\[([^\]]+)\]\((.+?)\)/g, htmllink("$2", "$1"))
-                .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-                .replace(/\*([^`]+?)\*/g, htmlem("$1"));
+            var html = escapeHtml(markdown);
+            var rules = [
+                [/([*_]{2})(.+?)\1/g, htmlstrong(__makeTemplateObject(["$2"], ["$2"]))],
+                [/([*_])([^`*_]+?)\1(?![*_])/g, htmlem(__makeTemplateObject(["$2"], ["$2"]))],
+                [/\[([^\]]+)\]\((.+?)\)/g, htmllink("$2", "$1")],
+            ];
+            return rules.reduce(function (a, _a) {
+                var _b = __read(_a, 2), expr = _b[0], replacer = _b[1];
+                return a.replace(expr, replacer);
+            }, html);
         };
         var untag = function (text) {
             return text

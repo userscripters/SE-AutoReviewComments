@@ -370,7 +370,13 @@ window.addEventListener("load", () => {
         /**
          * @summary template for the <em> HTML
          */
-        const htmlem = (text: string) => `<em>${text}</em>`;
+        const htmlem = (text: TemplateStringsArray) => `<em>${text}</em>`;
+
+        /**
+         * @summary template for the <strong> HTML
+         */
+        const htmlstrong = (text: TemplateStringsArray) =>
+            `<strong>${text}</strong>`;
 
         //default comments
         const commentDefaults: CommentInfo[] = [
@@ -411,9 +417,7 @@ window.addEventListener("load", () => {
             {
                 targets: [Target.CommentAnswer],
                 name: "OP using an answer for further information",
-                description: `Please use the ${htmlem(
-                    "Post answer"
-                )} button only for actual answers. You should modify your original question to add additional information.`,
+                description: `Please use the ${htmlem`Post answer`} button only for actual answers. You should modify your original question to add additional information.`,
             },
             {
                 targets: [Target.CommentAnswer],
@@ -426,9 +430,7 @@ window.addEventListener("load", () => {
             {
                 targets: [Target.CommentAnswer],
                 name: 'Another user adding a "Me too!"',
-                description: `If you have a ${htmlem(
-                    "new"
-                )} question, please ask it by clicking the ${htmllink(
+                description: `If you have a ${htmlem`new`} question, please ask it by clicking the ${htmllink(
                     "/questions/ask",
                     "Ask Question"
                 )} button. If you have sufficient reputation, ${htmllink(
@@ -2008,11 +2010,22 @@ window.addEventListener("load", () => {
          * @param {string} markdown
          * @returns {string}
          */
-        const markdownToHTML = (markdown: string) =>
-            escapeHtml(markdown)
-                .replace(/\[([^\]]+)\]\((.+?)\)/g, htmllink("$2", "$1"))
-                .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-                .replace(/\*([^`]+?)\*/g, htmlem("$1"));
+        const markdownToHTML = (markdown: string) => {
+            const html = escapeHtml(markdown);
+
+            const rules: [RegExp, string][] = [
+                //strong should match before italics to avoid overcomplicating the regex
+                [/([*_]{2})(.+?)\1/g, htmlstrong`$2`],
+                //it is imperative that italics are matched before links as _blank is very hard to exclude
+                [/([*_])([^`*_]+?)\1(?![*_])/g, htmlem`$2`],
+                [/\[([^\]]+)\]\((.+?)\)/g, htmllink("$2", "$1")],
+            ];
+
+            return rules.reduce(
+                (a, [expr, replacer]) => a.replace(expr, replacer),
+                html
+            );
+        };
 
         /**
          * @summary untags the comment text
