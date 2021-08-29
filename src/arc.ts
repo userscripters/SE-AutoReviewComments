@@ -2099,10 +2099,8 @@ window.addEventListener("load", () => {
 
             if (mode === "edit") return;
 
-            // remove greeting before editing
-            const html = tag(
-                backup.replace(Store.load("WelcomeMessage", ""), "")
-            );
+            const greeting = Store.load("WelcomeMessage", "");
+            const html = tag(backup).replace(greeting && `${greeting} `, "");
 
             debugLogger.log({ backup, html });
 

@@ -1210,7 +1210,8 @@ window.addEventListener("load", function () {
             var backup = commentElem.innerHTML, dataset = commentElem.dataset, _a = commentElem.dataset.mode, mode = _a === void 0 ? "insert" : _a;
             if (mode === "edit")
                 return;
-            var html = tag(backup.replace(Store.load("WelcomeMessage", ""), ""));
+            var greeting = Store.load("WelcomeMessage", "");
+            var html = tag(backup).replace(greeting && greeting + " ", "");
             debugLogger.log({ backup: backup, html: html });
             empty(commentElem);
             var replaceVars = makeVariableReplacer({
