@@ -6,7 +6,8 @@ output=$dist"/headers.js"
 generate tampermonkey \
     -o $output \
     -m $(cat .matches) \
-    -g "get" "set" "list" "delete"
+    -g "get" "set" "list" "delete" \
+    --pretty
 
 userscript=$dist"/$(ls $dist -1 | grep -e ".*\.user\.js")"
 
