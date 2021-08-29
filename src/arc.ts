@@ -118,6 +118,17 @@ type CommentInfo = { name: string; description: string; targets: string[] };
 
 type TimeAgo = "sec" | "min" | "hour" | "day";
 
+type VarsReplacerOptions = {
+    /** id of the logged in user */
+    myId: string;
+    /** username of the original poster */
+    opName: string;
+    /** current network site hostname */
+    site: string;
+    /** current network site display name */
+    sitename: string;
+};
+
 StackExchange.ready(() => {
     /**
      * @summary centers the element
@@ -2197,6 +2208,34 @@ StackExchange.ready(() => {
     };
 
     /**
+     * @summary replaces variables with dynamic substitutions
+     * @param {VarsReplacerOptions} options
+     */
+    const makeVariableReplacer =
+        ({ myId, opName, site, sitename }: VarsReplacerOptions) =>
+        /**
+         * @param {string} text text with user variables
+         * @returns {string}
+         */
+        (text: string) => {
+            const rules: Record<string, string> = {
+                SITENAME: sitename,
+                SITEURL: site,
+                MYUSERID: myId,
+                OP: opName,
+            };
+
+            return Object.entries(rules).reduce(
+                (a, [expression, replacement]) =>
+                    a.replace(
+                        new RegExp(`\\$${expression}\\$`, "g"),
+                        replacement
+                    ),
+                text
+            );
+        };
+
+    /**
      * @summary updates comments in the UI
      * @param {HTMLElement} popup wrapper popup
      * @param {PostType} postType parent post type
@@ -2213,11 +2252,21 @@ StackExchange.ready(() => {
 
         const comments = loadComments(numComments);
 
+        const myId = getLoggedInUserId(StackExchange);
+        const opName = getOP();
+
+        const opts: VarsReplacerOptions = {
+            myId,
+            opName,
+            site,
+            sitename,
+        };
+
+        const replaceVars = makeVariableReplacer(opts);
+
         const greet = Store.load("ShowGreeting", false);
         const welcome = Store.load("WelcomeMessage", "");
-        const greeting = greet ? `${welcome} ` : "";
-
-        const userId = getLoggedInUserId(StackExchange);
+        const greeting = greet ? `${replaceVars(welcome)} ` : "";
 
         debugLogger.log({
             comments,
@@ -2225,7 +2274,7 @@ StackExchange.ready(() => {
             greet,
             welcome,
             greeting,
-            userId,
+            ...opts,
         });
 
         const listItems = comments
@@ -2233,11 +2282,7 @@ StackExchange.ready(() => {
             .map(({ name, desc }, i) => {
                 const cname = name.replace(allTgtMatcher, "");
 
-                const description = desc
-                    .replace(/\$SITENAME\$/g, sitename)
-                    .replace(/\$SITEURL\$/g, site)
-                    .replace(/\$MYUSERID\$/g, userId)
-                    .replace(/\$/g, "$$$");
+                const description = replaceVars(desc).replace(/\$/g, "$$$");
 
                 return makeOption(
                     i.toString(),

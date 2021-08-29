@@ -14,13 +14,25 @@
 // @match            *://*.stackexchange.com/*
 // @match            *://*.stackoverflow.com/*
 // @match            *://*.superuser.com/.*
-// @name             autoreviewcomments
+// @name             Autoreviewcomments
+// @run-at           document-start
 // @source           git+https://github.com/userscripters/SE-AutoReviewComments.git
 // @supportURL       https://github.com/userscripters/SE-AutoReviewComments/issues
 // @version          1.4.7
 // ==/UserScript==
 
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -302,8 +314,6 @@ StackExchange.ready(function () {
         [
             "." + arc + ".popup{\n                    position:absolute;\n                    display:block;\n                    width:690px;\n                    padding:15px 15px 10px;\n                }",
             "." + arc + ".popup .svg-icon.mute-text a {\n                    color: var(--black-500);\n                }",
-            "." + arc + ".popup>div>textarea{\n                    width:100%;\n                    height:442px;\n                }",
-            "." + arc + ".popup .view textarea {\n                    resize: vertical;\n                }",
             "." + arc + ".popup .main .view {\n                    padding: 1vh 1vw;\n                }",
             "." + arc + ".popup .main .userinfo{\n                    padding:5px;\n                    margin-bottom:7px;\n                }",
             "." + arc + ".popup .main .remoteurl, ." + arc + ".popup .main .customwelcome {\n                    display: block;\n                    width: 100%;\n                }",
@@ -366,6 +376,7 @@ StackExchange.ready(function () {
         var area = el("textarea", "flex--item", "s-textarea");
         area.id = area.name = id;
         area.value = value;
+        area.rows = 20;
         wrap.append(area);
         return [wrap, area];
     };
@@ -422,14 +433,16 @@ StackExchange.ready(function () {
         }
         var button = el.apply(void 0, __spreadArray(["button", "s-btn"], __read(classes)));
         button.innerHTML = text;
-        button.title = title;
+        if (title)
+            button.title = title;
         return button;
     };
     var makeCloseBtn = function (id) {
         var close = document.createElement("div");
         close.classList.add("popup-close");
         close.id = id;
-        var btn = makeButton("×", "close this popup (or hit Esc)");
+        var clearSvg = makeStacksIconButton("iconClear", "Close popup", "M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9 15 4.41z", {});
+        var btn = makeButton(clearSvg.outerHTML, "", "s-btn__muted");
         close.append(btn);
         return close;
     };
@@ -615,35 +628,40 @@ StackExchange.ready(function () {
             return updateImpExpComments(makeImpExpView.view);
         var view = el("div", "view");
         view.id = id;
-        var actionWrap = el("div", "actions");
+        view.classList.add("d-flex", "gs8", "gsy", "fd-column");
         var _a = __read(makeStacksTextArea("impexp", {
             label: "Comment source",
         }), 2), areaWrap = _a[0], area = _a[1];
         area.addEventListener("change", function () { return __awaiter(void 0, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                importComments(popup, area.value);
+                importComments(area.value);
                 updateComments(popup, postType);
                 return [2];
             });
         }); });
-        var jsonpBtn = makeButton("JSONP", "JSONP", "s-btn__outlined", "jsonp");
-        var cancelBtn = makeButton("cancel", "cancel import/export", "s-btn__danger", "cancel");
+        var actionWrap = el("div", "actions", "flex--item");
+        var buttonsWrap = el("div", "d-flex", "gs8", "gsx");
+        var toJsonBtn = makeButton("JSON", "Convert to JSON", "s-btn__primary", "flex--item");
+        var cancelBtn = makeButton("cancel", "cancel import/export", "s-btn__danger", "flex--item");
         var viewSwitcher = makeViewSwitcher(viewsSel);
         cancelBtn.addEventListener("click", function () {
             return viewSwitcher(makeSearchView(popup, "search-popup", postType));
         });
-        actionWrap.append(jsonpBtn, cancelBtn);
-        view.append(areaWrap, actionWrap);
-        var cbk = "callback";
-        jsonpBtn.addEventListener("click", function () {
-            var _a;
+        buttonsWrap.append(toJsonBtn, cancelBtn);
+        actionWrap.append(buttonsWrap);
+        var flexItemTextareaWrapper = el("div", "flex--item");
+        var flexItemActionWrap = el("div", "flex--item");
+        flexItemTextareaWrapper.append(areaWrap);
+        flexItemActionWrap.append(actionWrap);
+        view.append(flexItemTextareaWrapper, flexItemActionWrap);
+        toJsonBtn.addEventListener("click", function () {
+            var _a, _b;
             var numComments = Store.load("commentcount");
             var loaded = loadComments(numComments);
-            var content = loaded
-                .map(function (comment) { return JSON.stringify(comment); })
-                .join(",\n");
-            area.value = cbk + "([\n" + content + "\n])";
-            (_a = view.querySelector(".actions")) === null || _a === void 0 ? void 0 : _a.remove();
+            var content = JSON.stringify(loaded, null, 4);
+            area.value = content;
+            (_a = view.querySelector("textarea")) === null || _a === void 0 ? void 0 : _a.classList.add("ff-mono");
+            (_b = view.querySelector(".actions")) === null || _b === void 0 ? void 0 : _b.remove();
         });
         return (makeImpExpView.view = updateImpExpComments(view));
     };
@@ -655,7 +673,7 @@ StackExchange.ready(function () {
         var input = document.getElementById(inputId);
         if (!input)
             return false;
-        input.value = unscheme(Store.load(key));
+        input.value = unscheme(Store.load(key) || "");
         return true;
     };
     var makeOnRemoteChange = function (storeKey, input) {
@@ -679,7 +697,7 @@ StackExchange.ready(function () {
         var wrap = el("div", "view");
         wrap.id = id;
         var initialScheme = "https://";
-        var initialURL = unscheme(Store.load(storeKeyJSONP));
+        var initialURL = unscheme(Store.load(storeKeyJSONP) || "");
         var inputWrap = el("div", "d-flex", "fd-column", "gs8");
         var _a = __read(makeStacksURLInput(storeKeyJSON, initialScheme, "JSON source", initialURL), 4), jsonWrap = _a[0], jsonIWrap = _a[2], jsonInput = _a[3];
         var _b = __read(makeStacksURLInput(storeKeyJSONP, initialScheme, "JSONP source", initialURL), 4), jsonpWrap = _b[0], jsonpIWrap = _b[2], jsonpInput = _b[3];
@@ -791,7 +809,7 @@ StackExchange.ready(function () {
                     var selected = p.querySelector(".action-selected");
                     var descr = selected === null || selected === void 0 ? void 0 : selected.querySelector(".action-desc");
                     if (!descr || !selected)
-                        return notify(p, "Nothing selected", "please select a comment");
+                        return notify("Nothing selected, please select a comment", "warning");
                     var op = getOP();
                     debugLogger.log({ op: op });
                     insertComment(input, descr.innerHTML, op);
@@ -833,19 +851,6 @@ StackExchange.ready(function () {
         if (title)
             el.title = title;
         return el;
-    };
-    var makeAnnouncement = function (title, message, unsafe) {
-        if (unsafe === void 0) { unsafe = false; }
-        var wrap = document.createElement("div");
-        wrap.classList.add("auto-review-comments", "announcement");
-        wrap.id = "announcement";
-        var close = document.createElement("span");
-        close.classList.add("notify-close");
-        var dismissal = makeButton("x", "dismiss this notification");
-        close.append(dismissal);
-        var txt = unsafe ? span(message, { unsafe: unsafe }) : text(message);
-        wrap.append(b(title), txt, close);
-        return wrap;
     };
     var makeOption = function (id, name, desc) {
         var li = document.createElement("li");
@@ -982,18 +987,8 @@ StackExchange.ready(function () {
     var getLoggedInUserId = function (se) {
         return se.options.user.userId || "";
     };
-    var notify = function (popup, title, body, callback) {
-        var message = makeAnnouncement(title, body, true);
-        message.addEventListener("click", function (_a) {
-            var target = _a.target;
-            if (!target.matches(".notify-close a"))
-                return;
-            fadeOut(message);
-            message.remove();
-            typeof callback === "function" && callback();
-        });
-        popup.prepend(message);
-        return message;
+    var notify = function (toastBody, type) {
+        StackExchange.helpers.showToast(toastBody, { type: type });
     };
     var getUserId = function (tgt) {
         var parent = tgt.closest(".answer") || tgt.closest(".question");
@@ -1101,7 +1096,7 @@ StackExchange.ready(function () {
         lsep.innerHTML = " | ";
         return lsep;
     };
-    var importComments = function (popup, text) {
+    var importComments = function (text) {
         Store.clear("name-");
         Store.clear("desc-");
         var lines = text.split("\n");
@@ -1118,7 +1113,7 @@ StackExchange.ready(function () {
         var numDescs = descs.length;
         debugLogger.log({ numNames: numNames, numDescs: numDescs });
         if (numNames !== numDescs)
-            return notify(popup, "Failed to import", "Titles and descriptions do not match");
+            return notify("Failed to import: titles and descriptions do not match", "danger");
         names.forEach(function (name, idx) {
             Store.save("name-" + idx, name);
             Store.save("desc-" + idx, descs[idx]);
@@ -1263,7 +1258,7 @@ StackExchange.ready(function () {
             show(descr);
         };
     };
-    var makeQuickInsertHandler = function (popup) {
+    var makeQuickInsertHandler = function () {
         return function (_a) {
             var target = _a.target;
             var el = target;
@@ -1272,7 +1267,7 @@ StackExchange.ready(function () {
             var action = el.closest("li");
             var radio = action === null || action === void 0 ? void 0 : action.querySelector("input");
             if (!action || !radio)
-                return notify(popup, "Problem", "something went wrong");
+                return notify("Something went wrong", "danger");
             action.classList.add("action-selected");
             radio.checked = true;
         };
@@ -1286,7 +1281,7 @@ StackExchange.ready(function () {
                 return;
             openEditMode(el, popup);
         });
-        var insertHandler = makeQuickInsertHandler(popup);
+        var insertHandler = makeQuickInsertHandler();
         var selectHandler = makeCommentClickHandler(popup);
         popup.addEventListener("click", function (event) {
             debugLogger.log({ currView: currView, viewId: viewId });
@@ -1296,6 +1291,21 @@ StackExchange.ready(function () {
             selectHandler(event);
         });
     };
+    var makeVariableReplacer = function (_a) {
+        var myId = _a.myId, opName = _a.opName, site = _a.site, sitename = _a.sitename;
+        return function (text) {
+            var rules = {
+                SITENAME: sitename,
+                SITEURL: site,
+                MYUSERID: myId,
+                OP: opName,
+            };
+            return Object.entries(rules).reduce(function (a, _a) {
+                var _b = __read(_a, 2), expression = _b[0], replacement = _b[1];
+                return a.replace(new RegExp("\\$" + expression + "\\$", "g"), replacement);
+            }, text);
+        };
+    };
     var updateComments = function (popup, postType) {
         var numComments = Store.load("commentcount");
         if (!numComments)
@@ -1303,18 +1313,19 @@ StackExchange.ready(function () {
         var ul = popup.querySelector(".action-list");
         empty(ul);
         var comments = loadComments(numComments);
+        var myId = getLoggedInUserId(StackExchange);
+        var opName = getOP();
+        var opts = {
+            myId: myId,
+            opName: opName,
+            site: site,
+            sitename: sitename,
+        };
+        var replaceVars = makeVariableReplacer(opts);
         var greet = Store.load("ShowGreeting", false);
         var welcome = Store.load("WelcomeMessage", "");
-        var greeting = greet ? welcome : "";
-        var userId = getLoggedInUserId(StackExchange);
-        debugLogger.log({
-            comments: comments,
-            postType: postType,
-            greet: greet,
-            welcome: welcome,
-            greeting: greeting,
-            userId: userId,
-        });
+        var greeting = greet ? replaceVars(welcome) + " " : "";
+        debugLogger.log(__assign({ comments: comments, postType: postType, greet: greet, welcome: welcome, greeting: greeting }, opts));
         var listItems = comments
             .filter(function (_a) {
             var name = _a.name;
@@ -1323,11 +1334,7 @@ StackExchange.ready(function () {
             .map(function (_a, i) {
             var name = _a.name, desc = _a.desc;
             var cname = name.replace(allTgtMatcher, "");
-            var description = desc
-                .replace(/\$SITENAME\$/g, sitename)
-                .replace(/\$SITEURL\$/g, site)
-                .replace(/\$MYUSERID\$/g, userId)
-                .replace(/\$/g, "$$$");
+            var description = replaceVars(desc).replace(/\$/g, "$$$");
             return makeOption(i.toString(), cname.replace(/\$/g, "$$$"), greeting + description);
         });
         ul.append.apply(ul, __spreadArray([], __read(listItems)));
@@ -1441,6 +1448,7 @@ StackExchange.ready(function () {
         });
     };
     var showPopup = function (popup) {
+        show(popup);
         fadeTo(popup, 1);
         var style = popup.style, classList = popup.classList;
         style.display = "";
