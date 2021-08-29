@@ -1,4 +1,4 @@
-type ToastTypes = 'success' | 'warning' | 'danger';
+type ToastTypes = "success" | "warning" | "danger";
 declare const StackExchange: {
     options: {
         user: { userId: string };
@@ -8,7 +8,10 @@ declare const StackExchange: {
     };
     helpers: {
         bindMovablePopups(): void;
-        showToast(message: string, info: { type: ToastTypes, transientTimeout?: number }): void;
+        showToast(
+            message: string,
+            info: { type: ToastTypes; transientTimeout?: number }
+        ): void;
     };
     ready(cbk: (...args: any[]) => any): void;
 };
@@ -1149,12 +1152,14 @@ StackExchange.ready(() => {
         const toJsonBtn = makeButton(
             "JSON",
             "Convert to JSON",
-            "s-btn__primary", "flex--item"
+            "s-btn__primary",
+            "flex--item"
         );
         const cancelBtn = makeButton(
             "cancel",
             "cancel import/export",
-            "s-btn__danger", "flex--item"
+            "s-btn__danger",
+            "flex--item"
         );
 
         const viewSwitcher = makeViewSwitcher(viewsSel);
@@ -1419,7 +1424,10 @@ StackExchange.ready(() => {
                         const descr = selected?.querySelector(".action-desc");
 
                         if (!descr || !selected)
-                            return notify("Nothing selected, please select a comment", "warning");
+                            return notify(
+                                "Nothing selected, please select a comment",
+                                "warning"
+                            );
 
                         const op = getOP();
 
@@ -1664,10 +1672,7 @@ StackExchange.ready(() => {
      * @param {ToastTypes} type
      * @returns {void}
      */
-    const notify = (
-        toastBody: string,
-        type: ToastTypes
-    ) => {
+    const notify = (toastBody: string, type: ToastTypes) => {
         StackExchange.helpers.showToast(toastBody, { type });
     };
 
@@ -2210,7 +2215,7 @@ StackExchange.ready(() => {
 
         const greet = Store.load("ShowGreeting", false);
         const welcome = Store.load("WelcomeMessage", "");
-        const greeting = greet ? welcome : "";
+        const greeting = greet ? `${welcome} ` : "";
 
         const userId = getLoggedInUserId(StackExchange);
 
