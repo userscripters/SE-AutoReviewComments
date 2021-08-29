@@ -130,7 +130,7 @@ type VarsReplacerOptions = {
 };
 
 window.addEventListener("load", () => {
-    StackExchange.ready(() => {
+    StackExchange?.ready(() => {
         /**
          * @summary centers the element
          * @param {HTMLElement} element
