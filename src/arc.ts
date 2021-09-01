@@ -1450,8 +1450,7 @@ window.addEventListener("load", () => {
             const makePopup: WrapperPopupMaker = (input, postType) => {
                 if (makePopup.popup) return makePopup.popup;
 
-                const popup = document.createElement("div");
-                popup.classList.add("auto-review-comments", "popup");
+                const popup = el("div", "auto-review-comments", "popup");
 
                 const close = makeCloseBtn("close");
                 close.addEventListener("click", () => {
@@ -1459,8 +1458,7 @@ window.addEventListener("load", () => {
                     hide(popup);
                 });
 
-                const main = document.createElement("div");
-                main.classList.add("main");
+                const main = el("div", "main");
                 main.id = "main";
 
                 const viewSwitcher = makeViewSwitcher(viewsSel);
@@ -1533,7 +1531,8 @@ window.addEventListener("load", () => {
                     maker(popup, id, initPostType)
                 );
 
-                const hidden = views.slice(1, -1);
+                const visibleViews = 2;
+                const hidden = views.slice(visibleViews, -1);
                 hidden.forEach(hide);
 
                 main.append(...views);

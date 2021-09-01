@@ -802,15 +802,13 @@ window.addEventListener("load", function () {
             var makePopup = function (input, postType) {
                 if (makePopup.popup)
                     return makePopup.popup;
-                var popup = document.createElement("div");
-                popup.classList.add("auto-review-comments", "popup");
+                var popup = el("div", "auto-review-comments", "popup");
                 var close = makeCloseBtn("close");
                 close.addEventListener("click", function () {
                     fadeOut(popup);
                     hide(popup);
                 });
-                var main = document.createElement("div");
-                main.classList.add("main");
+                var main = el("div", "main");
                 main.id = "main";
                 var viewSwitcher = makeViewSwitcher(viewsSel);
                 popup.addEventListener("click", function (_a) {
@@ -859,7 +857,8 @@ window.addEventListener("load", function () {
                     var _b = __read(_a, 2), id = _b[0], maker = _b[1];
                     return maker(popup, id, initPostType);
                 });
-                var hidden = views.slice(1, -1);
+                var visibleViews = 2;
+                var hidden = views.slice(visibleViews, -1);
                 hidden.forEach(hide);
                 main.append.apply(main, __spreadArray([], __read(views), false));
                 popup.append(close, main);
