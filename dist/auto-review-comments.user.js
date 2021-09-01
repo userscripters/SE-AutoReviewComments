@@ -335,6 +335,7 @@ window.addEventListener("load", function () {
                     "." + arc + ".popup{\n                    position:absolute;\n                    display:block;\n                    width:690px;\n                    padding:15px 15px 10px;\n                }",
                     "." + arc + ".popup .svg-icon.mute-text a {\n                    color: var(--black-500);\n                }",
                     "." + arc + ".popup .main .view {\n                    padding: 1vh 1vw;\n                }",
+                    "." + arc + ".popup .close:hover {\n                    cursor: pointer;\n                }",
                     "." + arc + ".popup .main .userinfo{\n                    padding:5px;\n                    margin-bottom:7px;\n                }",
                     "." + arc + ".popup .main .remoteurl, ." + arc + ".popup .main .customwelcome {\n                    display: block;\n                    width: 100%;\n                }",
                     "." + arc + ".popup .main .action-list{\n                    overflow-y:scroll;\n                    max-height: 400px;\n                }",
@@ -457,15 +458,6 @@ window.addEventListener("load", function () {
                     button.title = title;
                 return button;
             };
-            var makeCloseBtn = function (id) {
-                var close = document.createElement("div");
-                close.classList.add("popup-close");
-                close.id = id;
-                var clearSvg = makeStacksIconButton("iconClear", "Close popup", "M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9 15 4.41z", {});
-                var btn = makeButton(clearSvg.outerHTML, "", "s-btn__muted");
-                close.append(btn);
-                return close;
-            };
             var makeStacksIconButton = function (icon, title, path, _a) {
                 var _b;
                 var url = _a.url, _c = _a.classes, classes = _c === void 0 ? [] : _c;
@@ -539,8 +531,15 @@ window.addEventListener("load", function () {
                     fadeTo(seeBtn.closest(".main"), 1);
                 });
                 var info = makeStacksIconButton("iconInfo", "see info about ARC (v" + VERSION + ")", "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z", { url: GITHUB_URL, classes: iconClasses });
+                var closeWrap = el("div", "flex--item");
+                var close = makeStacksIconButton("iconClear", "Close popup", "M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9 15 4.41z", { classes: ["mute-text", "close"] });
+                close.addEventListener("click", function () {
+                    fadeOut(popup);
+                    hide(popup);
+                });
+                closeWrap.append(close);
                 iconGroup.append(seeBtn, info);
-                wrap.append(tabGroup, iconGroup);
+                wrap.append(tabGroup, iconGroup, closeWrap);
                 return (makeTabsView.view = wrap);
             };
             var makeSettingsView = function (popup, id, postType) {
@@ -803,11 +802,6 @@ window.addEventListener("load", function () {
                 if (makePopup.popup)
                     return makePopup.popup;
                 var popup = el("div", "auto-review-comments", "popup");
-                var close = makeCloseBtn("close");
-                close.addEventListener("click", function () {
-                    fadeOut(popup);
-                    hide(popup);
-                });
                 var main = el("div", "main");
                 main.id = "main";
                 var viewSwitcher = makeViewSwitcher(viewsSel);
@@ -861,7 +855,7 @@ window.addEventListener("load", function () {
                 var hidden = views.slice(visibleViews);
                 hidden.forEach(hide);
                 main.append.apply(main, __spreadArray([], __read(views), false));
-                popup.append(close, main);
+                popup.append(main);
                 setupCommentHandlers(popup, commentViewId);
                 setupSearchHandlers(popup);
                 makeViewSwitcher(viewsSel)(views[0]);

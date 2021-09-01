@@ -488,6 +488,9 @@ window.addEventListener("load", () => {
                     `.${arc}.popup .main .view {
                     padding: 1vh 1vw;
                 }`,
+                    `.${arc}.popup .close:hover {
+                    cursor: pointer;
+                }`,
                     `.${arc}.popup .main .userinfo{
                     padding:5px;
                     margin-bottom:7px;
@@ -790,29 +793,6 @@ window.addEventListener("load", () => {
             };
 
             /**
-             * @summary creates the popup close button
-             * @param {string} id id to give to the element
-             * @returns {HTMLElement}
-             */
-            const makeCloseBtn = (id: string) => {
-                const close = document.createElement("div");
-                close.classList.add("popup-close");
-                close.id = id;
-
-                // https://stackoverflow.design/product/resources/icons/#clear
-                const clearSvg = makeStacksIconButton(
-                    "iconClear",
-                    "Close popup",
-                    "M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9 15 4.41z",
-                    {}
-                );
-                const btn = makeButton(clearSvg.outerHTML, "", "s-btn__muted");
-
-                close.append(btn);
-                return close;
-            };
-
-            /**
              * @summary makes an info button icon
              * @param {string} icon icon class name
              * @param {string} title link title
@@ -970,8 +950,23 @@ window.addEventListener("load", () => {
                     { url: GITHUB_URL, classes: iconClasses }
                 );
 
+                const closeWrap = el("div", "flex--item");
+
+                const close = makeStacksIconButton(
+                    "iconClear",
+                    "Close popup",
+                    "M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9 15 4.41z",
+                    { classes: ["mute-text", "close"] }
+                );
+
+                close.addEventListener("click", () => {
+                    fadeOut(popup);
+                    hide(popup);
+                });
+
+                closeWrap.append(close);
                 iconGroup.append(seeBtn, info);
-                wrap.append(tabGroup, iconGroup);
+                wrap.append(tabGroup, iconGroup, closeWrap);
 
                 return (makeTabsView.view = wrap);
             };
@@ -1452,12 +1447,6 @@ window.addEventListener("load", () => {
 
                 const popup = el("div", "auto-review-comments", "popup");
 
-                const close = makeCloseBtn("close");
-                close.addEventListener("click", () => {
-                    fadeOut(popup);
-                    hide(popup);
-                });
-
                 const main = el("div", "main");
                 main.id = "main";
 
@@ -1536,7 +1525,7 @@ window.addEventListener("load", () => {
                 hidden.forEach(hide);
 
                 main.append(...views);
-                popup.append(close, main);
+                popup.append(main);
 
                 setupCommentHandlers(popup, commentViewId);
                 setupSearchHandlers(popup);
