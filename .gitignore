@@ -4,6 +4,7 @@
 
 # Packaged extensions
 dist/*
+!dist/*.user.js
 
 # Develeper scratch files
 *~

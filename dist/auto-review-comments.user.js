@@ -14,7 +14,7 @@
 // @match            *://*.stackexchange.com/*
 // @match            *://*.stackoverflow.com/*
 // @match            *://*.superuser.com/.*
-// @name             Autoreviewcomments
+// @name             Auto Review Comments
 // @run-at           document-start
 // @source           git+https://github.com/userscripters/SE-AutoReviewComments.git
 // @supportURL       https://github.com/userscripters/SE-AutoReviewComments/issues

@@ -18,7 +18,7 @@
         "removeComments": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "outFile": "dist/autoreviewcomments.user.js",
+        "outFile": "dist/auto-review-comments.user.js",
         "module": "none"
     },
     "exclude": ["utils", "test"]
