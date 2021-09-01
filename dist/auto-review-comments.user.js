@@ -580,9 +580,11 @@ window.addEventListener("load", function () {
                     fadeOut(popup);
                     hide(popup);
                 });
+                var actionGroup = el("div", "d-flex", "gsx", "gs16", "ai-center", "flex--item");
                 closeWrap.append(close);
                 iconGroup.append(seeBtn, info);
-                wrap.append(tabGroup, iconGroup, closeWrap);
+                actionGroup.append(iconGroup, closeWrap);
+                wrap.append(tabGroup, actionGroup);
                 return (makeTabsView.view = wrap);
             };
             var makeSettingsView = function (popup, id, postType) {

@@ -1047,9 +1047,19 @@ window.addEventListener("load", () => {
                     hide(popup);
                 });
 
+                const actionGroup = el(
+                    "div",
+                    "d-flex",
+                    "gsx",
+                    "gs16",
+                    "ai-center",
+                    "flex--item"
+                );
+
                 closeWrap.append(close);
                 iconGroup.append(seeBtn, info);
-                wrap.append(tabGroup, iconGroup, closeWrap);
+                actionGroup.append(iconGroup, closeWrap);
+                wrap.append(tabGroup, actionGroup);
 
                 return (makeTabsView.view = wrap);
             };
