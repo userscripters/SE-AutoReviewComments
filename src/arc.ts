@@ -1591,26 +1591,6 @@ window.addEventListener("load", () => {
                                 viewSwitcher(
                                     makeSearchView(p, "search-popup", t)
                                 ),
-                            ".quick-insert": (p) => {
-                                const selected =
-                                    p.querySelector(".action-selected");
-                                const descr =
-                                    selected?.querySelector(".action-desc");
-
-                                if (!descr || !selected)
-                                    return notify(
-                                        "Nothing selected, please select a comment",
-                                        "warning"
-                                    );
-
-                                const op = getOP();
-
-                                debugLogger.log({ op });
-
-                                insertComment(input, descr.innerHTML, op);
-                                fadeOut(p);
-                                hide(p);
-                            },
                         },
                         (sel) => (target as HTMLElement).matches(sel),
                         popup,
@@ -1643,7 +1623,7 @@ window.addEventListener("load", () => {
                 main.append(...views);
                 popup.append(main);
 
-                setupCommentHandlers(popup, commentViewId);
+                setupCommentHandlers(popup, commentViewId, input);
 
                 const view = views.find(({ id }) => id === commentViewId)!;
                 makeViewSwitcher(viewsSel)(view);
@@ -2372,11 +2352,11 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes the comment quick insert handler
-             * @param {HTMLElement} popup wrapper popup
+             * @param {HTMLInputElement} input target input
              * @returns {EventListener}
              */
             const makeQuickInsertHandler =
-                (): EventListener =>
+                (input: HTMLInputElement): EventListener =>
                 ({ target }) => {
                     const el = <HTMLElement>target;
 
@@ -2384,23 +2364,28 @@ window.addEventListener("load", () => {
 
                     const action = el.closest("li");
                     const radio = action?.querySelector("input");
+                    const descr = action?.querySelector(".action-desc");
 
-                    if (!action || !radio)
+                    if (!action || !radio || !descr)
                         return notify("Something went wrong", "danger");
 
                     action.classList.add("action-selected");
                     radio.checked = true;
+
+                    insertComment(input, descr.innerHTML, getOP());
                 };
 
             /**
              * @summary sets up comment event listeners
              * @param {HTMLElement} popup wrapper popup
              * @param {string} viewId comment view id
+             * @param {HTMLInputElement} target target input
              * @returns {void}
              */
             const setupCommentHandlers = (
                 popup: HTMLElement,
-                viewId: string
+                viewId: string,
+                target: HTMLInputElement
             ) => {
                 popup.addEventListener("dblclick", ({ target }) => {
                     const el = <HTMLElement>target;
@@ -2408,7 +2393,7 @@ window.addEventListener("load", () => {
                     openEditMode(el, popup);
                 });
 
-                const insertHandler = makeQuickInsertHandler();
+                const insertHandler = makeQuickInsertHandler(target);
                 const selectHandler = makeCommentClickHandler(popup);
 
                 popup.addEventListener("click", (event) => {

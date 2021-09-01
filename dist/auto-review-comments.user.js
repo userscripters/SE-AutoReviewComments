@@ -885,17 +885,6 @@ window.addEventListener("load", function () {
                         ".popup-actions-filter": function (p, t) {
                             return viewSwitcher(makeSearchView(p, "search-popup", t));
                         },
-                        ".quick-insert": function (p) {
-                            var selected = p.querySelector(".action-selected");
-                            var descr = selected === null || selected === void 0 ? void 0 : selected.querySelector(".action-desc");
-                            if (!descr || !selected)
-                                return notify("Nothing selected, please select a comment", "warning");
-                            var op = getOP();
-                            debugLogger.log({ op: op });
-                            insertComment(input, descr.innerHTML, op);
-                            fadeOut(p);
-                            hide(p);
-                        },
                     }, function (sel) { return target.matches(sel); }, popup, Store.load("post_type", "question"));
                 });
                 var commentViewId = "search-popup";
@@ -918,7 +907,7 @@ window.addEventListener("load", function () {
                 hidden.forEach(hide);
                 main.append.apply(main, __spreadArray([], __read(views), false));
                 popup.append(main);
-                setupCommentHandlers(popup, commentViewId);
+                setupCommentHandlers(popup, commentViewId, input);
                 var view = views.find(function (_a) {
                     var id = _a.id;
                     return id === commentViewId;
@@ -1368,7 +1357,7 @@ window.addEventListener("load", function () {
                     show(descr);
                 };
             };
-            var makeQuickInsertHandler = function () {
+            var makeQuickInsertHandler = function (input) {
                 return function (_a) {
                     var target = _a.target;
                     var el = target;
@@ -1376,13 +1365,15 @@ window.addEventListener("load", function () {
                         return;
                     var action = el.closest("li");
                     var radio = action === null || action === void 0 ? void 0 : action.querySelector("input");
-                    if (!action || !radio)
+                    var descr = action === null || action === void 0 ? void 0 : action.querySelector(".action-desc");
+                    if (!action || !radio || !descr)
                         return notify("Something went wrong", "danger");
                     action.classList.add("action-selected");
                     radio.checked = true;
+                    insertComment(input, descr.innerHTML, getOP());
                 };
             };
-            var setupCommentHandlers = function (popup, viewId) {
+            var setupCommentHandlers = function (popup, viewId, target) {
                 popup.addEventListener("dblclick", function (_a) {
                     var target = _a.target;
                     var el = target;
@@ -1390,7 +1381,7 @@ window.addEventListener("load", function () {
                         return;
                     openEditMode(el, popup);
                 });
-                var insertHandler = makeQuickInsertHandler();
+                var insertHandler = makeQuickInsertHandler(target);
                 var selectHandler = makeCommentClickHandler(popup);
                 popup.addEventListener("click", function (event) {
                     var currView = Store.load("CurrentView");
