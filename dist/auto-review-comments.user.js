@@ -349,10 +349,9 @@ window.addEventListener("load", function () {
                     "." + arc + ".popup .close:hover {\n                    cursor: pointer;\n                }",
                     "." + arc + ".popup .main .userinfo{\n                    padding:5px;\n                    margin-bottom:7px;\n                }",
                     "." + arc + ".popup .main .remoteurl {\n                    display: block;\n                    width: 100%;\n                }",
-                    "." + arc + ".popup .main .action-list{\n                    overflow-y:scroll;\n                    max-height: 400px;\n                }",
+                    "." + arc + ".popup .main .action-list{\n                    max-height: 400px;\n                }",
                     "." + arc + ".popup .main .action-list li{\n                    padding:0;\n                    transition:.1s\n                }",
-                    "." + arc + ".popup .main .action-list li:hover{\n                    background-color:#f2f2f2\n                }",
-                    "." + arc + ".popup .main .action-list li.action-selected:hover{\n                    background-color:#e6e6e6\n                }",
+                    "." + arc + ".popup .main .action-list li:hover {\n                    background-color: var(--black-075)\n                }",
                     "." + arc + ".popup .main .action-list li label{\n                    position:relative;\n                    display:block;\n                    padding:10px;\n                }",
                     "." + arc + ".popup .main .action-list li label .action-name{\n                    display:block;\n                    margin-bottom:3px;\n                    cursor:default;\n                }",
                     "." + arc + ".popup .main .action-list li label .action-desc{\n                    margin:0;\n                    color:#888;\n                    cursor:default;\n                }",
@@ -632,8 +631,7 @@ window.addEventListener("load", function () {
                     inputClasses: ["s-input__search"],
                 }), 2), searchWrap = _a[0], searchInput = _a[1];
                 setupSearchHandlers(popup, searchInput);
-                var actions = document.createElement("ul");
-                actions.classList.add("action-list");
+                var actions = el("ul", "action-list", "overflow-y-scroll", "d-flex", "fd-column", "mt16");
                 wrap.append(header, uinfo, searchWrap, actions);
                 return (makeSearchView.view = wrap);
             };
@@ -925,25 +923,22 @@ window.addEventListener("load", function () {
                     el.title = title;
                 return el;
             };
-            var makeOption = function (id, name, desc) {
-                var li = document.createElement("li");
-                var reviewRadio = document.createElement("input");
+            var makeCommentItem = function (id, name, desc) {
+                var li = el("li", "pr8");
+                var reviewRadio = el("input");
                 reviewRadio.id = "comment-" + id;
                 reviewRadio.type = "radio";
                 reviewRadio.name = "commentreview";
                 reviewRadio.hidden = true;
-                var lbl = document.createElement("label");
+                var lbl = el("label");
                 lbl.htmlFor = reviewRadio.id;
-                var nameEl = document.createElement("span");
-                nameEl.classList.add("action-name");
+                var nameEl = el("span", "action-name");
                 nameEl.id = "name-" + id;
                 nameEl.innerHTML = name;
-                var descEl = document.createElement("span");
-                descEl.classList.add("action-desc");
+                var descEl = el("span", "action-desc");
                 descEl.id = "desc-" + id;
                 descEl.innerHTML = desc;
-                var insertBtn = document.createElement("button");
-                insertBtn.classList.add("quick-insert");
+                var insertBtn = el("button", "quick-insert");
                 insertBtn.innerHTML = "↓";
                 insertBtn.title = "Insert now";
                 lbl.append(nameEl, descEl, insertBtn);
@@ -1436,7 +1431,7 @@ window.addEventListener("load", function () {
                     var name = _a.name, desc = _a.desc;
                     var cname = name.replace(allTgtMatcher, "");
                     var description = replaceVars(desc).replace(/\$/g, "$$$");
-                    return makeOption(i.toString(), cname.replace(/\$/g, "$$$"), greeting + description);
+                    return makeCommentItem(i.toString(), cname.replace(/\$/g, "$$$"), greeting + description);
                 });
                 ul.append.apply(ul, __spreadArray([], __read(listItems), false));
                 toggleDescriptionVisibility(popup);

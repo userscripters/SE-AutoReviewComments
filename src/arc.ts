@@ -508,18 +508,14 @@ window.addEventListener("load", () => {
                     width: 100%;
                 }`,
                     `.${arc}.popup .main .action-list{
-                    overflow-y:scroll;
                     max-height: 400px;
                 }`,
                     `.${arc}.popup .main .action-list li{
                     padding:0;
                     transition:.1s
                 }`,
-                    `.${arc}.popup .main .action-list li:hover{
-                    background-color:#f2f2f2
-                }`,
-                    `.${arc}.popup .main .action-list li.action-selected:hover{
-                    background-color:#e6e6e6
+                    `.${arc}.popup .main .action-list li:hover {
+                    background-color: var(--black-075)
                 }`,
                     `.${arc}.popup .main .action-list li label{
                     position:relative;
@@ -1152,8 +1148,14 @@ window.addEventListener("load", () => {
 
                 setupSearchHandlers(popup, searchInput);
 
-                const actions = document.createElement("ul");
-                actions.classList.add("action-list");
+                const actions = el(
+                    "ul",
+                    "action-list",
+                    "overflow-y-scroll",
+                    "d-flex",
+                    "fd-column",
+                    "mt16"
+                );
 
                 wrap.append(header, uinfo, searchWrap, actions);
                 return (makeSearchView.view = wrap);
@@ -1654,30 +1656,31 @@ window.addEventListener("load", () => {
              * @param {string} desc
              * @returns {HTMLElement}
              */
-            const makeOption = (id: string, name: string, desc: string) => {
-                const li = document.createElement("li");
+            const makeCommentItem = (
+                id: string,
+                name: string,
+                desc: string
+            ) => {
+                const li = el("li", "pr8");
 
-                const reviewRadio = document.createElement("input");
+                const reviewRadio = el("input");
                 reviewRadio.id = `comment-${id}`;
                 reviewRadio.type = "radio";
                 reviewRadio.name = "commentreview";
                 reviewRadio.hidden = true;
 
-                const lbl = document.createElement("label");
+                const lbl = el("label");
                 lbl.htmlFor = reviewRadio.id;
 
-                const nameEl = document.createElement("span");
-                nameEl.classList.add("action-name");
+                const nameEl = el("span", "action-name");
                 nameEl.id = `name-${id}`;
                 nameEl.innerHTML = name;
 
-                const descEl = document.createElement("span");
-                descEl.classList.add("action-desc");
+                const descEl = el("span", "action-desc");
                 descEl.id = `desc-${id}`;
                 descEl.innerHTML = desc;
 
-                const insertBtn = document.createElement("button");
-                insertBtn.classList.add("quick-insert");
+                const insertBtn = el("button", "quick-insert");
                 insertBtn.innerHTML = "↓";
                 insertBtn.title = "Insert now";
 
@@ -2485,7 +2488,7 @@ window.addEventListener("load", () => {
                             "$$$"
                         );
 
-                        return makeOption(
+                        return makeCommentItem(
                             i.toString(),
                             cname.replace(/\$/g, "$$$"),
                             greeting + description
