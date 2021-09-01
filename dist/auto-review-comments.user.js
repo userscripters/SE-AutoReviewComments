@@ -363,7 +363,6 @@ window.addEventListener("load", function () {
                     "." + arc + ".announcement{\n                    padding:7px;\n                    margin-bottom:10px;\n                    background:orange;\n                    font-size:15px;\n                }",
                     "." + arc + ".announcement .notify-close{\n                    display:block;\n                    float:right;\n                    margin:0 4px;\n                    padding:0 4px;\n                    border:2px solid black;\n                    cursor:pointer;\n                    line-height:17px;\n                }",
                     "." + arc + ".announcement .notify-close a{\n                    color:black;\n                    text-decoration:none;\n                    font-weight:bold;\n                    font-size:16px;\n                }",
-                    "." + arc + ".popup .main .searchfilter{\n                    width:100%;\n                    box-sizing:border-box;\n                    display:block\n                }",
                 ].forEach(function (rule) { return sheet.insertRule(rule); });
             };
             var makeTextInput = function (id, _a) {
@@ -613,7 +612,7 @@ window.addEventListener("load", function () {
                 });
                 return (makeSettingsView.view = view);
             };
-            var makeSearchView = function (_popup, id) {
+            var makeSearchView = function (popup, id) {
                 if (makeSearchView.view)
                     return makeSearchView.view;
                 var wrap = document.createElement("div");
@@ -625,13 +624,13 @@ window.addEventListener("load", function () {
                 var uinfo = document.createElement("div");
                 uinfo.classList.add("userinfo");
                 uinfo.id = "userinfo";
-                var searchWrap = document.createElement("div");
-                searchWrap.classList.add("searchbox");
-                var search = document.createElement("input");
-                search.classList.add("searchfilter");
-                search.type = "search";
-                search.placeholder = "filter the comments list";
-                searchWrap.append(search);
+                var _a = __read(makeStacksIconInput("comment-search", "iconSearch", "m18 16.5-5.14-5.18h-.35a7 7 0 10-1.19 1.19v.35L16.5 18l1.5-1.5zM12 7A5 5 0 112 7a5 5 0 0110 0z", {
+                    placeholder: "filter the comments list",
+                    classes: ["flex--item", "d-flex", "fd-column"],
+                    iconClasses: ["s-input-icon__search", "flex--item"],
+                    inputClasses: ["s-input__search"],
+                }), 2), searchWrap = _a[0], searchInput = _a[1];
+                setupSearchHandlers(popup, searchInput);
                 var actions = document.createElement("ul");
                 actions.classList.add("action-list");
                 wrap.append(header, uinfo, searchWrap, actions);
@@ -919,7 +918,6 @@ window.addEventListener("load", function () {
                 main.append.apply(main, __spreadArray([], __read(views), false));
                 popup.append(main);
                 setupCommentHandlers(popup, commentViewId);
-                setupSearchHandlers(popup);
                 makeViewSwitcher(viewsSel)(views[0]);
                 return (makePopup.popup = popup);
             };
@@ -1473,12 +1471,7 @@ window.addEventListener("load", function () {
                     shown ? show(item) : hide(item);
                 });
             };
-            var setupSearchHandlers = function (popup) {
-                var filterSel = ".searchfilter";
-                var sbox = popup.querySelector(".searchbox");
-                var stext = sbox.querySelector(filterSel);
-                if (!stext)
-                    return debugLogger.log("missing filter: " + filterSel);
+            var setupSearchHandlers = function (popup, searchInput) {
                 var callback = function (_a) {
                     var target = _a.target;
                     return setTimeout(function () {
@@ -1486,11 +1479,11 @@ window.addEventListener("load", function () {
                         filterOn(popup, value);
                     }, 100);
                 };
-                stext.addEventListener("keydown", callback);
-                stext.addEventListener("change", callback);
-                stext.addEventListener("cut", callback);
-                stext.addEventListener("paste", callback);
-                stext.addEventListener("search", callback);
+                searchInput.addEventListener("keydown", callback);
+                searchInput.addEventListener("change", callback);
+                searchInput.addEventListener("cut", callback);
+                searchInput.addEventListener("paste", callback);
+                searchInput.addEventListener("search", callback);
             };
             var toggleDescriptionVisibility = function (popup, hidden) {
                 if (hidden === void 0) { hidden = Store.load("hide-desc"); }

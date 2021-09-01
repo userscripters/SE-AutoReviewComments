@@ -585,11 +585,6 @@ window.addEventListener("load", () => {
                     font-weight:bold;
                     font-size:16px;
                 }`,
-                    `.${arc}.popup .main .searchfilter{
-                    width:100%;
-                    box-sizing:border-box;
-                    display:block
-                }`,
                 ].forEach((rule) => sheet.insertRule(rule));
             };
 
@@ -1127,7 +1122,7 @@ window.addEventListener("load", () => {
              * @param {string} id view id
              * @returns {HTMLElement}
              */
-            const makeSearchView: ViewMaker = (_popup, id) => {
+            const makeSearchView: ViewMaker = (popup, id) => {
                 if (makeSearchView.view) return makeSearchView.view;
 
                 const wrap = document.createElement("div");
@@ -1142,15 +1137,19 @@ window.addEventListener("load", () => {
                 uinfo.classList.add("userinfo");
                 uinfo.id = "userinfo";
 
-                const searchWrap = document.createElement("div");
-                searchWrap.classList.add("searchbox");
+                const [searchWrap, searchInput] = makeStacksIconInput(
+                    "comment-search",
+                    "iconSearch",
+                    "m18 16.5-5.14-5.18h-.35a7 7 0 10-1.19 1.19v.35L16.5 18l1.5-1.5zM12 7A5 5 0 112 7a5 5 0 0110 0z",
+                    {
+                        placeholder: "filter the comments list",
+                        classes: ["flex--item", "d-flex", "fd-column"],
+                        iconClasses: ["s-input-icon__search", "flex--item"],
+                        inputClasses: ["s-input__search"],
+                    }
+                );
 
-                const search = document.createElement("input");
-                search.classList.add("searchfilter");
-                search.type = "search";
-                search.placeholder = "filter the comments list";
-
-                searchWrap.append(search);
+                setupSearchHandlers(popup, searchInput);
 
                 const actions = document.createElement("ul");
                 actions.classList.add("action-list");
@@ -1644,7 +1643,6 @@ window.addEventListener("load", () => {
                 popup.append(main);
 
                 setupCommentHandlers(popup, commentViewId);
-                setupSearchHandlers(popup);
 
                 makeViewSwitcher(viewsSel)(views[0]);
 
@@ -2565,26 +2563,21 @@ window.addEventListener("load", () => {
              * @param {HTMLElement} popup wrapper popup
              * @returns {void}
              */
-            const setupSearchHandlers = (popup: HTMLElement) => {
-                const filterSel = ".searchfilter";
-
-                const sbox = popup.querySelector<HTMLElement>(".searchbox")!;
-
-                const stext = sbox.querySelector<HTMLInputElement>(filterSel);
-                if (!stext)
-                    return debugLogger.log(`missing filter: ${filterSel}`);
-
+            const setupSearchHandlers = (
+                popup: HTMLElement,
+                searchInput: HTMLInputElement
+            ) => {
                 const callback: EventListener = ({ target }) =>
                     setTimeout(() => {
                         const { value } = <HTMLInputElement>target;
                         filterOn(popup, value);
                     }, 100);
 
-                stext.addEventListener("keydown", callback);
-                stext.addEventListener("change", callback);
-                stext.addEventListener("cut", callback);
-                stext.addEventListener("paste", callback);
-                stext.addEventListener("search", callback);
+                searchInput.addEventListener("keydown", callback);
+                searchInput.addEventListener("change", callback);
+                searchInput.addEventListener("cut", callback);
+                searchInput.addEventListener("paste", callback);
+                searchInput.addEventListener("search", callback);
             };
 
             /**
