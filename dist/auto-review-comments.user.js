@@ -73,6 +73,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -337,7 +348,7 @@ window.addEventListener("load", function () {
                     "." + arc + ".popup .main .view {\n                    padding: 1vh 1vw;\n                }",
                     "." + arc + ".popup .close:hover {\n                    cursor: pointer;\n                }",
                     "." + arc + ".popup .main .userinfo{\n                    padding:5px;\n                    margin-bottom:7px;\n                }",
-                    "." + arc + ".popup .main .remoteurl, ." + arc + ".popup .main .customwelcome {\n                    display: block;\n                    width: 100%;\n                }",
+                    "." + arc + ".popup .main .remoteurl {\n                    display: block;\n                    width: 100%;\n                }",
                     "." + arc + ".popup .main .action-list{\n                    overflow-y:scroll;\n                    max-height: 400px;\n                }",
                     "." + arc + ".popup .main .action-list li{\n                    padding:0;\n                    transition:.1s\n                }",
                     "." + arc + ".popup .main .action-list li:hover{\n                    background-color:#f2f2f2\n                }",
@@ -357,12 +368,15 @@ window.addEventListener("load", function () {
             };
             var makeTextInput = function (id, _a) {
                 var _b;
-                var _c = _a === void 0 ? {} : _a, _d = _c.value, value = _d === void 0 ? "" : _d, _e = _c.classes, classes = _e === void 0 ? [] : _e;
+                var _c = _a === void 0 ? {} : _a, _d = _c.value, value = _d === void 0 ? "" : _d, _e = _c.classes, classes = _e === void 0 ? [] : _e, _f = _c.placeholder, placeholder = _f === void 0 ? "" : _f, title = _c.title;
                 var input = document.createElement("input");
                 (_b = input.classList).add.apply(_b, __spreadArray([], __read(classes), false));
                 input.type = "text";
                 input.id = input.name = id;
+                input.placeholder = placeholder;
                 input.value = value;
+                if (title)
+                    input.title = title;
                 return input;
             };
             var makeCheckbox = function (id, _a) {
@@ -401,22 +415,59 @@ window.addEventListener("load", function () {
                 wrap.append(area);
                 return [wrap, area];
             };
-            var makeStacksURLInput = function (id, schema, label, value) {
+            var makeStacksIcon = function (icon, path) {
+                var _a;
+                var classes = [];
+                for (var _i = 2; _i < arguments.length; _i++) {
+                    classes[_i - 2] = arguments[_i];
+                }
+                var NS = "http://www.w3.org/2000/svg";
+                var svg = document.createElementNS(NS, "svg");
+                (_a = svg.classList).add.apply(_a, __spreadArray(["svg-icon", icon], __read(classes), false));
+                svg.setAttribute("aria-hidden", "true");
+                svg.setAttribute("width", "18");
+                svg.setAttribute("height", "18");
+                svg.setAttribute("viewBox", "0 0 18 18");
+                var d = document.createElementNS(NS, "path");
+                d.setAttribute("d", path);
+                svg.append(d);
+                return [svg, d];
+            };
+            var makeStacksIconInput = function (id, icon, path, _a) {
+                if (_a === void 0) { _a = {}; }
+                var label = _a.label, _b = _a.classes, classes = _b === void 0 ? [] : _b, _c = _a.iconClasses, iconClasses = _c === void 0 ? [] : _c, _d = _a.inputClasses, inputClasses = _d === void 0 ? [] : _d, inputOptions = __rest(_a, ["label", "classes", "iconClasses", "inputClasses"]);
+                var wrap = el.apply(void 0, __spreadArray(["div", "ps-relative"], __read(classes), false));
+                if (label) {
+                    var lbl = el("label", "flex--item", "s-label");
+                    lbl.htmlFor = id;
+                    lbl.textContent = label;
+                    wrap.append(lbl);
+                }
+                var input = makeTextInput(id, __assign(__assign({}, inputOptions), { classes: __spreadArray(["s-input"], __read(inputClasses), false) }));
+                var _e = __read(makeStacksIcon.apply(void 0, __spreadArray([icon,
+                    path,
+                    "s-input-icon"], __read(iconClasses), false)), 1), iconSVG = _e[0];
+                wrap.append(input, iconSVG);
+                return [wrap, input];
+            };
+            var makeStacksURLInput = function (id, schema, _a) {
+                if (_a === void 0) { _a = {}; }
+                var label = _a.label, inputOptions = __rest(_a, ["label"]);
                 var wrap = el("div", "d-flex", "gs4", "gsy", "fd-column");
-                var lbl = el("label", "flex--item", "s-label");
-                lbl.htmlFor = id;
-                lbl.textContent = label;
+                if (label) {
+                    var lbl = el("label", "flex--item", "s-label");
+                    lbl.htmlFor = id;
+                    lbl.textContent = label;
+                    wrap.append(lbl);
+                }
                 var iwrap = el("div", "d-flex");
                 var ischema = el("div", "flex--item", "s-input-fill", "order-first");
                 ischema.textContent = schema;
                 var iinput = el("div", "d-flex", "fl-grow1", "ps-relative");
-                var input = makeTextInput(id, {
-                    value: value,
-                    classes: ["flex--item", "s-input", "blr0"],
-                });
+                var input = makeTextInput(id, __assign({ classes: ["flex--item", "s-input", "blr0"] }, inputOptions));
                 iinput.append(input);
                 iwrap.append(ischema, iinput);
-                wrap.append(lbl, iwrap);
+                wrap.append(iwrap);
                 return [wrap, iwrap, iinput, input];
             };
             var makeStacksCheckbox = function (id, label, state) {
@@ -459,19 +510,11 @@ window.addEventListener("load", function () {
                 return button;
             };
             var makeStacksIconButton = function (icon, title, path, _a) {
-                var _b;
-                var url = _a.url, _c = _a.classes, classes = _c === void 0 ? [] : _c;
+                var url = _a.url, _b = _a.classes, classes = _b === void 0 ? [] : _b;
                 var NS = "http://www.w3.org/2000/svg";
-                var svg = document.createElementNS(NS, "svg");
-                (_b = svg.classList).add.apply(_b, __spreadArray(["svg-icon", icon], __read(classes), false));
-                svg.setAttribute("aria-hidden", "true");
-                svg.setAttribute("width", "18");
-                svg.setAttribute("height", "18");
-                svg.setAttribute("viewBox", "0 0 18 18");
+                var _c = __read(makeStacksIcon.apply(void 0, __spreadArray([icon, path], __read(classes), false)), 2), svg = _c[0], d = _c[1];
                 var ttl = document.createElementNS(NS, "title");
                 ttl.textContent = title;
-                var d = document.createElementNS(NS, "path");
-                d.setAttribute("d", path);
                 if (url) {
                     var anchor = document.createElementNS(NS, "a");
                     anchor.setAttribute("href", url);
@@ -480,7 +523,7 @@ window.addEventListener("load", function () {
                     svg.append(anchor);
                     return svg;
                 }
-                svg.append(ttl, d);
+                svg.append(ttl);
                 return svg;
             };
             var makeViewSwitcher = function (viewsSel) { return function (view) {
@@ -595,18 +638,29 @@ window.addEventListener("load", function () {
             var makeWelcomeView = function (popup, id, postType) {
                 if (makeWelcomeView.view)
                     return makeWelcomeView.view;
-                var view = el("div", "view");
+                var view = el("div", "view", "d-flex", "fd-column", "gsy", "gs16");
                 view.id = id;
-                var text = document.createTextNode('Setup the "welcome" message (blank is none):');
-                var welcomeWrap = document.createElement("div");
-                var input = makeTextInput("customwelcome", {
-                    classes: ["customwelcome"],
-                });
+                var _a = __read(makeStacksIconInput("customwelcome", "iconSearch", "m18 16.5-5.14-5.18h-.35a7 7 0 10-1.19 1.19v.35L16.5 18l1.5-1.5zM12 7A5 5 0 112 7a5 5 0 0110 0z", {
+                    value: Store.load("WelcomeMessage", ""),
+                    title: '"Welcome" message (blank is none)',
+                    label: "Greeting",
+                    classes: [
+                        "flex--item",
+                        "d-flex",
+                        "fd-column",
+                        "gsy",
+                        "gs4",
+                    ],
+                    iconClasses: ["s-input-icon__search", "flex--item"],
+                    inputClasses: ["s-input__search"],
+                }), 2), welcomeWrap = _a[0], input = _a[1];
+                input.classList.add("flex--item");
                 input.addEventListener("change", function () {
-                    return Store.save("WelcomeMessage", input.value);
+                    Store.save("WelcomeMessage", input.value);
+                    updateComments(popup, postType);
                 });
                 welcomeWrap.append(input);
-                var actionsWrap = el("div", "float-right");
+                var actionsWrap = el("div", "flex--item");
                 var actions = [
                     makeButton("force", "force", "welcome-force", "s-btn__outlined"),
                     makeButton("cancel", "cancel", "welcome-cancel", "s-btn__danger"),
@@ -616,7 +670,7 @@ window.addEventListener("load", function () {
                     var target = _a.target;
                     runFromHashmap({
                         ".popup-actions-welcome": function () {
-                            input.value || (input.value = Store.load("WelcomeMessage"));
+                            input.value || (input.value = Store.load("WelcomeMessage", ""));
                         },
                         ".welcome-cancel": function (p, t) {
                             return viewSwitcher(makeSearchView(p, "search-popup", t));
@@ -628,7 +682,7 @@ window.addEventListener("load", function () {
                     }, function (key) { return target.matches(key); }, popup, Store.load("post_type", postType));
                 });
                 actionsWrap.append.apply(actionsWrap, __spreadArray([], __read(actions), false));
-                view.append(text, welcomeWrap, actionsWrap);
+                view.append(welcomeWrap, actionsWrap);
                 return (makeWelcomeView.view = view);
             };
             var updateImpExpComments = function (view) {
@@ -720,8 +774,14 @@ window.addEventListener("load", function () {
                 var initialScheme = "https://";
                 var initialURL = unscheme(Store.load(storeKeyJSONP) || "");
                 var inputWrap = el("div", "d-flex", "fd-column", "gs8");
-                var _a = __read(makeStacksURLInput(storeKeyJSON, initialScheme, "JSON source", initialURL), 4), jsonWrap = _a[0], jsonIWrap = _a[2], jsonInput = _a[3];
-                var _b = __read(makeStacksURLInput(storeKeyJSONP, initialScheme, "JSONP source", initialURL), 4), jsonpWrap = _b[0], jsonpIWrap = _b[2], jsonpInput = _b[3];
+                var _a = __read(makeStacksURLInput(storeKeyJSON, initialScheme, {
+                    label: "JSON source",
+                    value: initialURL,
+                }), 4), jsonWrap = _a[0], jsonIWrap = _a[2], jsonInput = _a[3];
+                var _b = __read(makeStacksURLInput(storeKeyJSONP, initialScheme, {
+                    label: "JSONP source",
+                    value: initialURL,
+                }), 4), jsonpWrap = _b[0], jsonpIWrap = _b[2], jsonpInput = _b[3];
                 jsonInput.addEventListener("change", makeOnRemoteChange(storeKeyJSON, jsonInput));
                 jsonpInput.addEventListener("change", makeOnRemoteChange(storeKeyJSONP, jsonpInput));
                 var autoWrap = el("div", "float-left");

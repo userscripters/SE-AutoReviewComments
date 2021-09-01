@@ -85,7 +85,15 @@ type StackAPIBatchResponse<T> = {
 
 type TextInputOptions = {
     value?: string;
+    title?: string;
+    placeholder?: string;
     classes?: string[];
+};
+
+type StacksTextInputOptions = TextInputOptions & {
+    label?: string;
+    iconClasses?: string[];
+    inputClasses?: string[];
 };
 
 type CheckboxOptions = {
@@ -495,7 +503,7 @@ window.addEventListener("load", () => {
                     padding:5px;
                     margin-bottom:7px;
                 }`,
-                    `.${arc}.popup .main .remoteurl, .${arc}.popup .main .customwelcome {
+                    `.${arc}.popup .main .remoteurl {
                     display: block;
                     width: 100%;
                 }`,
@@ -593,13 +601,21 @@ window.addEventListener("load", () => {
              */
             const makeTextInput = (
                 id: string,
-                { value = "", classes = [] }: TextInputOptions = {}
+                {
+                    value = "",
+                    classes = [],
+                    placeholder = "",
+                    title,
+                }: TextInputOptions = {}
             ) => {
                 const input = document.createElement("input");
                 input.classList.add(...classes);
                 input.type = "text";
                 input.id = input.name = id;
+                input.placeholder = placeholder;
                 input.value = value;
+
+                if (title) input.title = title;
                 return input;
             };
 
@@ -666,26 +682,101 @@ window.addEventListener("load", () => {
             };
 
             /**
+             * @summary helper function for making Stacks icons
+             * @param {string} icon icon class name
+             * @param {string} path icons path to set
+             * @param {...string} classes list of classes to set
+             * @returns {[SVGSVGElement, SVGPathElement]}
+             */
+            const makeStacksIcon = (
+                icon: string,
+                path: string,
+                ...classes: string[]
+            ) => {
+                const NS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(NS, "svg");
+                svg.classList.add("svg-icon", icon, ...classes);
+                svg.setAttribute("aria-hidden", "true");
+                svg.setAttribute("width", "18");
+                svg.setAttribute("height", "18");
+                svg.setAttribute("viewBox", `0 0 18 18`);
+
+                const d = document.createElementNS(NS, "path");
+                d.setAttribute("d", path);
+
+                svg.append(d);
+                return [svg, d];
+            };
+
+            /**
+             * {@link https://stackoverflow.design/product/components/inputs/#icons}
+             *
+             * @summary creates a Stacks text input with an icon
+             * @param {string} id input id (also sets the name)
+             * @param {string} icon icons class to set
+             * @param {string} path icon path to set
+             * @param {StacksTextInputOptions} [options] text input options
+             * @returns {[HTMLDivElement, HTMLInputElement]}
+             */
+            const makeStacksIconInput = (
+                id: string,
+                icon: string,
+                path: string,
+                {
+                    label,
+                    classes = [],
+                    iconClasses = [],
+                    inputClasses = [],
+                    ...inputOptions
+                }: StacksTextInputOptions = {}
+            ) => {
+                const wrap = el("div", "ps-relative", ...classes);
+
+                if (label) {
+                    const lbl = el("label", "flex--item", "s-label");
+                    lbl.htmlFor = id;
+                    lbl.textContent = label;
+                    wrap.append(lbl);
+                }
+
+                const input = makeTextInput(id, {
+                    ...inputOptions,
+                    classes: ["s-input", ...inputClasses],
+                });
+
+                const [iconSVG] = makeStacksIcon(
+                    icon,
+                    path,
+                    "s-input-icon",
+                    ...iconClasses
+                );
+                wrap.append(input, iconSVG);
+
+                return [wrap, input] as const;
+            };
+
+            /**
              * {@link https://stackoverflow.design/product/components/inputs/#input-fills}
              *
              * @summary creates a Stacks URL input
              * @param {string} id input id (also sets the name)
              * @param {string} schema URL schema (http://, https://, or custom)
-             * @param {string} label input label
-             * @param {string} [value] input value
+             * @param {StacksTextInputOptions} [options] text input options
              * @returns {[HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLInputElement]}
              */
             const makeStacksURLInput = (
                 id: string,
                 schema: string,
-                label: string,
-                value?: string
+                { label, ...inputOptions }: StacksTextInputOptions = {}
             ) => {
                 const wrap = el("div", "d-flex", "gs4", "gsy", "fd-column");
 
-                const lbl = el("label", "flex--item", "s-label");
-                lbl.htmlFor = id;
-                lbl.textContent = label;
+                if (label) {
+                    const lbl = el("label", "flex--item", "s-label");
+                    lbl.htmlFor = id;
+                    lbl.textContent = label;
+                    wrap.append(lbl);
+                }
 
                 const iwrap = el("div", "d-flex");
 
@@ -700,13 +791,13 @@ window.addEventListener("load", () => {
                 const iinput = el("div", "d-flex", "fl-grow1", "ps-relative");
 
                 const input = makeTextInput(id, {
-                    value,
                     classes: ["flex--item", "s-input", "blr0"],
+                    ...inputOptions,
                 });
 
                 iinput.append(input);
                 iwrap.append(ischema, iinput);
-                wrap.append(lbl, iwrap);
+                wrap.append(iwrap);
                 return [wrap, iwrap, iinput, input] as const;
             };
 
@@ -807,18 +898,10 @@ window.addEventListener("load", () => {
                 { url, classes = [] }: IconButtonOptions
             ) => {
                 const NS = "http://www.w3.org/2000/svg";
-                const svg = document.createElementNS(NS, "svg");
-                svg.classList.add("svg-icon", icon, ...classes);
-                svg.setAttribute("aria-hidden", "true");
-                svg.setAttribute("width", "18");
-                svg.setAttribute("height", "18");
-                svg.setAttribute("viewBox", `0 0 18 18`);
+                const [svg, d] = makeStacksIcon(icon, path, ...classes);
 
                 const ttl = document.createElementNS(NS, "title");
                 ttl.textContent = title;
-
-                const d = document.createElementNS(NS, "path");
-                d.setAttribute("d", path);
 
                 if (url) {
                     const anchor = document.createElementNS(NS, "a");
@@ -829,7 +912,7 @@ window.addEventListener("load", () => {
                     return svg;
                 }
 
-                svg.append(ttl, d);
+                svg.append(ttl);
                 return svg;
             };
 
@@ -1076,26 +1159,46 @@ window.addEventListener("load", () => {
             const makeWelcomeView: ViewMaker = (popup, id, postType) => {
                 if (makeWelcomeView.view) return makeWelcomeView.view;
 
-                const view = el("div", "view");
+                const view = el(
+                    "div",
+                    "view",
+                    "d-flex",
+                    "fd-column",
+                    "gsy",
+                    "gs16"
+                );
                 view.id = id;
 
-                const text = document.createTextNode(
-                    'Setup the "welcome" message (blank is none):'
+                const [welcomeWrap, input] = makeStacksIconInput(
+                    "customwelcome",
+                    "iconSearch",
+                    "m18 16.5-5.14-5.18h-.35a7 7 0 10-1.19 1.19v.35L16.5 18l1.5-1.5zM12 7A5 5 0 112 7a5 5 0 0110 0z",
+                    {
+                        value: Store.load("WelcomeMessage", ""),
+                        title: '"Welcome" message (blank is none)',
+                        label: "Greeting",
+                        classes: [
+                            "flex--item",
+                            "d-flex",
+                            "fd-column",
+                            "gsy",
+                            "gs4",
+                        ],
+                        iconClasses: ["s-input-icon__search", "flex--item"],
+                        inputClasses: ["s-input__search"],
+                    }
                 );
 
-                const welcomeWrap = document.createElement("div");
+                input.classList.add("flex--item");
 
-                const input = makeTextInput("customwelcome", {
-                    classes: ["customwelcome"],
+                input.addEventListener("change", () => {
+                    Store.save("WelcomeMessage", input.value);
+                    updateComments(popup, postType);
                 });
-
-                input.addEventListener("change", () =>
-                    Store.save("WelcomeMessage", input.value)
-                );
 
                 welcomeWrap.append(input);
 
-                const actionsWrap = el("div", "float-right");
+                const actionsWrap = el("div", "flex--item");
 
                 const actions: Node[] = [
                     makeButton(
@@ -1118,7 +1221,10 @@ window.addEventListener("load", () => {
                     runFromHashmap<PopupActionMap>(
                         {
                             ".popup-actions-welcome": () => {
-                                input.value ||= Store.load("WelcomeMessage");
+                                input.value ||= Store.load(
+                                    "WelcomeMessage",
+                                    ""
+                                );
                             },
                             ".welcome-cancel": (p, t) =>
                                 viewSwitcher(
@@ -1137,7 +1243,7 @@ window.addEventListener("load", () => {
 
                 actionsWrap.append(...actions);
 
-                view.append(text, welcomeWrap, actionsWrap);
+                view.append(welcomeWrap, actionsWrap);
                 return (makeWelcomeView.view = view);
             };
 
@@ -1314,17 +1420,17 @@ window.addEventListener("load", () => {
                 const [jsonWrap, , jsonIWrap, jsonInput] = makeStacksURLInput(
                     storeKeyJSON,
                     initialScheme,
-                    "JSON source",
-                    initialURL
+                    {
+                        label: "JSON source",
+                        value: initialURL,
+                    }
                 );
 
                 const [jsonpWrap, , jsonpIWrap, jsonpInput] =
-                    makeStacksURLInput(
-                        storeKeyJSONP,
-                        initialScheme,
-                        "JSONP source",
-                        initialURL
-                    );
+                    makeStacksURLInput(storeKeyJSONP, initialScheme, {
+                        label: "JSONP source",
+                        value: initialURL,
+                    });
 
                 jsonInput.addEventListener(
                     "change",
