@@ -858,7 +858,7 @@ window.addEventListener("load", function () {
                     return maker(popup, id, initPostType);
                 });
                 var visibleViews = 2;
-                var hidden = views.slice(visibleViews, -1);
+                var hidden = views.slice(visibleViews);
                 hidden.forEach(hide);
                 main.append.apply(main, __spreadArray([], __read(views), false));
                 popup.append(close, main);

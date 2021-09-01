@@ -1532,7 +1532,7 @@ window.addEventListener("load", () => {
                 );
 
                 const visibleViews = 2;
-                const hidden = views.slice(visibleViews, -1);
+                const hidden = views.slice(visibleViews);
                 hidden.forEach(hide);
 
                 main.append(...views);
