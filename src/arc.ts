@@ -923,6 +923,7 @@ window.addEventListener("load", () => {
                         .forEach(hide);
                     show(view);
                     Store.save("CurrentView", view.id);
+                    debugLogger.log(`switched to view: ${view.id}`);
                     return view;
                 };
 
@@ -1644,7 +1645,8 @@ window.addEventListener("load", () => {
 
                 setupCommentHandlers(popup, commentViewId);
 
-                makeViewSwitcher(viewsSel)(views[0]);
+                const view = views.find(({ id }) => id === commentViewId)!;
+                makeViewSwitcher(viewsSel)(view);
 
                 return (makePopup.popup = popup);
             };
@@ -2400,8 +2402,6 @@ window.addEventListener("load", () => {
                 popup: HTMLElement,
                 viewId: string
             ) => {
-                const currView = Store.load("CurrentView");
-
                 popup.addEventListener("dblclick", ({ target }) => {
                     const el = <HTMLElement>target;
                     if (!el.matches(".action-desc")) return;
@@ -2412,6 +2412,7 @@ window.addEventListener("load", () => {
                 const selectHandler = makeCommentClickHandler(popup);
 
                 popup.addEventListener("click", (event) => {
+                    const currView = Store.load("CurrentView");
                     debugLogger.log({ currView, viewId });
                     if (currView !== viewId) return;
                     insertHandler(event);

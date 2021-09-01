@@ -531,6 +531,7 @@ window.addEventListener("load", function () {
                     .forEach(hide);
                 show(view);
                 Store.save("CurrentView", view.id);
+                debugLogger.log("switched to view: " + view.id);
                 return view;
             }; };
             var makeTabsView = function (popup, id, _postType) {
@@ -918,7 +919,11 @@ window.addEventListener("load", function () {
                 main.append.apply(main, __spreadArray([], __read(views), false));
                 popup.append(main);
                 setupCommentHandlers(popup, commentViewId);
-                makeViewSwitcher(viewsSel)(views[0]);
+                var view = views.find(function (_a) {
+                    var id = _a.id;
+                    return id === commentViewId;
+                });
+                makeViewSwitcher(viewsSel)(view);
                 return (makePopup.popup = popup);
             };
             var span = function (text, _a) {
@@ -1378,7 +1383,6 @@ window.addEventListener("load", function () {
                 };
             };
             var setupCommentHandlers = function (popup, viewId) {
-                var currView = Store.load("CurrentView");
                 popup.addEventListener("dblclick", function (_a) {
                     var target = _a.target;
                     var el = target;
@@ -1389,6 +1393,7 @@ window.addEventListener("load", function () {
                 var insertHandler = makeQuickInsertHandler();
                 var selectHandler = makeCommentClickHandler(popup);
                 popup.addEventListener("click", function (event) {
+                    var currView = Store.load("CurrentView");
                     debugLogger.log({ currView: currView, viewId: viewId });
                     if (currView !== viewId)
                         return;
