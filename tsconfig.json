@@ -8,7 +8,8 @@
             "node",
             "greasemonkey",
             "tampermonkey",
-            "@userscripters/stackexchange-global-types"
+            "@userscripters/stackexchange-global-types",
+            "@userscripters/stackexchange-api-types"
         ],
         "lib": ["DOM", "DOM.Iterable", "ESNext"],
         "moduleResolution": "node",

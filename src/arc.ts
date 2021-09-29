@@ -37,40 +37,6 @@ type WrapperPopupMaker = {
     (target: HTMLInputElement, postType: PostType): HTMLElement;
 };
 
-type UserType =
-    | "unregistered"
-    | "registered"
-    | "moderator"
-    | "team_admin"
-    | "does_not_exist";
-
-type BadgeCounts = {
-    bronze: number;
-    silver: number;
-    gold: number;
-};
-
-type UserInfo = {
-    creation_date: number;
-    is_employee: boolean;
-    last_access_date: number;
-    last_modified_date: number;
-    reputation: number;
-    reputation_change_day: number;
-    reputation_change_month: number;
-    reputation_change_quarter: number;
-    reputation_change_week: number;
-    reputation_change_year: number;
-    user_id: number;
-    display_name: string;
-    website_url: string;
-    profile_image: string;
-    link: string;
-    location: string;
-    user_type: UserType;
-    badge_counts: BadgeCounts;
-};
-
 type opGetter = {
     op?: string;
     (refresh?: boolean): string;
@@ -1942,7 +1908,7 @@ window.addEventListener("load", () => {
 
             /**
              * @summary adds user info to the UI
-             * @param {UserInfo} userInfo
+             * @param {StackExchangeAPI.User} userInfo
              * @returns {void}
              */
             const addUserInfo = ({
@@ -1952,7 +1918,7 @@ window.addEventListener("load", () => {
                 last_access_date,
                 reputation,
                 user_type,
-            }: UserInfo) => {
+            }: StackExchangeAPI.User) => {
                 const container = document.getElementById("userinfo");
                 if (!container) return;
 
@@ -2007,7 +1973,7 @@ window.addEventListener("load", () => {
             /**
              * @summary get basic user info from the API
              * @param {string} userid
-             * @returns {Promise<UserInfo|null>}
+             * @returns {Promise<StackExchangeAPI.User|null>}
              */
             const getUserInfo = async (userid: string) => {
                 const url = new URL(
@@ -2024,7 +1990,7 @@ window.addEventListener("load", () => {
 
                 const {
                     items: [userInfo],
-                }: StackAPIBatchResponse<UserInfo> = await res.json();
+                }: StackAPIBatchResponse<StackExchangeAPI.User> = await res.json();
 
                 return userInfo;
             };
