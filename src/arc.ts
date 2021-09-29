@@ -488,15 +488,17 @@ window.addEventListener("load", () => {
                     display:block;
                     padding:10px;
                 }`,
-                    `.${arc}.popup .main .action-list li label .action-name{
-                    display:block;
-                    margin-bottom:3px;
-                    cursor:default;
+                    `.${arc}.popup .main .action-list li label .action-name {
+                    display: block;
+                    margin-bottom: 3px;
+                    cursor: default;
+                    margin: 0 0 1vh 0;
                 }`,
-                    `.${arc}.popup .main .action-list li label .action-desc{
-                    margin:0;
-                    color:#888;
-                    cursor:default;
+                    `.${arc}.popup .main .action-list li label .action-desc {
+                    margin: 0;
+                    padding: 0;
+                    color: #888;
+                    cursor: default;
                 }`,
                     `.${arc}.popup .main .action-list li label .quick-insert{
                     display:none;
