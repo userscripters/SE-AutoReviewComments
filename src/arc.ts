@@ -1790,10 +1790,11 @@ window.addEventListener("load", () => {
                 const range = ranges.find(
                     ({ divider }) => reputationNumber >= divider
                 );
-                return range
-                    ? (reputationNumber / range.divider).toFixed(1) +
-                          range.suffix
+                const shortenedRep = range
+                    ? (reputationNumber / range.divider).toFixed(1) + range.suffix
                     : reputationNumber.toString();
+
+                return shortenedRep.replace('.0', ''); // 4.0k => 4k
             };
 
             /**
