@@ -72,7 +72,7 @@ type IconButtonOptions = {
     classes?: string[];
 };
 
-type CommentInfo = { name: string; description: string; targets: string[] };
+type CommentInfo = { name: string; description: string; targets: string[]; };
 
 type TimeAgo = "sec" | "min" | "hour" | "day";
 
@@ -282,7 +282,7 @@ window.addEventListener("load", () => {
             class Debugger {
                 static prefix = "{{PREFIX}}";
 
-                constructor(public on: boolean) {}
+                constructor(public on: boolean) { }
 
                 log(msg: string | object, ...params: unknown[]) {
                     const { on } = this;
@@ -1359,12 +1359,12 @@ window.addEventListener("load", () => {
              */
             const makeOnRemoteChange =
                 (storeKey: string, input: HTMLInputElement): EventListener =>
-                () => {
-                    const { value } = input;
-                    //unscheme -> scheme is for foolproofing
-                    Store.save(storeKey, scheme(unscheme(value)));
-                    input.value = unscheme(value);
-                };
+                    () => {
+                        const { value } = input;
+                        //unscheme -> scheme is for foolproofing
+                        Store.save(storeKey, scheme(unscheme(value)));
+                        input.value = unscheme(value);
+                    };
 
             /**
              * @summary makes the remote view
@@ -2280,7 +2280,7 @@ window.addEventListener("load", () => {
              * @returns {{ name: string; desc: string }[]}
              */
             const loadComments = (numComments: number) => {
-                const comments: { name: string; desc: string }[] = [];
+                const comments: { name: string; desc: string; }[] = [];
                 for (let i = 0; i < numComments; i++) {
                     const name = Store.load<string>(`name-${i}`);
                     const desc = Store.load<string>(`desc-${i}`);
@@ -2296,31 +2296,31 @@ window.addEventListener("load", () => {
              */
             const makeCommentClickHandler =
                 (popup: HTMLElement): EventListener =>
-                ({ target }) => {
-                    const el = <HTMLElement>target;
+                    ({ target }) => {
+                        const el = <HTMLElement>target;
 
-                    if (!el.matches("input[type=radio]")) return;
+                        if (!el.matches("input[type=radio]")) return;
 
-                    const acts = popup.querySelector(".action-list")!;
-                    acts.querySelectorAll("li").forEach(({ classList }) =>
-                        classList.remove("action-selected")
-                    );
+                        const acts = popup.querySelector(".action-list")!;
+                        acts.querySelectorAll("li").forEach(({ classList }) =>
+                            classList.remove("action-selected")
+                        );
 
-                    if (Store.load("hide-desc")) {
-                        popup
-                            .querySelectorAll<HTMLElement>(".action-desc")
-                            .forEach(hide);
-                    }
+                        if (Store.load("hide-desc")) {
+                            popup
+                                .querySelectorAll<HTMLElement>(".action-desc")
+                                .forEach(hide);
+                        }
 
-                    const action = el.closest("li")!;
-                    const { classList } = action;
-                    classList.add("action-selected");
+                        const action = el.closest("li")!;
+                        const { classList } = action;
+                        classList.add("action-selected");
 
-                    const descr =
-                        action.querySelector<HTMLElement>(".action-desc")!;
+                        const descr =
+                            action.querySelector<HTMLElement>(".action-desc")!;
 
-                    show(descr);
-                };
+                        show(descr);
+                    };
 
             /**
              * @summary makes the comment quick insert handler
@@ -2329,23 +2329,23 @@ window.addEventListener("load", () => {
              */
             const makeQuickInsertHandler =
                 (input: HTMLInputElement): EventListener =>
-                ({ target }) => {
-                    const el = <HTMLElement>target;
+                    ({ target }) => {
+                        const el = <HTMLElement>target;
 
-                    if (!el.matches("label > .quick-insert")) return;
+                        if (!el.matches("label > .quick-insert")) return;
 
-                    const action = el.closest("li");
-                    const radio = action?.querySelector("input");
-                    const descr = action?.querySelector(".action-desc");
+                        const action = el.closest("li");
+                        const radio = action?.querySelector("input");
+                        const descr = action?.querySelector(".action-desc");
 
-                    if (!action || !radio || !descr)
-                        return notify("Something went wrong", "danger");
+                        if (!action || !radio || !descr)
+                            return notify("Something went wrong", "danger");
 
-                    action.classList.add("action-selected");
-                    radio.checked = true;
+                        action.classList.add("action-selected");
+                        radio.checked = true;
 
-                    insertComment(input, descr.innerHTML, getOP());
-                };
+                        insertComment(input, descr.innerHTML, getOP());
+                    };
 
             /**
              * @summary sets up comment event listeners
@@ -2383,27 +2383,27 @@ window.addEventListener("load", () => {
              */
             const makeVariableReplacer =
                 ({ myId, opName, site, sitename }: VarsReplacerOptions) =>
-                /**
-                 * @param {string} text text with user variables
-                 * @returns {string}
-                 */
-                (text: string) => {
-                    const rules: Record<string, string> = {
-                        SITENAME: sitename,
-                        SITEURL: site,
-                        MYUSERID: myId,
-                        OP: opName,
-                    };
+                    /**
+                     * @param {string} text text with user variables
+                     * @returns {string}
+                     */
+                    (text: string) => {
+                        const rules: Record<string, string> = {
+                            SITENAME: sitename,
+                            SITEURL: site,
+                            MYUSERID: myId,
+                            OP: opName,
+                        };
 
-                    return Object.entries(rules).reduce(
-                        (a, [expression, replacement]) =>
-                            a.replace(
-                                new RegExp(`\\$${expression}\\$`, "g"),
-                                replacement
-                            ),
-                        text
-                    );
-                };
+                        return Object.entries(rules).reduce(
+                            (a, [expression, replacement]) =>
+                                a.replace(
+                                    new RegExp(`\\$${expression}\\$`, "g"),
+                                    replacement
+                                ),
+                            text
+                        );
+                    };
 
             /**
              * @summary updates comments in the UI
