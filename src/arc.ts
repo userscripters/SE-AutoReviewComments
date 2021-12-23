@@ -909,6 +909,7 @@ window.addEventListener("load", () => {
                     "jc-space-between"
                 );
                 wrap.id = id;
+                wrap.setAttribute("data-se-draggable-target", "handle");
 
                 const tabGroup = el("div", "s-btn-group", "flex--item");
 
@@ -1531,7 +1532,6 @@ window.addEventListener("load", () => {
                 if (makePopup.popup) return makePopup.popup;
 
                 const popup = el("div", "auto-review-comments", "popup");
-                popup.setAttribute("data-se-draggable-target", "handle");
 
                 const main = el("div", "main");
                 main.id = "main";

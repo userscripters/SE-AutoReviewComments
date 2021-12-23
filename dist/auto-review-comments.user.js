@@ -542,6 +542,7 @@ window.addEventListener("load", function () {
                     return makeTabsView.view;
                 var wrap = el("div", "view", "d-flex", "ai-center", "jc-space-between");
                 wrap.id = id;
+                wrap.setAttribute("data-se-draggable-target", "handle");
                 var tabGroup = el("div", "s-btn-group", "flex--item");
                 var btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
                 var buttons = [
@@ -865,7 +866,6 @@ window.addEventListener("load", function () {
                 if (makePopup.popup)
                     return makePopup.popup;
                 var popup = el("div", "auto-review-comments", "popup");
-                popup.setAttribute("data-se-draggable-target", "handle");
                 var main = el("div", "main");
                 main.id = "main";
                 var viewSwitcher = makeViewSwitcher(viewsSel);
