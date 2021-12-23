@@ -7,13 +7,17 @@
 // @grant            GM_listValues
 // @grant            GM_setValue
 // @homepage         https://github.com/userscripters/SE-AutoReviewComments#readme
-// @match            *://*.askubuntu.com/*
-// @match            *://*.mathoverflow.net/*
-// @match            *://*.serverfault.com/*
-// @match            *://*.stackapps.com/*
-// @match            *://*.stackexchange.com/*
-// @match            *://*.stackoverflow.com/*
-// @match            *://*.superuser.com/.*
+// @match            https://*.stackexchange.com/questions/*
+// @match            https://askubuntu.com/questions/*
+// @match            https://es.stackoverflow.com/questions/*
+// @match            https://ja.stackoverflow.com/questions/*
+// @match            https://mathoverflow.net/questions/*
+// @match            https://pt.stackoverflow.com/questions/*
+// @match            https://ru.stackoverflow.com/questions/*
+// @match            https://serverfault.com/questions/*
+// @match            https://stackapps.com/questions/*
+// @match            https://stackoverflow.com/questions/*
+// @match            https://superuser.com/questions/*
 // @name             Auto Review Comments
 // @run-at           document-start
 // @source           git+https://github.com/userscripters/SE-AutoReviewComments.git
@@ -148,7 +152,7 @@ window.addEventListener("load", function () {
                 if (speed === void 0) { speed = 200; }
                 var style = element.style;
                 style.transitionProperty = "opacity";
-                style.transitionDuration = speed.toFixed(0) + "ms";
+                style.transitionDuration = "".concat(speed.toFixed(0), "ms");
                 style.transitionTimingFunction = "linear";
                 style.opacity = min.toFixed(2);
                 return element;
@@ -244,7 +248,7 @@ window.addEventListener("load", function () {
                     }
                     var on = this.on;
                     var pfx = Debugger.prefix.replace("-", "");
-                    on && console.debug.apply(console, __spreadArray([pfx + ":\n\n" + JSON.stringify(msg, null, 2)], __read(params), false));
+                    on && console.debug.apply(console, __spreadArray(["".concat(pfx, ":\n\n").concat(JSON.stringify(msg, null, 2))], __read(params), false));
                 };
                 Debugger.prefix = "AutoReviewComments-";
                 return Debugger;
@@ -275,11 +279,11 @@ window.addEventListener("load", function () {
             })(Target || (Target = {}));
             var htmllink = function (url, label) {
                 if (label === void 0) { label = url; }
-                return "<a href=\"" + url + "\" target=\"_blank\">" + label + "</a>";
+                return "<a href=\"".concat(url, "\" target=\"_blank\">").concat(label, "</a>");
             };
-            var htmlem = function (text) { return "<em>" + text + "</em>"; };
+            var htmlem = function (text) { return "<em>".concat(text, "</em>"); };
             var htmlstrong = function (text) {
-                return "<strong>" + text + "</strong>";
+                return "<strong>".concat(text, "</strong>");
             };
             var commentDefaults = [
                 {
@@ -295,32 +299,32 @@ window.addEventListener("load", function () {
                 {
                     targets: [Target.CommentAnswer],
                     name: "Answers just to say Thanks!",
-                    description: "Please do not add \"thanks\" as answers. Invest some time in the site and you will gain sufficient " + htmllink("/privileges", "privileges") + " to upvote answers you like, which is our way of saying thank you.",
+                    description: "Please do not add \"thanks\" as answers. Invest some time in the site and you will gain sufficient ".concat(htmllink("/privileges", "privileges"), " to upvote answers you like, which is our way of saying thank you."),
                 },
                 {
                     targets: [Target.CommentAnswer],
                     name: "Nothing but a URL (and isn't spam)",
-                    description: "Whilst this may theoretically answer the question, " + htmllink("https://meta.stackexchange.com/q/8259", "it would be preferable") + " to include the essential parts of the answer here, and provide the link for reference.",
+                    description: "Whilst this may theoretically answer the question, ".concat(htmllink("https://meta.stackexchange.com/q/8259", "it would be preferable"), " to include the essential parts of the answer here, and provide the link for reference."),
                 },
                 {
                     targets: [Target.CommentAnswer],
                     name: "Requests to OP for further information",
-                    description: "This is really a comment, not an answer. With a bit more rep, " + htmllink("/privileges/comment", "you will be able to post comments") + ". For the moment, I have added the comment for you and flagging the post for deletion.",
+                    description: "This is really a comment, not an answer. With a bit more rep, ".concat(htmllink("/privileges/comment", "you will be able to post comments"), ". For the moment, I have added the comment for you and flagging the post for deletion."),
                 },
                 {
                     targets: [Target.CommentAnswer],
                     name: "OP using an answer for further information",
-                    description: "Please use the " + htmlem(__makeTemplateObject(["Post answer"], ["Post answer"])) + " button only for actual answers. You should modify your original question to add additional information.",
+                    description: "Please use the ".concat(htmlem(__makeTemplateObject(["Post answer"], ["Post answer"])), " button only for actual answers. You should modify your original question to add additional information."),
                 },
                 {
                     targets: [Target.CommentAnswer],
                     name: "OP adding a new question as an answer",
-                    description: "If you have another question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button.",
+                    description: "If you have another question, please ask it by clicking the ".concat(htmllink("/questions/ask", "Ask Question"), " button."),
                 },
                 {
                     targets: [Target.CommentAnswer],
                     name: 'Another user adding a "Me too!"',
-                    description: "If you have a " + htmlem(__makeTemplateObject(["new"], ["new"])) + " question, please ask it by clicking the " + htmllink("/questions/ask", "Ask Question") + " button. If you have sufficient reputation, " + htmllink("/privileges/vote-up", "you may upvote") + " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers.",
+                    description: "If you have a ".concat(htmlem(__makeTemplateObject(["new"], ["new"])), " question, please ask it by clicking the ").concat(htmllink("/questions/ask", "Ask Question"), " button. If you have sufficient reputation, ").concat(htmllink("/privileges/vote-up", "you may upvote"), " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers."),
                 },
                 {
                     targets: [Target.Closure],
@@ -330,11 +334,11 @@ window.addEventListener("load", function () {
                 {
                     targets: [Target.EditSummaryQuestion],
                     name: "Improper tagging",
-                    description: "The tags you used are not appropriate for the question. Please review " + htmllink("/help/tagging", "What are tags, and how should I use them?"),
+                    description: "The tags you used are not appropriate for the question. Please review ".concat(htmllink("/help/tagging", "What are tags, and how should I use them?")),
                 },
             ];
             if (!Store.load("WelcomeMessage"))
-                Store.save("WelcomeMessage", "Welcome to " + sitename + "! ");
+                Store.save("WelcomeMessage", "Welcome to ".concat(sitename, "! "));
             var addStyles = function () {
                 var style = document.createElement("style");
                 document.head.append(style);
@@ -343,25 +347,25 @@ window.addEventListener("load", function () {
                     return;
                 var arc = "auto-review-comments";
                 [
-                    "." + arc + ".popup{\n                    position:absolute;\n                    display:block;\n                    width:690px;\n                    padding:15px 15px 10px;\n                }",
-                    "." + arc + ".popup .svg-icon.mute-text a {\n                    color: var(--black-500);\n                }",
-                    "." + arc + ".popup .main .view {\n                    padding: 1vh 1vw;\n                }",
-                    "." + arc + ".popup .close:hover {\n                    cursor: pointer;\n                }",
-                    "." + arc + ".popup .main .userinfo{\n                    padding:5px;\n                    margin-bottom:7px;\n                }",
-                    "." + arc + ".popup .main .remoteurl {\n                    display: block;\n                    width: 100%;\n                }",
-                    "." + arc + ".popup .main .action-list{\n                    max-height: 400px;\n                }",
-                    "." + arc + ".popup .main .action-list li{\n                    padding:0;\n                    transition:.1s\n                }",
-                    "." + arc + ".popup .main .action-list li:hover {\n                    background-color: var(--black-075)\n                }",
-                    "." + arc + ".popup .main .action-list li label{\n                    position:relative;\n                    display:block;\n                    padding:10px;\n                }",
-                    "." + arc + ".popup .main .action-list li label .action-name {\n                    display: block;\n                    margin-bottom: 3px;\n                    cursor: default;\n                    margin: 0 0 1vh 0;\n                }",
-                    "." + arc + ".popup .main .action-list li label .action-desc {\n                    margin: 0;\n                    padding: 0;\n                    color: #888;\n                    cursor: default;\n                }",
-                    "." + arc + ".popup .main .action-list li label .quick-insert{\n                    display:none;\n                    position:absolute;\n                    top:0;\n                    right:0;\n                    height:100%;\n                    margin:0;font-size:300%;\n                    color:transparent;\n                    border:0;\n                    transition:.3s;\n                    text-shadow:0 0 1px #fff;\n                    cursor:pointer;\n                    background-color:rgba(0,0,0,0.1);\n                    background:rgba(0,0,0,0.1);\n                    box-shadow:none;\n                    -moz-box-shadow:none;\n                    -webkit-box-shadow:none;\n                }",
-                    "." + arc + ".popup .main .action-list li:hover label .quick-insert{\n                    display:block\n                }",
-                    "." + arc + ".popup .main .action-list li label .quick-insert:hover{\n                    background-color:#222;\n                    color:#fff\n                }",
-                    "." + arc + ".announcement strong:first-child {\n                    display: block;\n                }",
-                    "." + arc + ".announcement{\n                    padding:7px;\n                    margin-bottom:10px;\n                    background:orange;\n                    font-size:15px;\n                }",
-                    "." + arc + ".announcement .notify-close{\n                    display:block;\n                    float:right;\n                    margin:0 4px;\n                    padding:0 4px;\n                    border:2px solid black;\n                    cursor:pointer;\n                    line-height:17px;\n                }",
-                    "." + arc + ".announcement .notify-close a{\n                    color:black;\n                    text-decoration:none;\n                    font-weight:bold;\n                    font-size:16px;\n                }",
+                    ".".concat(arc, ".popup{\n                    position:absolute;\n                    display:block;\n                    width:690px;\n                    padding:15px 15px 10px;\n                }"),
+                    ".".concat(arc, ".popup .svg-icon.mute-text a {\n                    color: var(--black-500);\n                }"),
+                    ".".concat(arc, ".popup .main .view {\n                    padding: 1vh 1vw;\n                }"),
+                    ".".concat(arc, ".popup .close:hover {\n                    cursor: pointer;\n                }"),
+                    ".".concat(arc, ".popup .main .userinfo{\n                    padding:5px;\n                    margin-bottom:7px;\n                }"),
+                    ".".concat(arc, ".popup .main .remoteurl {\n                    display: block;\n                    width: 100%;\n                }"),
+                    ".".concat(arc, ".popup .main .action-list{\n                    max-height: 400px;\n                }"),
+                    ".".concat(arc, ".popup .main .action-list li{\n                    padding:0;\n                    transition:.1s\n                }"),
+                    ".".concat(arc, ".popup .main .action-list li:hover {\n                    background-color: var(--black-075)\n                }"),
+                    ".".concat(arc, ".popup .main .action-list li label{\n                    position:relative;\n                    display:block;\n                    padding:10px;\n                }"),
+                    ".".concat(arc, ".popup .main .action-list li label .action-name {\n                    display: block;\n                    margin-bottom: 3px;\n                    cursor: default;\n                    margin: 0 0 1vh 0;\n                }"),
+                    ".".concat(arc, ".popup .main .action-list li label .action-desc {\n                    margin: 0;\n                    padding: 0;\n                    color: #888;\n                    cursor: default;\n                }"),
+                    ".".concat(arc, ".popup .main .action-list li label .quick-insert{\n                    display:none;\n                    position:absolute;\n                    top:0;\n                    right:0;\n                    height:100%;\n                    margin:0;font-size:300%;\n                    color:transparent;\n                    border:0;\n                    transition:.3s;\n                    text-shadow:0 0 1px #fff;\n                    cursor:pointer;\n                    background-color:rgba(0,0,0,0.1);\n                    background:rgba(0,0,0,0.1);\n                    box-shadow:none;\n                    -moz-box-shadow:none;\n                    -webkit-box-shadow:none;\n                }"),
+                    ".".concat(arc, ".popup .main .action-list li:hover label .quick-insert{\n                    display:block\n                }"),
+                    ".".concat(arc, ".popup .main .action-list li label .quick-insert:hover{\n                    background-color:#222;\n                    color:#fff\n                }"),
+                    ".".concat(arc, ".announcement strong:first-child {\n                    display: block;\n                }"),
+                    ".".concat(arc, ".announcement{\n                    padding:7px;\n                    margin-bottom:10px;\n                    background:orange;\n                    font-size:15px;\n                }"),
+                    ".".concat(arc, ".announcement .notify-close{\n                    display:block;\n                    float:right;\n                    margin:0 4px;\n                    padding:0 4px;\n                    border:2px solid black;\n                    cursor:pointer;\n                    line-height:17px;\n                }"),
+                    ".".concat(arc, ".announcement .notify-close a{\n                    color:black;\n                    text-decoration:none;\n                    font-weight:bold;\n                    font-size:16px;\n                }"),
                 ].forEach(function (rule) { return sheet.insertRule(rule); });
             };
             var makeTextInput = function (id, _a) {
@@ -530,7 +534,7 @@ window.addEventListener("load", function () {
                     .forEach(hide);
                 show(view);
                 Store.save("CurrentView", view.id);
-                debugLogger.log("switched to view: " + view.id);
+                debugLogger.log("switched to view: ".concat(view.id));
                 return view;
             }; };
             var makeTabsView = function (popup, id, _postType) {
@@ -572,7 +576,7 @@ window.addEventListener("load", function () {
                     fadeTo(popup, 1.0);
                     fadeTo(seeBtn.closest(".main"), 1);
                 });
-                var info = makeStacksIconButton("iconInfo", "see info about ARC (v" + VERSION + ")", "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z", { url: GITHUB_URL, classes: iconClasses });
+                var info = makeStacksIconButton("iconInfo", "see info about ARC (v".concat(VERSION, ")"), "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z", { url: GITHUB_URL, classes: iconClasses });
                 var closeWrap = el("div", "flex--item");
                 var close = makeStacksIconButton("iconClear", "Close popup", "M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9 15 4.41z", { classes: ["mute-text", "close"] });
                 close.addEventListener("click", function () {
@@ -692,7 +696,7 @@ window.addEventListener("load", function () {
                 var content = loaded
                     .map(function (_a) {
                     var name = _a.name, desc = _a.desc;
-                    return "###" + name + "\n" + HTMLtoMarkdown(desc);
+                    return "###".concat(name, "\n").concat(HTMLtoMarkdown(desc));
                 })
                     .join("\n\n");
                 area.value = content;
@@ -741,7 +745,7 @@ window.addEventListener("load", function () {
                 return (makeImpExpView.view = updateImpExpComments(view));
             };
             var scheme = function (url) {
-                return /^https?:\/\//.test(url) ? url : "https://" + url;
+                return /^https?:\/\//.test(url) ? url : "https://".concat(url);
             };
             var unscheme = function (url) { return url.replace(/^https?:\/\//, ""); };
             var updateRemoteURL = function (key, inputId) {
@@ -926,17 +930,17 @@ window.addEventListener("load", function () {
             var makeCommentItem = function (id, name, desc) {
                 var li = el("li", "pr8");
                 var reviewRadio = el("input");
-                reviewRadio.id = "comment-" + id;
+                reviewRadio.id = "comment-".concat(id);
                 reviewRadio.type = "radio";
                 reviewRadio.name = "commentreview";
                 reviewRadio.hidden = true;
                 var lbl = el("label");
                 lbl.htmlFor = reviewRadio.id;
                 var nameEl = el("span", "action-name");
-                nameEl.id = "name-" + id;
+                nameEl.id = "name-".concat(id);
                 nameEl.innerHTML = name;
                 var descEl = el("span", "action-desc");
-                descEl.id = "desc-" + id;
+                descEl.id = "desc-".concat(id);
                 descEl.innerHTML = desc;
                 var insertBtn = el("button", "quick-insert");
                 insertBtn.innerHTML = "↓";
@@ -982,7 +986,7 @@ window.addEventListener("load", function () {
             ];
             var absoluteTime = function (epochSeconds) {
                 var pad = function (number) {
-                    return number < 10 ? "0" + number : number;
+                    return number < 10 ? "0".concat(number) : number;
                 };
                 var date = new Date(epochSeconds * 1000);
                 var thisYear = new Date().getUTCFullYear();
@@ -994,7 +998,7 @@ window.addEventListener("load", function () {
                     months[date.getUTCMonth()],
                     date.getUTCDate(),
                     date.getUTCFullYear() !== thisYear
-                        ? "'" + thatDateShortYear
+                        ? "'".concat(thatDateShortYear)
                         : "",
                     "at",
                     [
@@ -1031,7 +1035,7 @@ window.addEventListener("load", function () {
                 var unitElapsed = Math.floor(diff / divideBy);
                 var pluralS = pluralise(unitElapsed);
                 var getTimeAgo = function (type) {
-                    return unitElapsed + " " + type + pluralS + " ago";
+                    return "".concat(unitElapsed, " ").concat(type).concat(pluralS, " ago");
                 };
                 var stringsMap = (_b = {},
                     _b[timeUnits.second * 2] = "just now",
@@ -1054,10 +1058,10 @@ window.addEventListener("load", function () {
                     var divider = _a.divider;
                     return reputationNumber >= divider;
                 });
-                return range
-                    ? (reputationNumber / range.divider).toFixed(1) +
-                        range.suffix
+                var shortenedRep = range
+                    ? (reputationNumber / range.divider).toFixed(1) + range.suffix
                     : reputationNumber.toString();
+                return shortenedRep.replace('.0', '');
             };
             var getLoggedInUserId = function (se) { var _a; return ((_a = se.options.user.userId) === null || _a === void 0 ? void 0 : _a.toString()) || ""; };
             var notify = function (toastBody, type) {
@@ -1119,7 +1123,7 @@ window.addEventListener("load", function () {
                     (_b = container
                         .querySelector(".action-desc")) === null || _b === void 0 ? void 0 : _b.prepend(Store.load("WelcomeMessage") || "");
                 }
-                var userLink = link("/users/" + user_id, "");
+                var userLink = link("/users/".concat(user_id), "");
                 userLink.append(b(display_name));
                 empty(container);
                 var relativeTimeClass = "relativetime";
@@ -1147,7 +1151,7 @@ window.addEventListener("load", function () {
                 return __generator(this, function (_b) {
                     switch (_b.label) {
                         case 0:
-                            url = new URL("https://api.stackexchange.com/" + API_VER + "/users/" + userid);
+                            url = new URL("https://api.stackexchange.com/".concat(API_VER, "/users/").concat(userid));
                             url.search = new URLSearchParams({
                                 site: site,
                                 key: API_KEY,
@@ -1190,8 +1194,8 @@ window.addEventListener("load", function () {
                 if (numNames !== numDescs)
                     return notify("Failed to import: titles and descriptions do not match", "danger");
                 names.forEach(function (name, idx) {
-                    Store.save("name-" + idx, name);
-                    Store.save("desc-" + idx, descs[idx]);
+                    Store.save("name-".concat(idx), name);
+                    Store.save("desc-".concat(idx), descs[idx]);
                 });
                 Store.save("commentcount", numNames);
             };
@@ -1240,8 +1244,8 @@ window.addEventListener("load", function () {
             };
             var tag = function (html) {
                 var regname = new RegExp(sitename, "g");
-                var regurl = new RegExp("//" + site, "g");
-                var reguid = new RegExp("/" + getLoggedInUserId(StackExchange) + "[)]", "g");
+                var regurl = new RegExp("//".concat(site), "g");
+                var reguid = new RegExp("/".concat(getLoggedInUserId(StackExchange), "[)]"), "g");
                 return html
                     .replace(regname, "$SITENAME$")
                     .replace(regurl, "//$SITEURL$")
@@ -1267,7 +1271,7 @@ window.addEventListener("load", function () {
                 if (mode === "edit")
                     return;
                 var greeting = Store.load("WelcomeMessage", "");
-                var html = tag(backup).replace(greeting && greeting + " ", "");
+                var html = tag(backup).replace(greeting && "".concat(greeting, " "), "");
                 debugLogger.log({ backup: backup, html: html });
                 empty(commentElem);
                 var replaceVars = makeVariableReplacer({
@@ -1314,17 +1318,17 @@ window.addEventListener("load", function () {
                 Store.clear("desc-");
                 comments.forEach(function (_a, index) {
                     var description = _a.description, name = _a.name, targets = _a.targets;
-                    var prefix = targets ? "[" + targets.join(",") + "] " : "";
-                    Store.save("name-" + index, prefix + name);
-                    Store.save("desc-" + index, description);
+                    var prefix = targets ? "[".concat(targets.join(","), "] ") : "";
+                    Store.save("name-".concat(index), prefix + name);
+                    Store.save("desc-".concat(index), description);
                 });
                 Store.save("commentcount", commentDefaults.length);
             };
             var loadComments = function (numComments) {
                 var comments = [];
                 for (var i = 0; i < numComments; i++) {
-                    var name_1 = Store.load("name-" + i);
-                    var desc = Store.load("desc-" + i);
+                    var name_1 = Store.load("name-".concat(i));
+                    var desc = Store.load("desc-".concat(i));
                     comments.push({ name: name_1, desc: desc });
                 }
                 return comments;
@@ -1398,7 +1402,7 @@ window.addEventListener("load", function () {
                     };
                     return Object.entries(rules).reduce(function (a, _a) {
                         var _b = __read(_a, 2), expression = _b[0], replacement = _b[1];
-                        return a.replace(new RegExp("\\$" + expression + "\\$", "g"), replacement);
+                        return a.replace(new RegExp("\\$".concat(expression, "\\$"), "g"), replacement);
                     }, text);
                 };
             };
@@ -1420,7 +1424,7 @@ window.addEventListener("load", function () {
                 var replaceVars = makeVariableReplacer(opts);
                 var greet = Store.load("ShowGreeting", false);
                 var welcome = Store.load("WelcomeMessage", "");
-                var greeting = greet ? replaceVars(welcome) + " " : "";
+                var greeting = greet ? "".concat(replaceVars(welcome), " ") : "";
                 debugLogger.log(__assign({ comments: comments, postType: postType, greet: greet, welcome: welcome, greeting: greeting }, opts));
                 var listItems = comments
                     .filter(function (_a) {
@@ -1532,8 +1536,8 @@ window.addEventListener("load", function () {
                                 Store.clear("desc-");
                                 comments.forEach(function (_a, i) {
                                     var name = _a.name, description = _a.description;
-                                    Store.save("name-" + i, name);
-                                    Store.save("desc-" + i, tag(markdownToHTML(description)));
+                                    Store.save("name-".concat(i), name);
+                                    Store.save("desc-".concat(i), tag(markdownToHTML(description)));
                                 });
                                 return [2];
                         }
@@ -1617,7 +1621,7 @@ window.addEventListener("load", function () {
             var findEditSummaryElements = function (_a) {
                 var href = _a.href;
                 var _b = __read(href.match(/posts\/(\d+)\/edit/) || [], 2), divid = _b[1];
-                var nextElementSibling = document.getElementById("post-editor-" + divid).nextElementSibling;
+                var nextElementSibling = document.getElementById("post-editor-".concat(divid)).nextElementSibling;
                 var placeIn = nextElementSibling.querySelector(".edit-comment");
                 return [placeIn, placeIn];
             };
