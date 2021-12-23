@@ -623,7 +623,6 @@ window.addEventListener("load", function () {
                 wrap.classList.add("view");
                 wrap.id = id;
                 var header = document.createElement("h2");
-                header.classList.add("handle");
                 header.innerHTML = "Which review comment to insert?";
                 var uinfo = document.createElement("div");
                 uinfo.classList.add("userinfo");
@@ -866,6 +865,7 @@ window.addEventListener("load", function () {
                 if (makePopup.popup)
                     return makePopup.popup;
                 var popup = el("div", "auto-review-comments", "popup");
+                popup.setAttribute("data-se-draggable-target", "handle");
                 var main = el("div", "main");
                 main.id = "main";
                 var viewSwitcher = makeViewSwitcher(viewsSel);

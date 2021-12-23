@@ -1095,7 +1095,6 @@ window.addEventListener("load", () => {
                 wrap.id = id;
 
                 const header = document.createElement("h2");
-                header.classList.add("handle");
                 header.innerHTML = "Which review comment to insert?";
 
                 const uinfo = document.createElement("div");
@@ -1532,6 +1531,7 @@ window.addEventListener("load", () => {
                 if (makePopup.popup) return makePopup.popup;
 
                 const popup = el("div", "auto-review-comments", "popup");
+                popup.setAttribute("data-se-draggable-target", "handle");
 
                 const main = el("div", "main");
                 main.id = "main";
