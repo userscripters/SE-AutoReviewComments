@@ -4,6 +4,7 @@
     "exclude": [],
     "compilerOptions": {
         "module": "CommonJS",
-        "outFile": null
+        "outFile": null,
+        "resolveJsonModule": true
     }
 }
