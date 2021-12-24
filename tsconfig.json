@@ -22,5 +22,5 @@
         "outFile": "dist/auto-review-comments.user.js",
         "module": "none"
     },
-    "exclude": ["utils", "test"]
+    "exclude": ["utils", "test", "scripts"]
 }
