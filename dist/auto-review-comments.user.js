@@ -1342,6 +1342,14 @@ window.addEventListener("load", function () {
                 }
                 return comments;
             };
+            var switchSelectedComment = function (popup, action) {
+                var acts = popup.querySelector(".action-list");
+                acts === null || acts === void 0 ? void 0 : acts.querySelectorAll("li").forEach(function (_a) {
+                    var classList = _a.classList;
+                    return classList.remove("action-selected");
+                });
+                action.classList.add("action-selected");
+            };
             var makeCommentClickHandler = function (popup) {
                 return function (_a) {
                     var target = _a.target;
@@ -1359,13 +1367,12 @@ window.addEventListener("load", function () {
                             .forEach(hide);
                     }
                     var action = el.closest("li");
-                    var classList = action.classList;
-                    classList.add("action-selected");
+                    switchSelectedComment(popup, action);
                     var descr = action.querySelector(".action-desc");
                     show(descr);
                 };
             };
-            var makeQuickInsertHandler = function (input) {
+            var makeQuickInsertHandler = function (popup, input) {
                 return function (_a) {
                     var target = _a.target;
                     var el = target;
@@ -1376,7 +1383,7 @@ window.addEventListener("load", function () {
                     var descr = action === null || action === void 0 ? void 0 : action.querySelector(".action-desc");
                     if (!action || !radio || !descr)
                         return notify("Something went wrong", "danger");
-                    action.classList.add("action-selected");
+                    switchSelectedComment(popup, action);
                     radio.checked = true;
                     insertComment(input, descr.innerHTML, getOP());
                 };
@@ -1389,7 +1396,7 @@ window.addEventListener("load", function () {
                         return;
                     openEditMode(el, popup);
                 });
-                var insertHandler = makeQuickInsertHandler(target);
+                var insertHandler = makeQuickInsertHandler(popup, target);
                 var selectHandler = makeCommentClickHandler(popup);
                 popup.addEventListener("click", function (event) {
                     var currView = Store.load("CurrentView");

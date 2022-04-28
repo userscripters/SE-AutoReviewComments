@@ -2290,6 +2290,20 @@ window.addEventListener("load", () => {
             };
 
             /**
+             * @summary switches currently selected comment
+             * @param {HTMLElement} popup wrapper popup
+             * @param {HTMLLIElement} action comment item
+             * @returns {void}
+             */
+            const switchSelectedComment = (popup: HTMLElement, action: HTMLLIElement) => {
+                const acts = popup.querySelector(".action-list");
+                acts?.querySelectorAll("li").forEach(({ classList }) =>
+                    classList.remove("action-selected")
+                );
+                action.classList.add("action-selected");
+            };
+
+            /**
              * @summary makes the comment click handler (selecting comments)
              * @param {HTMLElement} popup wrapper popup
              * @returns {EventListener}
@@ -2313,22 +2327,21 @@ window.addEventListener("load", () => {
                         }
 
                         const action = el.closest("li")!;
-                        const { classList } = action;
-                        classList.add("action-selected");
+                        switchSelectedComment(popup, action);
 
-                        const descr =
-                            action.querySelector<HTMLElement>(".action-desc")!;
+                        const descr = action.querySelector<HTMLElement>(".action-desc")!;
 
                         show(descr);
                     };
 
             /**
              * @summary makes the comment quick insert handler
+             * @param {HTMLElement} popup wrapper popup
              * @param {HTMLInputElement} input target input
              * @returns {EventListener}
              */
             const makeQuickInsertHandler =
-                (input: HTMLInputElement): EventListener =>
+                (popup: HTMLElement, input: HTMLInputElement): EventListener =>
                     ({ target }) => {
                         const el = <HTMLElement>target;
 
@@ -2341,7 +2354,7 @@ window.addEventListener("load", () => {
                         if (!action || !radio || !descr)
                             return notify("Something went wrong", "danger");
 
-                        action.classList.add("action-selected");
+                        switchSelectedComment(popup, action);
                         radio.checked = true;
 
                         insertComment(input, descr.innerHTML, getOP());
@@ -2365,7 +2378,7 @@ window.addEventListener("load", () => {
                     openEditMode(el, popup);
                 });
 
-                const insertHandler = makeQuickInsertHandler(target);
+                const insertHandler = makeQuickInsertHandler(popup, target);
                 const selectHandler = makeCommentClickHandler(popup);
 
                 popup.addEventListener("click", (event) => {
