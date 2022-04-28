@@ -126,6 +126,21 @@ window.addEventListener("load", function () {
     var _a;
     if (typeof StackExchange !== "undefined") {
         (_a = StackExchange.ready) === null || _a === void 0 ? void 0 : _a.call(StackExchange, function () {
+            var getNumTextLines = function (text, font, lineWidth) {
+                var lines = text.split(/\r?\n/);
+                var canvas = document.createElement("canvas");
+                var context = canvas.getContext("2d");
+                if (!context) {
+                    console.debug("missing 2d canvas context");
+                    return 1;
+                }
+                context.font = font;
+                return lines.reduce(function (a, line) {
+                    var width = context.measureText(line).width;
+                    var actualNumLines = Math.ceil(width / lineWidth);
+                    return a + actualNumLines;
+                }, 0);
+            };
             var center = function (element) {
                 var style = element.style;
                 var update = {
@@ -1292,8 +1307,9 @@ window.addEventListener("load", function () {
                 });
                 var preview = el("span", "d-inline-block", "p8");
                 preview.innerHTML = replaceVars(html);
+                var editedText = HTMLtoMarkdown(html);
                 var _b = __read(makeStacksTextArea(commentElem.id, {
-                    value: HTMLtoMarkdown(html),
+                    value: editedText,
                 }), 2), areaWrap = _b[0], area = _b[1];
                 area.addEventListener("input", function (_a) {
                     var target = _a.target;
@@ -1321,6 +1337,14 @@ window.addEventListener("load", function () {
                 });
                 actions.append(cancel);
                 commentElem.append(preview, areaWrap, actions);
+                var _c = window.getComputedStyle(area), paddingLeft = _c.paddingLeft, paddingRight = _c.paddingRight, font = _c.font;
+                var areaHorizontalPadding = parseInt(paddingLeft) + parseInt(paddingRight);
+                var lineWidth = 650 - 20 - 8 - areaHorizontalPadding;
+                area.rows = getNumTextLines(editedText, font, lineWidth);
+                area.addEventListener("input", function () {
+                    var value = area.value;
+                    area.rows = getNumTextLines(value, font, lineWidth);
+                });
                 dataset.mode = "edit";
             };
             var resetComments = function (comments) {

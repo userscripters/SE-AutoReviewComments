@@ -90,6 +90,34 @@ type VarsReplacerOptions = {
 window.addEventListener("load", () => {
     if (typeof StackExchange !== "undefined") {
         StackExchange.ready?.(() => {
+
+            /**
+             * @summary measures real text width and returns the actual number of lines
+             * @param text text to measure
+             * @param font font shorthand property
+             * @param lineWidth maximum line width (in pixels)
+             * @returns {number}
+             */
+            const getNumTextLines = (text: string, font: string, lineWidth: number) => {
+                const lines = text.split(/\r?\n/);
+
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d");
+
+                if (!context) {
+                    console.debug("missing 2d canvas context");
+                    return 1;
+                }
+
+                context.font = font;
+
+                return lines.reduce((a, line) => {
+                    const { width } = context.measureText(line);
+                    const actualNumLines = Math.ceil(width / lineWidth);
+                    return a + actualNumLines;
+                }, 0);
+            };
+
             /**
              * @summary centers the element
              * @param {HTMLElement} element
@@ -2218,8 +2246,10 @@ window.addEventListener("load", () => {
                 const preview = el("span", "d-inline-block", "p8");
                 preview.innerHTML = replaceVars(html);
 
+                const editedText = HTMLtoMarkdown(html);
+
                 const [areaWrap, area] = makeStacksTextArea(commentElem.id, {
-                    value: HTMLtoMarkdown(html),
+                    value: editedText,
                 });
 
                 area.addEventListener("input", ({ target }) => {
@@ -2255,6 +2285,20 @@ window.addEventListener("load", () => {
 
                 actions.append(cancel);
                 commentElem.append(preview, areaWrap, actions);
+
+                const { paddingLeft, paddingRight, font } = window.getComputedStyle(area);
+
+                const areaHorizontalPadding = parseInt(paddingLeft) + parseInt(paddingRight);
+
+                //650 is <ul> width 8 is <li> padding-right, 20 is <label> padding
+                const lineWidth = 650 - 20 - 8 - areaHorizontalPadding;
+
+                area.rows = getNumTextLines(editedText, font, lineWidth);
+
+                area.addEventListener("input", () => {
+                    const { value } = area;
+                    area.rows = getNumTextLines(value, font, lineWidth);
+                });
 
                 dataset.mode = "edit";
             };
