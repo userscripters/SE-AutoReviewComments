@@ -372,7 +372,7 @@ window.addEventListener("load", function () {
                 var arc = "auto-review-comments";
                 [
                     ".inline-editor button[id^='submit-button'] {\n                    width: unset !important;\n                }",
-                    ".".concat(arc, ".popup{\n                    position:absolute;\n                    display:block;\n                    width:690px;\n                    padding:15px 15px 10px;\n                }"),
+                    ".".concat(arc, ".popup{\n                    z-index: 9999;\n                    position:absolute;\n                    display:block;\n                    width:690px;\n                    padding:15px 15px 10px;\n                }"),
                     ".".concat(arc, ".popup .svg-icon.mute-text a {\n                    color: var(--black-500);\n                }"),
                     ".".concat(arc, ".popup .main .view {\n                    padding: 1vh 1vw;\n                }"),
                     ".".concat(arc, ".popup .close:hover {\n                    cursor: pointer;\n                }"),
@@ -1668,8 +1668,9 @@ window.addEventListener("load", function () {
                 return [injectTo, placeIn];
             };
             var findClosureElements = function (_where) {
-                var injectTo = document.querySelector(".close-as-off-topic-pane textarea");
-                return [injectTo, injectTo];
+                var injectTo = document.querySelector("#close-question-form .js-popup-submit");
+                var placeIn = document.querySelector("#site-specific-comment textarea");
+                return [injectTo, placeIn];
             };
             var findReviewQueueElements = function (_where) {
                 var injectTo = document.querySelector(".text-counter");
@@ -1748,7 +1749,7 @@ window.addEventListener("load", function () {
             addStyles();
             addTriggerButton(".js-add-link", findCommentElements, injectAutoLink, autoLinkAction);
             addTriggerButton(".js-edit-post", findEditSummaryElements, injectAutoLinkEdit, autoLinkAction);
-            addTriggerButton(".close-question-link", findClosureElements, injectAutoLinkClosure, autoLinkAction);
+            addTriggerButton(".js-close-question-link", findClosureElements, injectAutoLinkClosure, autoLinkAction);
             addTriggerButton(".review-actions input:first-child", findReviewQueueElements, injectAutoLinkReviewQueue, autoLinkAction);
         });
     }

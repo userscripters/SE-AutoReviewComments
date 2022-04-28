@@ -484,6 +484,7 @@ window.addEventListener("load", () => {
                     width: unset !important;
                 }`,
                     `.${arc}.popup{
+                    z-index: 9999;
                     position:absolute;
                     display:block;
                     width:690px;
@@ -2833,11 +2834,9 @@ window.addEventListener("load", () => {
              *                     comment should be placed.
              */
             const findClosureElements = (_where: HTMLElement): Placement => {
-                //TODO: why where is not used?
-                const injectTo = document.querySelector<HTMLElement>(
-                    ".close-as-off-topic-pane textarea"
-                )!;
-                return [injectTo, injectTo];
+                const injectTo = document.querySelector<HTMLElement>("#close-question-form .js-popup-submit")!;
+                const placeIn = document.querySelector<HTMLElement>("#site-specific-comment textarea")!;
+                return [injectTo, placeIn];
             };
 
             /**
@@ -3027,7 +3026,7 @@ window.addEventListener("load", () => {
             );
 
             addTriggerButton(
-                ".close-question-link",
+                ".js-close-question-link",
                 findClosureElements,
                 injectAutoLinkClosure,
                 autoLinkAction
