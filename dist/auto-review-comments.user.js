@@ -1655,7 +1655,7 @@ window.addEventListener("load", function () {
                 var id = parentElement.id;
                 var divId = id.replace("-link", "");
                 var div = document.getElementById(divId);
-                var injectNextTo = div.querySelector(".js-comment-help-link");
+                var injectNextTo = div.querySelector(".js-comment-form-layout button:last-of-type");
                 var placeCommentIn = div.querySelector("textarea");
                 return [injectNextTo, placeCommentIn];
             };
@@ -1676,14 +1676,12 @@ window.addEventListener("load", function () {
                 return [injectTo, placeIn];
             };
             var makePopupOpenButton = function (callback, next, where) {
-                var alink = document.createElement("a");
-                alink.classList.add("comment-auto-link");
-                alink.innerHTML = "auto";
-                alink.addEventListener("click", function (ev) {
-                    ev.preventDefault();
-                    callback(next, where);
-                });
-                return alink;
+                var btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = "ARC comment";
+                btn.classList.add("comment-auto-link", "s-btn", "s-btn__primary");
+                btn.addEventListener("click", function () { return callback(next, where); });
+                return btn;
             };
             var getTargetType = function (where, clsMap) {
                 var parent = where.closest(".answer") || where.closest(".question");

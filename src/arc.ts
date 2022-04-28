@@ -2802,7 +2802,7 @@ window.addEventListener("load", () => {
                 const div = document.getElementById(divId)!;
 
                 const injectNextTo = div.querySelector<HTMLElement>(
-                    ".js-comment-help-link"
+                    ".js-comment-form-layout button:last-of-type"
                 )!;
                 const placeCommentIn = div.querySelector("textarea")!;
                 return [injectNextTo, placeCommentIn];
@@ -2865,21 +2865,19 @@ window.addEventListener("load", () => {
              * @param {Actor} what The function that will be called when the link is clicked.
              * @param {HTMLElement} next The DOM element next to which we'll place the link.
              * @param {HTMLElement} where The DOM element into which the comment should be placed.
-             * @returns {HTMLAnchorElement}
+             * @returns {HTMLButtonElement}
              */
             const makePopupOpenButton = (
                 callback: Actor,
                 next: Parameters<Actor>[0],
                 where: Parameters<Actor>[1]
             ) => {
-                const alink = document.createElement("a");
-                alink.classList.add("comment-auto-link");
-                alink.innerHTML = "auto";
-                alink.addEventListener("click", (ev) => {
-                    ev.preventDefault();
-                    callback(next, where);
-                });
-                return alink;
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = "ARC comment";
+                btn.classList.add("comment-auto-link", "s-btn", "s-btn__primary");
+                btn.addEventListener("click", () => callback(next, where));
+                return btn;
             };
 
             /**
