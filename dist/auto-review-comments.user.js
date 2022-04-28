@@ -371,6 +371,7 @@ window.addEventListener("load", function () {
                     return;
                 var arc = "auto-review-comments";
                 [
+                    ".inline-editor button[id^='submit-button'] {\n                    width: unset !important;\n                }",
                     ".".concat(arc, ".popup{\n                    position:absolute;\n                    display:block;\n                    width:690px;\n                    padding:15px 15px 10px;\n                }"),
                     ".".concat(arc, ".popup .svg-icon.mute-text a {\n                    color: var(--black-500);\n                }"),
                     ".".concat(arc, ".popup .main .view {\n                    padding: 1vh 1vw;\n                }"),
@@ -1659,12 +1660,12 @@ window.addEventListener("load", function () {
                 var placeCommentIn = div.querySelector("textarea");
                 return [injectNextTo, placeCommentIn];
             };
-            var findEditSummaryElements = function (_a) {
-                var href = _a.href;
-                var _b = __read(href.match(/posts\/(\d+)\/edit/) || [], 2), divid = _b[1];
-                var nextElementSibling = document.getElementById("post-editor-".concat(divid)).nextElementSibling;
-                var placeIn = nextElementSibling.querySelector(".edit-comment");
-                return [placeIn, placeIn];
+            var findEditSummaryElements = function (where) {
+                var href = where.href;
+                var _a = __read(href.match(/posts\/(\d+)\/edit/) || [], 2), divid = _a[1];
+                var injectTo = document.getElementById("submit-button-".concat(divid));
+                var placeIn = document.getElementById("edit-comment-".concat(divid));
+                return [injectTo, placeIn];
             };
             var findClosureElements = function (_where) {
                 var injectTo = document.querySelector(".close-as-off-topic-pane textarea");
@@ -1746,7 +1747,7 @@ window.addEventListener("load", function () {
             };
             addStyles();
             addTriggerButton(".js-add-link", findCommentElements, injectAutoLink, autoLinkAction);
-            addTriggerButton(".edit-post", findEditSummaryElements, injectAutoLinkEdit, autoLinkAction);
+            addTriggerButton(".js-edit-post", findEditSummaryElements, injectAutoLinkEdit, autoLinkAction);
             addTriggerButton(".close-question-link", findClosureElements, injectAutoLinkClosure, autoLinkAction);
             addTriggerButton(".review-actions input:first-child", findReviewQueueElements, injectAutoLinkReviewQueue, autoLinkAction);
         });

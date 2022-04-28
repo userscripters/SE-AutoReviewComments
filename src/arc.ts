@@ -478,6 +478,11 @@ window.addEventListener("load", () => {
                 const arc = "auto-review-comments";
 
                 [
+                    // fixes SE code setting inline width if we add a button after
+                    // the "Save edits" button
+                    `.inline-editor button[id^='submit-button'] {
+                    width: unset !important;
+                }`,
                     `.${arc}.popup{
                     position:absolute;
                     display:block;
@@ -2813,21 +2818,12 @@ window.addEventListener("load", () => {
              * @param {HTMLAnchorElement} where A DOM element, near which we're looking for the location where to inject our link.
              * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the comment should be placed.
              */
-            const findEditSummaryElements = ({
-                href,
-            }: HTMLAnchorElement): Placement => {
+            const findEditSummaryElements = (where: HTMLAnchorElement): Placement => {
+                const { href } = where;
                 const [, divid] = href.match(/posts\/(\d+)\/edit/) || [];
-
-                const { nextElementSibling } = document.getElementById(
-                    `post-editor-${divid}`
-                )!;
-
-                const placeIn =
-                    nextElementSibling!.querySelector<HTMLElement>(
-                        ".edit-comment"
-                    )!;
-
-                return [placeIn, placeIn];
+                const injectTo = document.getElementById(`submit-button-${divid}`)!;
+                const placeIn = document.getElementById(`edit-comment-${divid}`)!;
+                return [injectTo, placeIn];
             };
 
             /**
@@ -3024,7 +3020,7 @@ window.addEventListener("load", () => {
             );
 
             addTriggerButton(
-                ".edit-post",
+                ".js-edit-post",
                 findEditSummaryElements,
                 injectAutoLinkEdit,
                 autoLinkAction
