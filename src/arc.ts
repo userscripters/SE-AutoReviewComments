@@ -607,6 +607,7 @@ window.addEventListener("load", () => {
 
             type TextAreaOptions = {
                 value?: string;
+                rows?: number;
                 label?: string;
             };
 
@@ -620,7 +621,7 @@ window.addEventListener("load", () => {
              */
             const makeStacksTextArea = (
                 id: string,
-                { label = "", value = "" }: TextAreaOptions
+                { label = "", rows = 1, value = "" }: TextAreaOptions
             ) => {
                 const wrap = el("div", "d-flex", "fd-column", "gs4", "gsy");
 
@@ -634,7 +635,7 @@ window.addEventListener("load", () => {
                 const area = el("textarea", "flex--item", "s-textarea");
                 area.id = area.name = id;
                 area.value = value;
-                area.rows = 20;
+                area.rows = rows;
                 wrap.append(area);
 
                 return [wrap, area] as const;
@@ -1267,6 +1268,7 @@ window.addEventListener("load", () => {
 
                 const [areaWrap, area] = makeStacksTextArea("impexp", {
                     label: "Comment source",
+                    rows: 20
                 });
 
                 area.addEventListener("change", async () => {

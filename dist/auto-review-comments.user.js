@@ -411,7 +411,7 @@ window.addEventListener("load", function () {
                 return el;
             };
             var makeStacksTextArea = function (id, _a) {
-                var _b = _a.label, label = _b === void 0 ? "" : _b, _c = _a.value, value = _c === void 0 ? "" : _c;
+                var _b = _a.label, label = _b === void 0 ? "" : _b, _c = _a.rows, rows = _c === void 0 ? 1 : _c, _d = _a.value, value = _d === void 0 ? "" : _d;
                 var wrap = el("div", "d-flex", "fd-column", "gs4", "gsy");
                 if (label) {
                     var lbl = el("label", "flex--item", "s-label");
@@ -422,7 +422,7 @@ window.addEventListener("load", function () {
                 var area = el("textarea", "flex--item", "s-textarea");
                 area.id = area.name = id;
                 area.value = value;
-                area.rows = 20;
+                area.rows = rows;
                 wrap.append(area);
                 return [wrap, area];
             };
@@ -719,6 +719,7 @@ window.addEventListener("load", function () {
                 view.classList.add("d-flex", "gs8", "gsy", "fd-column");
                 var _a = __read(makeStacksTextArea("impexp", {
                     label: "Comment source",
+                    rows: 20
                 }), 2), areaWrap = _a[0], area = _a[1];
                 area.addEventListener("change", function () { return __awaiter(void 0, void 0, void 0, function () {
                     return __generator(this, function (_a) {
