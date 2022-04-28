@@ -2841,17 +2841,13 @@ window.addEventListener("load", () => {
 
             /**
              * @summary A locator for the edit summary you get in the "Help and Improvement" review queue.
-             * @param {HTMLElement} where A DOM element, near which we're looking for the location where to inject our link.
+             * @param {HTMLElement} [_where] A DOM element, near which we're looking for the location where to inject our link.
              * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the
              *                     comment should be placed.
              */
-            const findReviewQueueElements = (
-                _where: HTMLElement
-            ): Placement => {
-                const injectTo =
-                    document.querySelector<HTMLElement>(".text-counter")!;
-                const placeIn =
-                    document.querySelector<HTMLElement>(".edit-comment")!;
+            const findReviewQueueElements = (_where?: HTMLElement): Placement => {
+                const injectTo = document.querySelector<HTMLElement>(".js-review-editor [id^='submit-button']")!;
+                const placeIn = document.querySelector<HTMLElement>(".js-review-editor .js-post-edit-comment-field")!;
                 return [injectTo, placeIn];
             };
 
@@ -3033,7 +3029,7 @@ window.addEventListener("load", () => {
             );
 
             addTriggerButton(
-                ".review-actions input:first-child",
+                ".js-review-submit",
                 findReviewQueueElements,
                 injectAutoLinkReviewQueue,
                 autoLinkAction
