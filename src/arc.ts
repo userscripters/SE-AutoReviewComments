@@ -1092,7 +1092,7 @@ window.addEventListener("load", () => {
                     "reset",
                     "reset any custom comments",
                     "popup-actions-reset",
-                    "s-btn__filled",
+                    "s-btn__outlined",
                     "s-btn__danger"
                 );
 
@@ -1219,20 +1219,24 @@ window.addEventListener("load", () => {
 
                 welcomeWrap.append(input);
 
-                const actionsWrap = el("div", "flex--item");
+                const actionsWrap = el("div", "flex--item", "d-flex", "gsx", "gs8");
 
                 const actions: Node[] = [
                     makeButton(
                         "force",
                         "force",
                         "welcome-force",
-                        "s-btn__outlined"
+                        "s-btn__primary",
+                        "s-btn__filled",
+                        "flex--item"
                     ),
                     makeButton(
                         "cancel",
                         "cancel",
                         "welcome-cancel",
-                        "s-btn__danger"
+                        "s-btn__danger",
+                        "s-btn__outlined",
+                        "flex--item"
                     ),
                 ];
 

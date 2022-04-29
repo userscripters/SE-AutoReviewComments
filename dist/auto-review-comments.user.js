@@ -645,7 +645,7 @@ window.addEventListener("load", function () {
                 var generalWrap = el("div", "flex--item");
                 var dangerWrap = el("div", "flex--item");
                 var _a = __read(makeStacksToggle("toggleDescr", "hide comment descriptions", Store.load("hide-desc", false)), 1), descrToggle = _a[0];
-                var resetBtn = makeButton("reset", "reset any custom comments", "popup-actions-reset", "s-btn__filled", "s-btn__danger");
+                var resetBtn = makeButton("reset", "reset any custom comments", "popup-actions-reset", "s-btn__outlined", "s-btn__danger");
                 generalWrap.append(descrToggle);
                 dangerWrap.append(resetBtn);
                 view.append(generalWrap, dangerWrap);
@@ -710,10 +710,10 @@ window.addEventListener("load", function () {
                     updateComments(popup, postType);
                 });
                 welcomeWrap.append(input);
-                var actionsWrap = el("div", "flex--item");
+                var actionsWrap = el("div", "flex--item", "d-flex", "gsx", "gs8");
                 var actions = [
-                    makeButton("force", "force", "welcome-force", "s-btn__outlined"),
-                    makeButton("cancel", "cancel", "welcome-cancel", "s-btn__danger"),
+                    makeButton("force", "force", "welcome-force", "s-btn__primary", "s-btn__filled", "flex--item"),
+                    makeButton("cancel", "cancel", "welcome-cancel", "s-btn__danger", "s-btn__outlined", "flex--item"),
                 ];
                 var viewSwitcher = makeViewSwitcher(viewsSel);
                 popup.addEventListener("click", function (_a) {
