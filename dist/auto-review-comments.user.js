@@ -390,9 +390,10 @@ window.addEventListener("load", function () {
                 if (!sheet)
                     return;
                 var arc = "auto-review-comments";
+                var popupWidth = "690px";
                 [
                     ".inline-editor button[id^='submit-button'] {\n                    width: unset !important;\n                }",
-                    ".".concat(arc, ".popup{\n                    z-index: 9999;\n                    position:absolute;\n                    display:block;\n                    width:690px;\n                    padding:15px 15px 10px;\n                }"),
+                    ".".concat(arc, ".popup{\n                    z-index: 9999;\n                    position:absolute;\n                    top: calc(100vh / 3);\n                    left: calc(50vw - ").concat(popupWidth, "/2);\n                    display:block;\n                    width:").concat(popupWidth, ";\n                    padding:15px 15px 10px;\n                }"),
                     ".".concat(arc, ".popup .svg-icon.mute-text a {\n                    color: var(--black-500);\n                }"),
                     ".".concat(arc, ".popup .main .view {\n                    padding: 1vh 1vw;\n                }"),
                     ".".concat(arc, ".popup .close:hover {\n                    cursor: pointer;\n                }"),

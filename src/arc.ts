@@ -477,6 +477,8 @@ window.addEventListener("load", () => {
 
                 const arc = "auto-review-comments";
 
+                const popupWidth = "690px";
+
                 [
                     // fixes SE code setting inline width if we add a button after
                     // the "Save edits" button
@@ -486,8 +488,10 @@ window.addEventListener("load", () => {
                     `.${arc}.popup{
                     z-index: 9999;
                     position:absolute;
+                    top: calc(100vh / 3);
+                    left: calc(50vw - ${popupWidth}/2);
                     display:block;
-                    width:690px;
+                    width:${popupWidth};
                     padding:15px 15px 10px;
                 }`,
                     `.${arc}.popup .svg-icon.mute-text a {
