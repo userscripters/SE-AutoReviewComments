@@ -1314,12 +1314,10 @@ window.addEventListener("load", function () {
                 dataset.mode = "insert";
             };
             var openEditMode = function (commentElem, popup) {
-                var backup = commentElem.innerHTML, dataset = commentElem.dataset, _a = commentElem.dataset.mode, mode = _a === void 0 ? "insert" : _a;
+                var id = commentElem.id, dataset = commentElem.dataset, _a = commentElem.dataset.mode, mode = _a === void 0 ? "insert" : _a;
                 if (mode === "edit")
                     return;
-                var greeting = Store.load("WelcomeMessage", "");
-                var html = tag(backup).replace(greeting && "".concat(greeting, " "), "");
-                debugLogger.log({ backup: backup, html: html });
+                var desc = HTMLtoMarkdown(Store.load(id));
                 empty(commentElem);
                 var replaceVars = makeVariableReplacer({
                     site: site,
@@ -1327,12 +1325,10 @@ window.addEventListener("load", function () {
                     myId: getLoggedInUserId(StackExchange),
                     opName: getOP(),
                 });
+                var initialHTML = markdownToHTML(replaceVars(desc));
                 var preview = el("span", "d-inline-block", "p8");
-                preview.innerHTML = replaceVars(html);
-                var editedText = HTMLtoMarkdown(html);
-                var _b = __read(makeStacksTextArea(commentElem.id, {
-                    value: editedText,
-                }), 2), areaWrap = _b[0], area = _b[1];
+                preview.innerHTML = initialHTML;
+                var _b = __read(makeStacksTextArea(commentElem.id, { value: desc }), 2), areaWrap = _b[0], area = _b[1];
                 area.addEventListener("input", function (_a) {
                     var target = _a.target;
                     var value = target.value;
@@ -1341,7 +1337,7 @@ window.addEventListener("load", function () {
                 area.addEventListener("change", function (_a) {
                     var target = _a.target;
                     var _b = target, id = _b.id, value = _b.value;
-                    closeEditMode(commentElem, saveComment(id, value));
+                    closeEditMode(commentElem, replaceVars(saveComment(id, value)));
                 });
                 commentElem.closest("li").querySelector("input").disabled =
                     true;
@@ -1355,14 +1351,14 @@ window.addEventListener("load", function () {
                     popup
                         .querySelectorAll(".quick-insert")
                         .forEach(show);
-                    closeEditMode(commentElem, backup);
+                    closeEditMode(commentElem, initialHTML);
                 });
                 actions.append(cancel);
                 commentElem.append(preview, areaWrap, actions);
                 var _c = window.getComputedStyle(area), paddingLeft = _c.paddingLeft, paddingRight = _c.paddingRight, font = _c.font;
                 var areaHorizontalPadding = parseInt(paddingLeft) + parseInt(paddingRight);
                 var lineWidth = 650 - 20 - 8 - areaHorizontalPadding;
-                area.rows = getNumTextLines(editedText, font, lineWidth);
+                area.rows = getNumTextLines(desc, font, lineWidth);
                 area.addEventListener("input", function () {
                     var value = area.value;
                     area.rows = getNumTextLines(value, font, lineWidth);
@@ -1385,7 +1381,7 @@ window.addEventListener("load", function () {
                 for (var i = 0; i < numComments; i++) {
                     var name_1 = Store.load("name-".concat(i));
                     var desc = Store.load("desc-".concat(i));
-                    comments.push({ name: name_1, desc: desc });
+                    comments.push({ id: i.toString(), name: name_1, desc: desc });
                 }
                 return comments;
             };
@@ -1494,11 +1490,11 @@ window.addEventListener("load", function () {
                     var name = _a.name;
                     return isCommentValidForType(name, postType);
                 })
-                    .map(function (_a, i) {
-                    var name = _a.name, desc = _a.desc;
+                    .map(function (_a) {
+                    var name = _a.name, id = _a.id, desc = _a.desc;
                     var cname = name.replace(allTgtMatcher, "");
                     var description = replaceVars(desc).replace(/\$/g, "$$$");
-                    return makeCommentItem(i.toString(), cname.replace(/\$/g, "$$$"), greeting + description);
+                    return makeCommentItem(id, cname.replace(/\$/g, "$$$"), greeting + description);
                 });
                 ul.append.apply(ul, __spreadArray([], __read(listItems), false));
                 toggleDescriptionVisibility(popup);

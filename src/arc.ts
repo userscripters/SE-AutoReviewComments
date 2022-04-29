@@ -74,6 +74,8 @@ type IconButtonOptions = {
 
 type CommentInfo = { name: string; description: string; targets: string[]; };
 
+type StoredComment = { id: string, name: string; desc: string; };
+
 type TimeAgo = "sec" | "min" | "hour" | "day";
 
 type VarsReplacerOptions = {
@@ -2229,20 +2231,14 @@ window.addEventListener("load", () => {
                 popup: HTMLElement
             ) => {
                 const {
-                    innerHTML: backup,
+                    id,
                     dataset,
                     dataset: { mode = "insert" },
                 } = commentElem;
 
                 if (mode === "edit") return;
 
-                const greeting = Store.load("WelcomeMessage", "");
-                const html = tag(backup).replace(
-                    greeting && `${greeting} `,
-                    ""
-                );
-
-                debugLogger.log({ backup, html });
+                const desc = HTMLtoMarkdown(Store.load<string>(id));
 
                 empty(commentElem);
 
@@ -2253,14 +2249,12 @@ window.addEventListener("load", () => {
                     opName: getOP(),
                 });
 
+                const initialHTML = markdownToHTML(replaceVars(desc));
+
                 const preview = el("span", "d-inline-block", "p8");
-                preview.innerHTML = replaceVars(html);
+                preview.innerHTML = initialHTML;
 
-                const editedText = HTMLtoMarkdown(html);
-
-                const [areaWrap, area] = makeStacksTextArea(commentElem.id, {
-                    value: editedText,
-                });
+                const [areaWrap, area] = makeStacksTextArea(commentElem.id, { value: desc });
 
                 area.addEventListener("input", ({ target }) => {
                     const { value } = <HTMLTextAreaElement>target;
@@ -2269,7 +2263,7 @@ window.addEventListener("load", () => {
 
                 area.addEventListener("change", ({ target }) => {
                     const { id, value } = <HTMLTextAreaElement>target;
-                    closeEditMode(commentElem, saveComment(id, value));
+                    closeEditMode(commentElem, replaceVars(saveComment(id, value)));
                 });
 
                 // Disable comment input while editing
@@ -2290,7 +2284,7 @@ window.addEventListener("load", () => {
                     popup
                         .querySelectorAll<HTMLElement>(".quick-insert")
                         .forEach(show);
-                    closeEditMode(commentElem, backup);
+                    closeEditMode(commentElem, initialHTML);
                 });
 
                 actions.append(cancel);
@@ -2303,7 +2297,7 @@ window.addEventListener("load", () => {
                 //650 is <ul> width 8 is <li> padding-right, 20 is <label> padding
                 const lineWidth = 650 - 20 - 8 - areaHorizontalPadding;
 
-                area.rows = getNumTextLines(editedText, font, lineWidth);
+                area.rows = getNumTextLines(desc, font, lineWidth);
 
                 area.addEventListener("input", () => {
                     const { value } = area;
@@ -2333,14 +2327,14 @@ window.addEventListener("load", () => {
              * TODO: rework once moved to config object
              * @summary loads comments from storage
              * @param {number} numComments
-             * @returns {{ name: string; desc: string }[]}
+             * @returns {StoredComment[]}
              */
             const loadComments = (numComments: number) => {
-                const comments: { name: string; desc: string; }[] = [];
+                const comments: StoredComment[] = [];
                 for (let i = 0; i < numComments; i++) {
                     const name = Store.load<string>(`name-${i}`);
                     const desc = Store.load<string>(`desc-${i}`);
-                    comments.push({ name, desc });
+                    comments.push({ id: i.toString(), name, desc });
                 }
                 return comments;
             };
@@ -2518,7 +2512,7 @@ window.addEventListener("load", () => {
 
                 const listItems = comments
                     .filter(({ name }) => isCommentValidForType(name, postType))
-                    .map(({ name, desc }, i) => {
+                    .map(({ name, id, desc }) => {
                         const cname = name.replace(allTgtMatcher, "");
 
                         const description = replaceVars(desc).replace(
@@ -2527,7 +2521,7 @@ window.addEventListener("load", () => {
                         );
 
                         return makeCommentItem(
-                            i.toString(),
+                            id,
                             cname.replace(/\$/g, "$$$"),
                             greeting + description
                         );
