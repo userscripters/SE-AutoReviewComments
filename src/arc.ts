@@ -1893,11 +1893,15 @@ window.addEventListener("load", () => {
             const getOP: opGetter = (refresh = false) => {
                 if (getOP.op && !refresh) return getOP.op;
 
-                const question = document.getElementById("question")!;
+                const question = document.getElementById("question");
+                if (!question) {
+                    const review = document.querySelector(".js-review-editor")!;
+                    const userLink = review.querySelector(".s-post-summary--meta .s-user-card--link");
+                    return userLink?.textContent || "OP";
+                }
 
                 const userlink = question.querySelector(userLinkSel);
-
-                if (userlink) return userlink.innerHTML || "";
+                if (userlink) return userlink.textContent || "OP";
 
                 const deleted = question.querySelector(".owner .user-details");
                 return (getOP.op = (deleted && deleted.innerHTML) || "OP");

@@ -1133,9 +1133,14 @@ window.addEventListener("load", function () {
                 if (getOP.op && !refresh)
                     return getOP.op;
                 var question = document.getElementById("question");
+                if (!question) {
+                    var review = document.querySelector(".js-review-editor");
+                    var userLink = review.querySelector(".s-post-summary--meta .s-user-card--link");
+                    return (userLink === null || userLink === void 0 ? void 0 : userLink.textContent) || "OP";
+                }
                 var userlink = question.querySelector(userLinkSel);
                 if (userlink)
-                    return userlink.innerHTML || "";
+                    return userlink.textContent || "OP";
                 var deleted = question.querySelector(".owner .user-details");
                 return (getOP.op = (deleted && deleted.innerHTML) || "OP");
             };
