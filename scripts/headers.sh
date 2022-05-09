@@ -3,7 +3,7 @@
 dist="dist"
 output=$dist"/headers.js"
 
-generate tampermonkey \
+generate-headers tampermonkey \
     -o $output \
     -m meta all "https://domain/questions|review/*" \
     -g "get" "set" "list" "delete" \
