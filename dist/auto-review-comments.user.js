@@ -1508,14 +1508,12 @@ window.addEventListener("load", function () {
                 var _a = __read(text.match(allTgtMatcher) || [], 2), matched = _a[1];
                 return matched === postType;
             };
+            var matchText = function (source, term) {
+                var strict = term.startsWith("\"") && term.endsWith("\"");
+                return new RegExp(strict ? "\\b".concat(term.slice(1, -1), "\\b") : term, "gm").test(source);
+            };
             var filterOn = function (popup, text) {
-                var words = text
-                    .toLowerCase()
-                    .split(/\s+/)
-                    .filter(function (_a) {
-                    var length = _a.length;
-                    return length;
-                });
+                var term = text.toLowerCase();
                 var items = popup.querySelectorAll(".action-list > li");
                 if (!text)
                     return items.forEach(show);
@@ -1526,7 +1524,7 @@ window.addEventListener("load", function () {
                     var desc = item
                         .querySelector(".action-desc")
                         .innerHTML.toLowerCase();
-                    var shown = words.some(function (w) { return name.includes(w) || desc.includes(w); });
+                    var shown = matchText(name, term) || matchText(desc, term);
                     shown ? show(item) : hide(item);
                 });
             };

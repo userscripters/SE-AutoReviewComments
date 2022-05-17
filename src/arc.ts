@@ -2555,16 +2555,24 @@ window.addEventListener("load", () => {
             };
 
             /**
-             * @summary filters comments based on text
-             * @param {HTMLElement} popup wrapper popup
-             * @param {string} text text to match
-             * @returns {void}
+             * @summary matches a word in text
+             * @param source text to search in
+             * @param term word to match
              */
-            const filterOn = (popup: HTMLElement, text: string) => {
-                const words = text
-                    .toLowerCase()
-                    .split(/\s+/)
-                    .filter(({ length }) => length);
+            const matchText = (source: string, term: string): boolean => {
+                const strict = term.startsWith("\"") && term.endsWith("\"");
+                return new RegExp(
+                    strict ? `\\b${term.slice(1, -1)}\\b` : term, "gm"
+                ).test(source);
+            };
+
+            /**
+             * @summary filters comments based on text
+             * @param popup wrapper popup
+             * @param text text to match
+             */
+            const filterOn = (popup: HTMLElement, text: string): void => {
+                const term = text.toLowerCase();
 
                 const items =
                     popup.querySelectorAll<HTMLLIElement>(".action-list > li");
@@ -2579,9 +2587,7 @@ window.addEventListener("load", () => {
                         .querySelector(".action-desc")!
                         .innerHTML!.toLowerCase();
 
-                    const shown = words.some(
-                        (w) => name.includes(w) || desc.includes(w)
-                    );
+                    const shown = matchText(name, term) || matchText(desc, term);
 
                     shown ? show(item) : hide(item);
                 });
