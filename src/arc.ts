@@ -2759,7 +2759,6 @@ window.addEventListener("load", () => {
 
                 center(popup);
 
-                //@ts-expect-error TODO: add to package
                 StackExchange.helpers.bindMovablePopups();
             };
 
