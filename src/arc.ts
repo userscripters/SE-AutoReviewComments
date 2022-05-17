@@ -14,27 +14,34 @@ type Placement = readonly [insert: HTMLElement | null, place: HTMLElement];
 
 type Locator<T extends HTMLElement = HTMLElement> = (where: T) => Placement;
 
-type Actor = (...args: any[]) => any;
+declare enum Target {
+    Closure = "C",
+    CommentQuestion = "Q",
+    CommentAnswer = "A",
+    EditSummaryAnswer = "EA",
+    EditSummaryQuestion = "EQ",
+}
+
+type Actor = (where: HTMLElement, target: Target) => Promise<void>;
 
 type PopupActionMap = Record<
     string,
-    (popup: HTMLElement, postType: PostType) => void
+    (popup: HTMLElement, target: Target) => void
 >;
 
 type Injector = (
-    injected: HTMLElement,
-    placed: HTMLElement,
+    where: HTMLElement,
     action: Actor
 ) => void;
 
 type ViewMaker = {
     view?: HTMLElement;
-    (popup: HTMLElement, id: string, postType: PostType): HTMLElement;
+    (popup: HTMLElement, id: string, target: Target): HTMLElement;
 };
 
 type WrapperPopupMaker = {
     popup?: HTMLElement;
-    (target: HTMLInputElement, postType: PostType): HTMLElement;
+    (target: Target): HTMLElement;
 };
 
 type opGetter = {
@@ -1068,12 +1075,10 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes popup settings view
-             * @param {HTMLElement} popup wrapper popup
-             * @param {string} id actions wrapper id
-             * @param {PostType} postType parent post type
-             * @returns {HTMLElement}
+             * @param popup wrapper popup
+             * @param id actions wrapper id
              */
-            const makeSettingsView: ViewMaker = (popup, id, postType) => {
+            const makeSettingsView: ViewMaker = (popup, id) => {
                 if (makeSettingsView.view) return makeSettingsView.view;
 
                 const view = el("div", "view", "d-flex", "fd-column", "gs16");
@@ -1116,7 +1121,7 @@ window.addEventListener("load", () => {
                         },
                         (key) => (target as HTMLElement).matches(key),
                         popup,
-                        Store.load("post_type", postType)
+                        Store.load("post_target", Target.CommentQuestion)
                     );
                 });
 
@@ -1172,12 +1177,11 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes welcome view
-             * @param {HTMLElement} popup wrapper popup
-             * @param {string} id view id
-             * @param {PostType} postType parent post type
-             * @returns {HTMLElement}
+             * @param popup wrapper popup
+             * @param id view id
+             * @param commentTarget parent post type
              */
-            const makeWelcomeView: ViewMaker = (popup, id, postType) => {
+            const makeWelcomeView: ViewMaker = (popup, id, commentTarget) => {
                 if (makeWelcomeView.view) return makeWelcomeView.view;
 
                 const view = el(
@@ -1214,7 +1218,7 @@ window.addEventListener("load", () => {
 
                 input.addEventListener("change", () => {
                     Store.save("WelcomeMessage", input.value);
-                    updateComments(popup, postType);
+                    updateComments(popup, commentTarget);
                 });
 
                 welcomeWrap.append(input);
@@ -1262,7 +1266,7 @@ window.addEventListener("load", () => {
                         },
                         (key) => (target as HTMLElement).matches(key),
                         popup,
-                        Store.load("post_type", postType)
+                        Store.load("target", commentTarget)
                     );
                 });
 
@@ -1415,12 +1419,11 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes the remote view
-             * @param {HTMLElement} popup wrapper popup
-             * @param {string} id view id
-             * @param {PostType} postType parent post type
-             * @returns {HTMLElement}
+             * @param popup wrapper popup
+             * @param id view id
+             * @param commentTarget comment {@link Target}
              */
-            const makeRemoteView: ViewMaker = (popup, id, postType) => {
+            const makeRemoteView: ViewMaker = (popup, id, commentTarget) => {
                 const storeKeyJSON = "remote_json";
                 const storeKeyJSONauto = "remote_json_auto";
 
@@ -1516,7 +1519,7 @@ window.addEventListener("load", () => {
                             ".remote-json-get": async () => {
                                 getJSONbtn.classList.add("is-loading");
                                 await fetchFromRemote(scheme(jsonInput.value));
-                                updateComments(popup, postType);
+                                updateComments(popup, commentTarget);
                                 getJSONbtn.classList.remove("is-loading");
                             },
                             ".remote-jsonp-get": async () => {
@@ -1525,7 +1528,7 @@ window.addEventListener("load", () => {
                                     scheme(jsonpInput.value),
                                     true
                                 );
-                                updateComments(popup, postType);
+                                updateComments(popup, commentTarget);
                                 getJSONPbtn.classList.remove("is-loading");
                             },
                         },
@@ -1544,19 +1547,23 @@ window.addEventListener("load", () => {
             };
 
             /**
-             * @param {HTMLInputElement} input comment input
-             * @param {string} html comment HTML
-             * @param {string} op original poster info
-             * @returns {void}
+             * @summary inserts ARC comment into the comment box
+             * @param html comment HTML
+             * @param op original poster info
              */
             const insertComment = (
-                input: HTMLInputElement,
                 html: string,
                 op: string
-            ) => {
+            ): void => {
                 const md = HTMLtoMarkdown(html)
                     .replace(/\[username\]/g, "") //TODO: get user info
                     .replace(/\[OP\]/g, op);
+
+                const input = document.querySelector<HTMLTextAreaElement>("[data-arc=current]");
+                if (!input) {
+                    console.debug("missing comment box to insert to");
+                    return;
+                }
 
                 input.value = md;
                 input.focus(); //focus provokes character count test
@@ -1570,11 +1577,9 @@ window.addEventListener("load", () => {
             /**
              * @summary creates the popup markup
              * @description memoizable popup maker
-             * @param {HTMLInputElement} input target comment input
-             * @param {PostType} postType initial post type
-             * @returns {HTMLElement}
+             * @param target initial post type
              */
-            const makePopup: WrapperPopupMaker = (input, postType) => {
+            const makePopup: WrapperPopupMaker = (target) => {
                 if (makePopup.popup) return makePopup.popup;
 
                 const popup = el("div", "auto-review-comments", "popup");
@@ -1610,7 +1615,7 @@ window.addEventListener("load", () => {
                         },
                         (sel) => (target as HTMLElement).matches(sel),
                         popup,
-                        Store.load("post_type", "question")
+                        Store.load("post_target", Target.CommentQuestion)
                     );
                 });
 
@@ -1625,8 +1630,8 @@ window.addEventListener("load", () => {
                     ["settings-popup", makeSettingsView],
                 ] as const;
 
-                const initPostType = Store.load("post_type", postType);
-                debugLogger.log({ initPostType, postType });
+                const initPostType = Store.load("post_target", target);
+                debugLogger.log({ initPostType, target });
 
                 const views = viewsMap.map(([id, maker]) =>
                     maker(popup, id, initPostType)
@@ -1639,7 +1644,7 @@ window.addEventListener("load", () => {
                 main.append(...views);
                 popup.append(main);
 
-                setupCommentHandlers(popup, commentViewId, input);
+                setupCommentHandlers(popup, commentViewId);
 
                 const view = views.find(({ id }) => id === commentViewId)!;
                 makeViewSwitcher(viewsSel)(view);
@@ -1866,7 +1871,7 @@ window.addEventListener("load", () => {
              * @param {HTMLInputElement} tgt element to insert comment in
              * @returns {string}
              */
-            const getUserId = (tgt: HTMLInputElement) => {
+            const getUserId = (tgt: HTMLElement) => {
                 const parent =
                     tgt.closest(".answer") || tgt.closest(".question");
                 if (!parent) return "";
@@ -2394,12 +2399,10 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes the comment quick insert handler
-             * @param {HTMLElement} popup wrapper popup
-             * @param {HTMLInputElement} input target input
-             * @returns {EventListener}
+             * @param popup wrapper popup
              */
             const makeQuickInsertHandler =
-                (popup: HTMLElement, input: HTMLInputElement): EventListener =>
+                (popup: HTMLElement): EventListener =>
                     ({ target }) => {
                         const el = <HTMLElement>target;
 
@@ -2415,28 +2418,25 @@ window.addEventListener("load", () => {
                         switchSelectedComment(popup, action);
                         radio.checked = true;
 
-                        insertComment(input, descr.innerHTML, getOP());
+                        insertComment(descr.innerHTML, getOP());
                     };
 
             /**
              * @summary sets up comment event listeners
-             * @param {HTMLElement} popup wrapper popup
-             * @param {string} viewId comment view id
-             * @param {HTMLInputElement} target target input
-             * @returns {void}
+             * @param popup wrapper popup
+             * @param viewId comment view id
              */
             const setupCommentHandlers = (
                 popup: HTMLElement,
                 viewId: string,
-                target: HTMLInputElement
-            ) => {
+            ): void => {
                 popup.addEventListener("dblclick", ({ target }) => {
                     const el = <HTMLElement>target;
                     if (!el.matches(".action-desc")) return;
                     openEditMode(el, popup);
                 });
 
-                const insertHandler = makeQuickInsertHandler(popup, target);
+                const insertHandler = makeQuickInsertHandler(popup);
                 const selectHandler = makeCommentClickHandler(popup);
 
                 popup.addEventListener("click", (event) => {
@@ -2478,11 +2478,10 @@ window.addEventListener("load", () => {
 
             /**
              * @summary updates comments in the UI
-             * @param {HTMLElement} popup wrapper popup
-             * @param {PostType} postType parent post type
-             * @returns {void}
+             * @param popup wrapper popup
+             * @param target comment target type
              */
-            const updateComments = (popup: HTMLElement, postType: PostType) => {
+            const updateComments = (popup: HTMLElement, target: Target) => {
                 const numComments = Store.load<number>("commentcount");
 
                 if (!numComments) resetComments(commentDefaults);
@@ -2511,7 +2510,7 @@ window.addEventListener("load", () => {
 
                 debugLogger.log({
                     comments,
-                    postType,
+                    target,
                     greet,
                     welcome,
                     greeting,
@@ -2519,7 +2518,7 @@ window.addEventListener("load", () => {
                 });
 
                 const listItems = comments
-                    .filter(({ name }) => isCommentValidForType(name, postType))
+                    .filter(({ name }) => isCommentValidForTarget(name, target))
                     .map(({ name, id, desc }) => {
                         const cname = name.replace(allTgtMatcher, "");
 
@@ -2542,16 +2541,12 @@ window.addEventListener("load", () => {
 
             /**
              * @summary Checks if a given comment could be used together with a given post type.
-             * @param {string} text The comment content itself.
-             * @param {PostType} postType The type of post the comment could be placed on.
-             * @return {boolean} true if the comment is valid for the type of post; false otherwise.
+             * @param text The comment content itself.
+             * @param target {@link Target} to match.
              */
-            const isCommentValidForType = (
-                text: string,
-                postType: PostType
-            ) => {
+            const isCommentValidForTarget = (text: string, target: Target) => {
                 const [, matched] = text.match(allTgtMatcher) || [];
-                return matched === postType;
+                return matched === target;
             };
 
             /**
@@ -2715,17 +2710,16 @@ window.addEventListener("load", () => {
 
             /**
              * @summary creates ARC modal and wires functionality
-             * @param {HTMLInputElement} target
-             * @param {PostType} postType
-             * @returns {Promise<void>}
+             * @param where element next to which the button is inserted
+             * @param target comment {@link Target}
              */
-            const autoLinkAction = async (
-                target: HTMLInputElement,
-                postType: PostType
+            const autoLinkAction: Actor = async (
+                where,
+                target,
             ) => {
-                Store.save("post_type", postType);
+                Store.save("post_target", target);
 
-                const popup = makePopup(target, postType);
+                const popup = makePopup(target);
 
                 if (!popup.isConnected) document.body.append(popup);
 
@@ -2742,7 +2736,7 @@ window.addEventListener("load", () => {
                     await fetchFromRemote(Store.load("remote_json"));
                 }
 
-                updateComments(popup, postType);
+                updateComments(popup, target);
 
                 center(popup);
 
@@ -2750,7 +2744,7 @@ window.addEventListener("load", () => {
                 StackExchange.helpers.bindMovablePopups();
 
                 //Get user info and inject
-                const userid = getUserId(target);
+                const userid = getUserId(where);
 
                 if (userid) {
                     const uinfo = await getUserInfo(userid);
@@ -2790,8 +2784,10 @@ window.addEventListener("load", () => {
 
                     const [injectNextTo, placeIn] = locator(trigger);
 
-                    if (injectNextTo)
-                        return injector(injectNextTo, placeIn, actor);
+                    if (injectNextTo) {
+                        placeIn.dataset.arc = "current";
+                        return injector(injectNextTo, actor);
+                    }
 
                     // We didn't find it? Try again in 50ms.
                     setTimeout(() => _injector(trigger, retry + 1), 50);
@@ -2865,91 +2861,78 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes the "auto" button
-             * @param {Actor} what The function that will be called when the link is clicked.
-             * @param {HTMLElement} next The DOM element next to which we'll place the link.
-             * @param {HTMLElement} where The DOM element into which the comment should be placed.
-             * @returns {HTMLButtonElement}
+             * @param callback {@link Actor} to call on button click
+             * @param params {@link Actor} parameters
              */
             const makePopupOpenButton = (
                 callback: Actor,
-                next: Parameters<Actor>[0],
-                where: Parameters<Actor>[1]
-            ) => {
+                ...params: Parameters<Actor>
+            ): HTMLButtonElement => {
                 const btn = document.createElement("button");
                 btn.type = "button";
                 btn.textContent = "ARC comment";
                 btn.classList.add("comment-auto-link", "s-btn", "s-btn__primary");
-                btn.addEventListener("click", () => callback(next, where));
+                btn.addEventListener("click", () => callback(...params));
                 return btn;
             };
 
             /**
              * @summary gets target type by post type
-             * @param {HTMLElement} where The DOM element next to which we'll place the link.
-             * @param {[PostType, string][]} clsMap post type to target map
-             * @returns {string}
+             * @param where The DOM element next to which we'll place the link.
+             * @param clsMap post type to target map
              */
             const getTargetType = (
                 where: HTMLElement,
-                clsMap: [PostType, string][]
-            ) => {
+                clsMap: [PostType, Target][]
+            ): Target => {
                 const parent =
                     where.closest(".answer") || where.closest(".question");
-                if (!parent) return Target.CommentQuestion;
+
+                if (!parent) {
+                    return Target.CommentQuestion;
+                }
 
                 const { classList } = parent;
 
-                //if not found, we have a problem
-                const [, tgt] =
-                    clsMap.find(([c]) => classList.contains(c)) || [];
-                return tgt;
+                const [, target] = clsMap.find(([c]) => classList.contains(c)) || [];
+
+                return target || Target.CommentQuestion;
             };
 
             /**
              * @summary Inject the auto link next to the given DOM element.
-             * @param {HTMLElement} where The DOM element next to which we'll place the link.
-             * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
-             * @param {Actor} actor The function that will be called when the link is clicked.
-             * @returns {void}
+             * @param where The DOM element next to which we'll place the link.
+             * @param actor The function that will be called when the link is clicked.
              */
-            const injectAutoLink = (
-                where: HTMLElement,
-                placeCommentIn: HTMLElement,
-                actor: Actor
-            ) => {
+            const injectAutoLink: Injector = (where, actor) => {
                 const existingAutoLinks = siblings(where, ".comment-auto-link");
                 if (existingAutoLinks.length) return;
 
-                const clsMap: [PostType, string][] = [
+                const clsMap: [PostType, Target][] = [
                     ["answer", Target.CommentAnswer],
                     ["question", Target.CommentQuestion],
                 ];
-                const tgt = getTargetType(where, clsMap);
+
+                const target = getTargetType(where, clsMap);
 
                 const lsep = makeSeparator();
-                const alink = makePopupOpenButton(actor, placeCommentIn, tgt);
+                const alink = makePopupOpenButton(actor, where, target);
                 where.after(lsep, alink);
             };
 
             /**
              * @summary Inject the auto link next to the given DOM element.
-             * @param {HTMLElement} where The DOM element next to which we'll place the link.
-             * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
-             * @param {Actor} actor The function that will be called when the link is clicked.
-             * @returns {void}
+             * @param where The DOM element next to which we'll place the link.
+             * @param actor The function that will be called when the link is clicked.
              */
-            const injectAutoLinkClosure = (
-                where: HTMLElement,
-                placeCommentIn: HTMLElement,
-                actor: Actor
-            ) => {
+            const injectAutoLinkClosure: Injector = (where, actor) => {
                 const existingAutoLinks = siblings(where, ".comment-auto-link");
                 if (existingAutoLinks.length) return;
 
                 const lsep = makeSeparator();
                 const alink = makePopupOpenButton(
                     actor,
-                    placeCommentIn,
+                    where,
                     Target.Closure
                 );
                 where.after(lsep, alink);
@@ -2957,25 +2940,22 @@ window.addEventListener("load", () => {
 
             /**
              * @summary Inject hte auto link next to the "characters left" counter below the edit summary in the review queue.
-             * @param {HTMLElement} where The DOM element next to which we'll place the link.
-             * @param {HTMLElement} placeCommentIn The DOM element into which the comment should be placed.
-             * @param {Actor} actor The function that will be called when the link is clicked.
-             * @returns {void}
+             * @param where The DOM element next to which we'll place the link.
+             * @param actor The function that will be called when the link is clicked.
              */
-            const injectAutoLinkReviewQueue = (
-                where: HTMLElement,
-                placeCommentIn: HTMLElement,
-                actor: Actor
-            ) => {
+            const injectAutoLinkReviewQueue: Injector = (where, actor) => {
                 const existingAutoLinks = siblings(where, ".comment-auto-link");
                 if (existingAutoLinks.length) return;
 
+                const clsMap: [PostType, Target][] = [
+                    ["answer", Target.EditSummaryAnswer],
+                    ["question", Target.EditSummaryQuestion],
+                ];
+
+                const target = getTargetType(where, clsMap);
+
                 const lsep = makeSeparator();
-                const alink = makePopupOpenButton(
-                    actor,
-                    placeCommentIn,
-                    Target.EditSummaryQuestion
-                );
+                const alink = makePopupOpenButton(actor, where, target);
                 alink.style.float = "right";
 
                 where.after(lsep, alink);
@@ -2984,16 +2964,10 @@ window.addEventListener("load", () => {
             /**
              * Inject the auto link next to the edit summary input box.
              * This will also slightly shrink the input box, so that the link will fit next to it.
-             * @param {HTMLElement} where The DOM element next to which we'll place the link.
-             * @param {HTMLElement} placeIn The DOM element into which the comment should be placed.
-             * @param {Actor} actor The function that will be called when the link is clicked.
-             * @returns {void}
+             * @param where The DOM element next to which we'll place the link.
+             * @param actor The function that will be called when the link is clicked.
              */
-            const injectAutoLinkEdit = (
-                where: HTMLElement,
-                placeIn: HTMLElement,
-                actor: Actor
-            ) => {
+            const injectAutoLinkEdit: Injector = (where, actor) => {
                 const existingAutoLinks = siblings(where, ".comment-auto-link");
                 if (existingAutoLinks.length) return;
 
@@ -3006,14 +2980,15 @@ window.addEventListener("load", () => {
                 );
                 overs.forEach(({ style }) => (style.width = "510px"));
 
-                const clsMap: [PostType, string][] = [
+                const clsMap: [PostType, Target][] = [
                     ["answer", Target.EditSummaryAnswer],
                     ["question", Target.EditSummaryQuestion],
                 ];
-                const tgt = getTargetType(where, clsMap);
+
+                const target = getTargetType(where, clsMap);
 
                 const lsep = makeSeparator();
-                const alink = makePopupOpenButton(actor, placeIn, tgt);
+                const alink = makePopupOpenButton(actor, where, target);
                 where.after(lsep, alink);
             };
 

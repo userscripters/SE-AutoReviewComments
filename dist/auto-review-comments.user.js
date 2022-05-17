@@ -637,7 +637,7 @@ window.addEventListener("load", function () {
                 wrap.append(tabGroup, actionGroup);
                 return (makeTabsView.view = wrap);
             };
-            var makeSettingsView = function (popup, id, postType) {
+            var makeSettingsView = function (popup, id) {
                 if (makeSettingsView.view)
                     return makeSettingsView.view;
                 var view = el("div", "view", "d-flex", "fd-column", "gs16");
@@ -659,7 +659,7 @@ window.addEventListener("load", function () {
                         "#toggleDescr": function (p) {
                             return toggleDescriptionVisibility(p, Store.toggle("hide-desc"));
                         },
-                    }, function (key) { return target.matches(key); }, popup, Store.load("post_type", postType));
+                    }, function (key) { return target.matches(key); }, popup, Store.load("post_target", Target.CommentQuestion));
                 });
                 return (makeSettingsView.view = view);
             };
@@ -685,7 +685,7 @@ window.addEventListener("load", function () {
                 wrap.append(header, uinfo, searchWrap, actions);
                 return (makeSearchView.view = wrap);
             };
-            var makeWelcomeView = function (popup, id, postType) {
+            var makeWelcomeView = function (popup, id, commentTarget) {
                 if (makeWelcomeView.view)
                     return makeWelcomeView.view;
                 var view = el("div", "view", "d-flex", "fd-column", "gsy", "gs16");
@@ -707,7 +707,7 @@ window.addEventListener("load", function () {
                 input.classList.add("flex--item");
                 input.addEventListener("change", function () {
                     Store.save("WelcomeMessage", input.value);
-                    updateComments(popup, postType);
+                    updateComments(popup, commentTarget);
                 });
                 welcomeWrap.append(input);
                 var actionsWrap = el("div", "flex--item", "d-flex", "gsx", "gs8");
@@ -729,7 +729,7 @@ window.addEventListener("load", function () {
                             Store.save("ShowGreeting", true);
                             updateComments(p, t);
                         },
-                    }, function (key) { return target.matches(key); }, popup, Store.load("post_type", postType));
+                    }, function (key) { return target.matches(key); }, popup, Store.load("target", commentTarget));
                 });
                 actionsWrap.append.apply(actionsWrap, __spreadArray([], __read(actions), false));
                 view.append(welcomeWrap, actionsWrap);
@@ -809,7 +809,7 @@ window.addEventListener("load", function () {
                     input.value = unscheme(value);
                 };
             };
-            var makeRemoteView = function (popup, id, postType) {
+            var makeRemoteView = function (popup, id, commentTarget) {
                 var storeKeyJSON = "remote_json";
                 var storeKeyJSONauto = "remote_json_auto";
                 var storeKeyJSONP = "RemoteUrl";
@@ -868,7 +868,7 @@ window.addEventListener("load", function () {
                                         return [4, fetchFromRemote(scheme(jsonInput.value))];
                                     case 1:
                                         _a.sent();
-                                        updateComments(popup, postType);
+                                        updateComments(popup, commentTarget);
                                         getJSONbtn.classList.remove("is-loading");
                                         return [2];
                                 }
@@ -882,7 +882,7 @@ window.addEventListener("load", function () {
                                         return [4, fetchFromRemote(scheme(jsonpInput.value), true)];
                                     case 1:
                                         _a.sent();
-                                        updateComments(popup, postType);
+                                        updateComments(popup, commentTarget);
                                         getJSONPbtn.classList.remove("is-loading");
                                         return [2];
                                 }
@@ -898,10 +898,15 @@ window.addEventListener("load", function () {
                 wrap.append(inputWrap, autoWrap);
                 return (makeRemoteView.view = wrap);
             };
-            var insertComment = function (input, html, op) {
+            var insertComment = function (html, op) {
                 var md = HTMLtoMarkdown(html)
                     .replace(/\[username\]/g, "")
                     .replace(/\[OP\]/g, op);
+                var input = document.querySelector("[data-arc=current]");
+                if (!input) {
+                    console.debug("missing comment box to insert to");
+                    return;
+                }
                 input.value = md;
                 input.focus();
                 var hereTxt = "[type here]";
@@ -909,7 +914,7 @@ window.addEventListener("load", function () {
                 if (caret >= 0)
                     input.setSelectionRange(caret, caret + hereTxt.length);
             };
-            var makePopup = function (input, postType) {
+            var makePopup = function (target) {
                 if (makePopup.popup)
                     return makePopup.popup;
                 var popup = el("div", "auto-review-comments", "popup");
@@ -934,7 +939,7 @@ window.addEventListener("load", function () {
                         ".popup-actions-filter": function (p, t) {
                             return viewSwitcher(makeSearchView(p, "search-popup", t));
                         },
-                    }, function (sel) { return target.matches(sel); }, popup, Store.load("post_type", "question"));
+                    }, function (sel) { return target.matches(sel); }, popup, Store.load("post_target", Target.CommentQuestion));
                 });
                 var commentViewId = "search-popup";
                 var viewsMap = [
@@ -945,8 +950,8 @@ window.addEventListener("load", function () {
                     ["impexp-popup", makeImpExpView],
                     ["settings-popup", makeSettingsView],
                 ];
-                var initPostType = Store.load("post_type", postType);
-                debugLogger.log({ initPostType: initPostType, postType: postType });
+                var initPostType = Store.load("post_target", target);
+                debugLogger.log({ initPostType: initPostType, target: target });
                 var views = viewsMap.map(function (_a) {
                     var _b = __read(_a, 2), id = _b[0], maker = _b[1];
                     return maker(popup, id, initPostType);
@@ -956,7 +961,7 @@ window.addEventListener("load", function () {
                 hidden.forEach(hide);
                 main.append.apply(main, __spreadArray([], __read(views), false));
                 popup.append(main);
-                setupCommentHandlers(popup, commentViewId, input);
+                setupCommentHandlers(popup, commentViewId);
                 var view = views.find(function (_a) {
                     var id = _a.id;
                     return id === commentViewId;
@@ -1420,7 +1425,7 @@ window.addEventListener("load", function () {
                     show(descr);
                 };
             };
-            var makeQuickInsertHandler = function (popup, input) {
+            var makeQuickInsertHandler = function (popup) {
                 return function (_a) {
                     var target = _a.target;
                     var el = target;
@@ -1433,10 +1438,10 @@ window.addEventListener("load", function () {
                         return notify("Something went wrong", "danger");
                     switchSelectedComment(popup, action);
                     radio.checked = true;
-                    insertComment(input, descr.innerHTML, getOP());
+                    insertComment(descr.innerHTML, getOP());
                 };
             };
-            var setupCommentHandlers = function (popup, viewId, target) {
+            var setupCommentHandlers = function (popup, viewId) {
                 popup.addEventListener("dblclick", function (_a) {
                     var target = _a.target;
                     var el = target;
@@ -1444,7 +1449,7 @@ window.addEventListener("load", function () {
                         return;
                     openEditMode(el, popup);
                 });
-                var insertHandler = makeQuickInsertHandler(popup, target);
+                var insertHandler = makeQuickInsertHandler(popup);
                 var selectHandler = makeCommentClickHandler(popup);
                 popup.addEventListener("click", function (event) {
                     var currView = Store.load("CurrentView");
@@ -1470,7 +1475,7 @@ window.addEventListener("load", function () {
                     }, text);
                 };
             };
-            var updateComments = function (popup, postType) {
+            var updateComments = function (popup, target) {
                 var numComments = Store.load("commentcount");
                 if (!numComments)
                     resetComments(commentDefaults);
@@ -1489,11 +1494,11 @@ window.addEventListener("load", function () {
                 var greet = Store.load("ShowGreeting", false);
                 var welcome = Store.load("WelcomeMessage", "");
                 var greeting = greet ? "".concat(replaceVars(welcome), " ") : "";
-                debugLogger.log(__assign({ comments: comments, postType: postType, greet: greet, welcome: welcome, greeting: greeting }, opts));
+                debugLogger.log(__assign({ comments: comments, target: target, greet: greet, welcome: welcome, greeting: greeting }, opts));
                 var listItems = comments
                     .filter(function (_a) {
                     var name = _a.name;
-                    return isCommentValidForType(name, postType);
+                    return isCommentValidForTarget(name, target);
                 })
                     .map(function (_a) {
                     var name = _a.name, id = _a.id, desc = _a.desc;
@@ -1504,9 +1509,9 @@ window.addEventListener("load", function () {
                 ul.append.apply(ul, __spreadArray([], __read(listItems), false));
                 toggleDescriptionVisibility(popup);
             };
-            var isCommentValidForType = function (text, postType) {
+            var isCommentValidForTarget = function (text, target) {
                 var _a = __read(text.match(allTgtMatcher) || [], 2), matched = _a[1];
-                return matched === postType;
+                return matched === target;
             };
             var matchText = function (source, term) {
                 var strict = term.startsWith("\"") && term.endsWith("\"");
@@ -1613,13 +1618,13 @@ window.addEventListener("load", function () {
                 style.display = "";
                 classList.remove("popup-closing", "popup-closed");
             };
-            var autoLinkAction = function (target, postType) { return __awaiter(void 0, void 0, void 0, function () {
+            var autoLinkAction = function (where, target) { return __awaiter(void 0, void 0, void 0, function () {
                 var popup, userid, uinfo;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            Store.save("post_type", postType);
-                            popup = makePopup(target, postType);
+                            Store.save("post_target", target);
+                            popup = makePopup(target);
                             if (!popup.isConnected)
                                 document.body.append(popup);
                             showPopup(popup);
@@ -1637,10 +1642,10 @@ window.addEventListener("load", function () {
                             _a.sent();
                             _a.label = 4;
                         case 4:
-                            updateComments(popup, postType);
+                            updateComments(popup, target);
                             center(popup);
                             StackExchange.helpers.bindMovablePopups();
-                            userid = getUserId(target);
+                            userid = getUserId(where);
                             if (!userid) return [3, 6];
                             return [4, getUserInfo(userid)];
                         case 5:
@@ -1659,8 +1664,10 @@ window.addEventListener("load", function () {
                     if (maxTries <= retry)
                         return;
                     var _a = __read(locator(trigger), 2), injectNextTo = _a[0], placeIn = _a[1];
-                    if (injectNextTo)
-                        return injector(injectNextTo, placeIn, actor);
+                    if (injectNextTo) {
+                        placeIn.dataset.arc = "current";
+                        return injector(injectNextTo, actor);
+                    }
                     setTimeout(function () { return _injector(trigger, retry + 1); }, 50);
                 };
                 var content = document.getElementById("content");
@@ -1697,26 +1704,31 @@ window.addEventListener("load", function () {
                 var placeIn = document.querySelector(".js-review-editor .js-post-edit-comment-field");
                 return [injectTo, placeIn];
             };
-            var makePopupOpenButton = function (callback, next, where) {
+            var makePopupOpenButton = function (callback) {
+                var params = [];
+                for (var _i = 1; _i < arguments.length; _i++) {
+                    params[_i - 1] = arguments[_i];
+                }
                 var btn = document.createElement("button");
                 btn.type = "button";
                 btn.textContent = "ARC comment";
                 btn.classList.add("comment-auto-link", "s-btn", "s-btn__primary");
-                btn.addEventListener("click", function () { return callback(next, where); });
+                btn.addEventListener("click", function () { return callback.apply(void 0, __spreadArray([], __read(params), false)); });
                 return btn;
             };
             var getTargetType = function (where, clsMap) {
                 var parent = where.closest(".answer") || where.closest(".question");
-                if (!parent)
+                if (!parent) {
                     return Target.CommentQuestion;
+                }
                 var classList = parent.classList;
                 var _a = __read(clsMap.find(function (_a) {
                     var _b = __read(_a, 1), c = _b[0];
                     return classList.contains(c);
-                }) || [], 2), tgt = _a[1];
-                return tgt;
+                }) || [], 2), target = _a[1];
+                return target || Target.CommentQuestion;
             };
-            var injectAutoLink = function (where, placeCommentIn, actor) {
+            var injectAutoLink = function (where, actor) {
                 var existingAutoLinks = siblings(where, ".comment-auto-link");
                 if (existingAutoLinks.length)
                     return;
@@ -1724,29 +1736,34 @@ window.addEventListener("load", function () {
                     ["answer", Target.CommentAnswer],
                     ["question", Target.CommentQuestion],
                 ];
-                var tgt = getTargetType(where, clsMap);
+                var target = getTargetType(where, clsMap);
                 var lsep = makeSeparator();
-                var alink = makePopupOpenButton(actor, placeCommentIn, tgt);
+                var alink = makePopupOpenButton(actor, where, target);
                 where.after(lsep, alink);
             };
-            var injectAutoLinkClosure = function (where, placeCommentIn, actor) {
+            var injectAutoLinkClosure = function (where, actor) {
                 var existingAutoLinks = siblings(where, ".comment-auto-link");
                 if (existingAutoLinks.length)
                     return;
                 var lsep = makeSeparator();
-                var alink = makePopupOpenButton(actor, placeCommentIn, Target.Closure);
+                var alink = makePopupOpenButton(actor, where, Target.Closure);
                 where.after(lsep, alink);
             };
-            var injectAutoLinkReviewQueue = function (where, placeCommentIn, actor) {
+            var injectAutoLinkReviewQueue = function (where, actor) {
                 var existingAutoLinks = siblings(where, ".comment-auto-link");
                 if (existingAutoLinks.length)
                     return;
+                var clsMap = [
+                    ["answer", Target.EditSummaryAnswer],
+                    ["question", Target.EditSummaryQuestion],
+                ];
+                var target = getTargetType(where, clsMap);
                 var lsep = makeSeparator();
-                var alink = makePopupOpenButton(actor, placeCommentIn, Target.EditSummaryQuestion);
+                var alink = makePopupOpenButton(actor, where, target);
                 alink.style.float = "right";
                 where.after(lsep, alink);
             };
-            var injectAutoLinkEdit = function (where, placeIn, actor) {
+            var injectAutoLinkEdit = function (where, actor) {
                 var existingAutoLinks = siblings(where, ".comment-auto-link");
                 if (existingAutoLinks.length)
                     return;
@@ -1761,9 +1778,9 @@ window.addEventListener("load", function () {
                     ["answer", Target.EditSummaryAnswer],
                     ["question", Target.EditSummaryQuestion],
                 ];
-                var tgt = getTargetType(where, clsMap);
+                var target = getTargetType(where, clsMap);
                 var lsep = makeSeparator();
-                var alink = makePopupOpenButton(actor, placeIn, tgt);
+                var alink = makePopupOpenButton(actor, where, target);
                 where.after(lsep, alink);
             };
             addStyles();
