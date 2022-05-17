@@ -1130,8 +1130,11 @@ window.addEventListener("load", function () {
                 var _a = __read(/users\/(\d+)\//.exec(href) || [], 2), uid = _a[1];
                 return uid || "";
             };
-            var isNewUser = function (date) {
-                return Date.now() / 1000 - date < timeUnits.week;
+            var isNewUser = function (creation_date, reputation) {
+                return [
+                    Date.now() / 1000 - creation_date < timeUnits.month,
+                    reputation < 10
+                ].some(Boolean);
             };
             var getOP = function (refresh) {
                 if (refresh === void 0) { refresh = false; }
@@ -1175,8 +1178,9 @@ window.addEventListener("load", function () {
                 var container = document.getElementById("userinfo");
                 if (!container)
                     return;
-                if (isNewUser(creation_date)) {
-                    Store.save("ShowGreeting", true);
+                var newUserState = isNewUser(creation_date, reputation);
+                Store.save("ShowGreeting", newUserState);
+                if (newUserState) {
                     (_b = container
                         .querySelector(".action-desc")) === null || _b === void 0 ? void 0 : _b.prepend(Store.load("WelcomeMessage") || "");
                 }
@@ -1642,9 +1646,6 @@ window.addEventListener("load", function () {
                             _a.sent();
                             _a.label = 4;
                         case 4:
-                            updateComments(popup, target);
-                            center(popup);
-                            StackExchange.helpers.bindMovablePopups();
                             userid = getUserId(where);
                             if (!userid) return [3, 6];
                             return [4, getUserInfo(userid)];
@@ -1654,7 +1655,11 @@ window.addEventListener("load", function () {
                             if (uinfo)
                                 addUserInfo(uinfo);
                             _a.label = 6;
-                        case 6: return [2];
+                        case 6:
+                            updateComments(popup, target);
+                            center(popup);
+                            StackExchange.helpers.bindMovablePopups();
+                            return [2];
                     }
                 });
             }); };

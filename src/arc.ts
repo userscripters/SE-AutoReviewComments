@@ -1887,11 +1887,18 @@ window.addEventListener("load", () => {
 
             /**
              * @summary checks if the user is new
-             * @param {number} date
-             * @returns {boolean}
+             * @param creation_date {@link StackExchangeAPI.User.creation_date} timestamp
+             * @param reputation {@link StackExchangeAPI.User.reputation} points
              */
-            const isNewUser = (date: number) =>
-                Date.now() / 1000 - date < timeUnits.week;
+            const isNewUser = (
+                creation_date: number,
+                reputation: number
+            ) => {
+                return [
+                    Date.now() / 1000 - creation_date < timeUnits.month,
+                    reputation < 10
+                ].some(Boolean);
+            }
 
             /**
              * @summary get original poster username
@@ -1966,8 +1973,7 @@ window.addEventListener("load", () => {
 
             /**
              * @summary adds user info to the UI
-             * @param {StackExchangeAPI.User} userInfo
-             * @returns {void}
+             * @param userInfo
              */
             const addUserInfo = ({
                 user_id,
@@ -1980,8 +1986,11 @@ window.addEventListener("load", () => {
                 const container = document.getElementById("userinfo");
                 if (!container) return;
 
-                if (isNewUser(creation_date)) {
-                    Store.save("ShowGreeting", true);
+                const newUserState = isNewUser(creation_date, reputation);
+
+                Store.save("ShowGreeting", newUserState);
+
+                if (newUserState) {
                     container
                         .querySelector(".action-desc")
                         ?.prepend(Store.load("WelcomeMessage") || "");
@@ -2736,13 +2745,6 @@ window.addEventListener("load", () => {
                     await fetchFromRemote(Store.load("remote_json"));
                 }
 
-                updateComments(popup, target);
-
-                center(popup);
-
-                //@ts-expect-error TODO: add to package
-                StackExchange.helpers.bindMovablePopups();
-
                 //Get user info and inject
                 const userid = getUserId(where);
 
@@ -2751,6 +2753,14 @@ window.addEventListener("load", () => {
                     debugLogger.log({ userid, uinfo });
                     if (uinfo) addUserInfo(uinfo);
                 }
+
+                // addUserInfo sets new user state, so should happen before comments are updated
+                updateComments(popup, target);
+
+                center(popup);
+
+                //@ts-expect-error TODO: add to package
+                StackExchange.helpers.bindMovablePopups();
             };
 
             /**
