@@ -1775,4 +1775,4 @@ window.addEventListener("load", function () {
             addTriggerButton(".js-review-submit", findReviewQueueElements, injectAutoLinkReviewQueue, autoLinkAction);
         });
     }
-});
+}, { once: true });
