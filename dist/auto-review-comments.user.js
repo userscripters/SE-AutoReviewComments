@@ -329,6 +329,9 @@ window.addEventListener("load", function () {
             var htmlstrong = function (text) {
                 return "<strong>".concat(text, "</strong>");
             };
+            var htmlinlinecode = function (text) {
+                return "<code>".concat(text, "</code>");
+            };
             var commentDefaults = [
                 {
                     targets: [Target.CommentQuestion],
@@ -412,6 +415,7 @@ window.addEventListener("load", function () {
                     ".".concat(arc, ".announcement{\n                    padding:7px;\n                    margin-bottom:10px;\n                    background:orange;\n                    font-size:15px;\n                }"),
                     ".".concat(arc, ".announcement .notify-close{\n                    display:block;\n                    float:right;\n                    margin:0 4px;\n                    padding:0 4px;\n                    border:2px solid black;\n                    cursor:pointer;\n                    line-height:17px;\n                }"),
                     ".".concat(arc, ".announcement .notify-close a{\n                    color:black;\n                    text-decoration:none;\n                    font-weight:bold;\n                    font-size:16px;\n                }"),
+                    ".".concat(arc, ".popup code {\n                    display: inline-block;\n                    margin: 1px;\n                    padding: 0px;\n                    background: none;\n                    border: 1px solid var(--black-200);\n                    border-radius: 2px;\n                    line-height: 1.5;\n                }"),
                 ].forEach(function (rule) { return sheet.insertRule(rule); });
             };
             var makeTextInput = function (id, _a) {
@@ -1271,7 +1275,7 @@ window.addEventListener("load", function () {
                 "&gt;": ">",
             };
             var escapeHtml = function (html) {
-                return String(html).replace(/[&<>]/g, function (s) { return entityMapToHtml[s]; });
+                return String(html).replace(/(?<!.*?`)[&<>](?!.*?`)/gm, function (s) { return entityMapToHtml[s]; });
             };
             var unescapeHtml = function (html) {
                 return Object.entries(entityMapFromHtml).reduce(function (acc, _a) {
@@ -1288,6 +1292,7 @@ window.addEventListener("load", function () {
             var markdownToHTML = function (markdown) {
                 var html = escapeHtml(markdown);
                 var rules = [
+                    [/`(.+?)`/g, htmlinlinecode(__makeTemplateObject(["$1"], ["$1"]))],
                     [/([*_]{2})(.+?)\1/g, htmlstrong(__makeTemplateObject(["$2"], ["$2"]))],
                     [/([*_])([^`*_]+?)\1(?![*_])/g, htmlem(__makeTemplateObject(["$2"], ["$2"]))],
                     [/\[([^\]]+)\]\((.+?)\)/g, htmllink("$2", "$1")],
@@ -1508,7 +1513,7 @@ window.addEventListener("load", function () {
                     var name = _a.name, id = _a.id, desc = _a.desc;
                     var cname = name.replace(allTgtMatcher, "");
                     var description = replaceVars(desc).replace(/\$/g, "$$$");
-                    return makeCommentItem(id, cname.replace(/\$/g, "$$$"), greeting + description);
+                    return makeCommentItem(id, cname.replace(/\$/g, "$$$"), markdownToHTML(greeting + description));
                 });
                 ul.append.apply(ul, __spreadArray([], __read(listItems), false));
                 toggleDescriptionVisibility(popup);

@@ -396,6 +396,12 @@ window.addEventListener("load", () => {
             const htmlstrong = (text: TemplateStringsArray) =>
                 `<strong>${text}</strong>`;
 
+            /**
+             * @summary template for the <code> HTML
+             */
+            const htmlinlinecode = (text: TemplateStringsArray) =>
+                `<code>${text}</code>`;
+
             //default comments
             const commentDefaults: CommentInfo[] = [
                 {
@@ -595,6 +601,15 @@ window.addEventListener("load", () => {
                     text-decoration:none;
                     font-weight:bold;
                     font-size:16px;
+                }`,
+                    `.${arc}.popup code {
+                    display: inline-block;
+                    margin: 1px;
+                    padding: 0px;
+                    background: none;
+                    border: 1px solid var(--black-200);
+                    border-radius: 2px;
+                    line-height: 1.5;
                 }`,
                 ].forEach((rule) => sheet.insertRule(rule));
             };
@@ -2131,11 +2146,13 @@ window.addEventListener("load", () => {
 
             /**
              * @summary escapes HTML entities
-             * @param {string} html
-             * @returns {string}
+             * @param html HTML string to escape
              */
-            const escapeHtml = (html: string) =>
-                String(html).replace(/[&<>]/g, (s) => entityMapToHtml[s]);
+            const escapeHtml = (html: string): string => {
+                // the expression needs to be context-aware not to escape inline code
+                // https://regex101.com/r/Ht8zcJ/1
+                return String(html).replace(/(?<!.*?`)[&<>](?!.*?`)/gm, (s) => entityMapToHtml[s]);
+            };
 
             /**
              * @summary unescapes HTML entities
@@ -2163,13 +2180,14 @@ window.addEventListener("load", () => {
 
             /**
              * @summary changes Markdown to HTML
-             * @param {string} markdown
-             * @returns {string}
+             * @param markdown Markdown to convert
              */
-            const markdownToHTML = (markdown: string) => {
+            const markdownToHTML = (markdown: string): string => {
                 const html = escapeHtml(markdown);
 
                 const rules: [RegExp, string][] = [
+                    // code should match before any conversion is done to preserve text
+                    [/`(.+?)`/g, htmlinlinecode`$1`],
                     //strong should match before italics to avoid overcomplicating the regex
                     [/([*_]{2})(.+?)\1/g, htmlstrong`$2`],
                     //it is imperative that italics are matched before links as _blank is very hard to exclude
@@ -2539,7 +2557,7 @@ window.addEventListener("load", () => {
                         return makeCommentItem(
                             id,
                             cname.replace(/\$/g, "$$$"),
-                            greeting + description
+                            markdownToHTML(greeting + description)
                         );
                     });
 
