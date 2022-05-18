@@ -12,7 +12,7 @@ type PostType = "answer" | "question";
 
 type Placement = readonly [insert: HTMLElement | null, place: HTMLElement];
 
-type Locator<T extends HTMLElement = HTMLElement> = (where: T) => Placement;
+type Locator<T extends HTMLElement = HTMLElement> = (where: T) => Promise<Placement>;
 
 declare enum Target {
     Closure = "C",
@@ -1922,7 +1922,7 @@ window.addEventListener("load", () => {
                     Date.now() / 1000 - creation_date < timeUnits.month,
                     reputation < 10
                 ].some(Boolean);
-            }
+            };
 
             /**
              * @summary get original poster username
@@ -2788,81 +2788,132 @@ window.addEventListener("load", () => {
             };
 
             /**
-             * @summary Attach an "auto" link somewhere in the DOM. This link is going to trigger the iconic ARC behavior.
-             * @param {string} selector A selector for a DOM element which, when clicked, will invoke the locator.
-             * @param {Locator} locator A function that will search for both the DOM element, next to which the "auto" link
-             *                           will be placed and where the text selected from the popup will be inserted.
-             *                           This function will receive the triggerElement as the first argument when called and it
-             *                           should return an array with the two DOM elements in the expected order.
-             * @param {Injector} injector A function that will be called to actually inject the "auto" link into the DOM.
-             *                            This function will receive the element that the locator found as the first argument when called.
-             *                            It will receive the action function as the second argument, so it know what to invoke when the "auto" link is clicked.
-             * @param {Actor} actor A function that will be called when the injected "auto" link is clicked.
+             * @summary waits until an {@link Element} matching {@link selector} appears in DOM
+             * @param selector selector to wait for
+             * @param context {@link Element} to observe
              */
-            function addTriggerButton<T extends HTMLElement>(
+            const waitFor = <T extends Element>(
+                selector: string,
+                context: Element
+            ) => {
+                return new Promise<T>((resolve) => {
+                    const element = context.querySelector<T>(selector);
+                    if (element) resolve(element);
+
+                    const observer = new MutationObserver(() => {
+                        const element = context.querySelector<T>(selector);
+                        if (element) {
+                            observer.disconnect();
+                            resolve(element);
+                        }
+                    });
+
+                    observer.observe(context, {
+                        attributes: true,
+                        childList: true,
+                        subtree: true,
+                    });
+                });
+            };
+
+            /**
+             * @summary observes {@link context} for changes
+             * @param selector selector to match on changes
+             * @param context {@link Element} to observe
+             * @param callback function to call with {@link selector} match results
+             */
+            const observe = <T extends Element>(
+                selector: string,
+                context: Element,
+                callback: (matched: T[]) => void
+            ) => {
+                const observerCallback = () => {
+                    const collection = context.querySelectorAll<T>(selector);
+                    if (collection.length) callback([...collection]);
+                };
+
+                const observer = new MutationObserver(observerCallback);
+
+                observer.observe(context, {
+                    attributes: true,
+                    childList: true,
+                    subtree: true,
+                });
+
+                observerCallback();
+            };
+
+            /**
+             * @summary Attach an "auto" link somewhere in the DOM. This link is going to trigger the iconic ARC behavior.
+             * @param selector A selector for a DOM element which, when clicked, will invoke the locator.
+             * @param locator A function that will search for both the DOM element, next to which the "auto" link
+             *                will be placed and where the text selected from the popup will be inserted.
+             *                This function will receive the triggerElement as the first argument when called and it
+             *                should return an array with the two DOM elements in the expected order.
+             * @param injector A function that will be called to actually inject the "auto" link into the DOM.
+             *                 This function will receive the element that the locator found as the first argument when called.
+             *                 It will receive the action function as the second argument, so it know what to invoke when the "auto" link is clicked.
+             * @param actor A function that will be called when the injected "auto" link is clicked.
+             */
+            const addTriggerButton = async <T extends HTMLElement>(
                 selector: string,
                 locator: Locator<T>,
                 injector: Injector,
                 actor: Actor
-            ) {
-                const maxTries = 20;
+            ) => {
+                const content = document.getElementById("content");
+                if (!content) {
+                    debugLogger.log("missing main content");
+                    return;
+                }
 
-                /**
-                 * @summary The internal injector invokes the locator to find an element in relation to the trigger element and then invokes the injector on it.
-                 * @param {HTMLElement} trigger The element that triggered the mechanism.
-                 * @param {number} [retry=0] How often this operation was already retried. 20 retries will be performed in 50ms intervals.
-                 * @private
-                 */
-                const _injector = (trigger: T, retry: number) => {
-                    if (maxTries <= retry) return;
+                observe<T>(selector, content, (targets) => {
+                    targets
+                        .filter(({ dataset }) => dataset.arc !== "ready")
+                        .forEach((target) => {
 
-                    const [injectNextTo, placeIn] = locator(trigger);
+                            target.addEventListener("click", async () => {
+                                const [injectNextTo, placeIn] = await locator(target);
+                                if (!injectNextTo) return;
 
-                    if (injectNextTo) {
-                        placeIn.dataset.arc = "current";
-                        return injector(injectNextTo, actor);
-                    }
+                                document
+                                    .querySelectorAll<HTMLElement>("[data-arc=current]")
+                                    .forEach((e) => delete e.dataset.arc);
 
-                    // We didn't find it? Try again in 50ms.
-                    setTimeout(() => _injector(trigger, retry + 1), 50);
-                };
+                                placeIn.dataset.arc = "current";
+                                return injector(injectNextTo, actor);
+                            }, { once: true });
 
-                const content = document.getElementById("content")!;
-                content.addEventListener("click", ({ target }) => {
-                    if (!(<HTMLElement>target).matches(selector)) return;
-                    _injector(<T>target, 0);
+                            target.dataset.arc = "ready";
+                        });
                 });
-            }
+            };
 
             /**
              * @description A locator for the help link next to the comment box under a post and the textarea for the comment.
-             * @param {HTMLElement} where A DOM element, near which we're looking for the location where to inject our link.
-             * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the
-             *                     comment should be placed.
+             * @param where A DOM element, near which we're looking for the location where to inject our link.
+             * @returns The DOM element next to which the link should be inserted and the element into which the comment should be placed.
              */
-            const findCommentElements = ({
-                parentElement,
-            }: HTMLElement): Placement => {
-                const { id } = parentElement!;
+            const findCommentElements: Locator = async (where) => {
+                const { id } = where.parentElement!;
 
                 const divId = id.replace("-link", "");
-
                 const div = document.getElementById(divId)!;
 
-                const injectNextTo = div.querySelector<HTMLElement>(
-                    ".js-comment-form-layout button:last-of-type"
-                )!;
+                const injectNextTo = await waitFor<HTMLElement>(".js-comment-form-layout button:last-of-type", div);
+
                 const placeCommentIn = div.querySelector("textarea")!;
+                console.log({ injectNextTo, div, divId, placeCommentIn });
                 return [injectNextTo, placeCommentIn];
             };
 
             /**
              * @summary A locator for the edit summary input box under a post while it is being edited.
-             * @param {HTMLAnchorElement} where A DOM element, near which we're looking for the location where to inject our link.
-             * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the comment should be placed.
+             * @param where A DOM element, near which we're looking for the location where to inject our link.
+             * @returns The DOM element next to which the link should be inserted and the element into which the comment should be placed.
              */
-            const findEditSummaryElements = (where: HTMLAnchorElement): Placement => {
-                const { href } = where;
+            const findEditSummaryElements: Locator = async (where) => {
+                const href = where.getAttribute("href") || "";
                 const [, divid] = href.match(/posts\/(\d+)\/edit/) || [];
                 const injectTo = document.getElementById(`submit-button-${divid}`)!;
                 const placeIn = document.getElementById(`edit-comment-${divid}`)!;
@@ -2871,11 +2922,10 @@ window.addEventListener("load", () => {
 
             /**
              * @summary A locator for the text area in which to put a custom off-topic closure reason in the closure dialog.
-             * @param {HTMLElement} where A DOM element, near which we're looking for the location where to inject our link.
-             * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the
-             *                     comment should be placed.
+             * @param _where A DOM element, near which we're looking for the location where to inject our link.
+             * @returns The DOM element next to which the link should be inserted and the element into which the comment should be placed.
              */
-            const findClosureElements = (_where: HTMLElement): Placement => {
+            const findClosureElements: Locator = async (_where) => {
                 const injectTo = document.querySelector<HTMLElement>("#close-question-form .js-popup-submit")!;
                 const placeIn = document.querySelector<HTMLElement>("#site-specific-comment textarea")!;
                 return [injectTo, placeIn];
@@ -2883,11 +2933,10 @@ window.addEventListener("load", () => {
 
             /**
              * @summary A locator for the edit summary you get in the "Help and Improvement" review queue.
-             * @param {HTMLElement} [_where] A DOM element, near which we're looking for the location where to inject our link.
-             * @returns {Placement} The DOM element next to which the link should be inserted and the element into which the
-             *                     comment should be placed.
+             * @param _where A DOM element, near which we're looking for the location where to inject our link.
+             * @returns The DOM element next to which the link should be inserted and the element into which the comment should be placed.
              */
-            const findReviewQueueElements = (_where?: HTMLElement): Placement => {
+            const findReviewQueueElements: Locator = async (_where) => {
                 const injectTo = document.querySelector<HTMLElement>(".js-review-editor [id^='submit-button']")!;
                 const placeIn = document.querySelector<HTMLElement>(".js-review-editor .js-post-edit-comment-field")!;
                 return [injectTo, placeIn];

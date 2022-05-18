@@ -1224,7 +1224,7 @@ window.addEventListener("load", function () {
                             url.search = new URLSearchParams({
                                 site: site,
                                 key: API_KEY,
-                                unsafe: FILTER_UNSAFE,
+                                filter: FILTER_UNSAFE,
                             }).toString();
                             return [4, fetch(url.toString())];
                         case 1:
@@ -1672,52 +1672,120 @@ window.addEventListener("load", function () {
                     }
                 });
             }); };
-            function addTriggerButton(selector, locator, injector, actor) {
-                var maxTries = 20;
-                var _injector = function (trigger, retry) {
-                    if (maxTries <= retry)
-                        return;
-                    var _a = __read(locator(trigger), 2), injectNextTo = _a[0], placeIn = _a[1];
-                    if (injectNextTo) {
-                        placeIn.dataset.arc = "current";
-                        return injector(injectNextTo, actor);
-                    }
-                    setTimeout(function () { return _injector(trigger, retry + 1); }, 50);
-                };
-                var content = document.getElementById("content");
-                content.addEventListener("click", function (_a) {
-                    var target = _a.target;
-                    if (!target.matches(selector))
-                        return;
-                    _injector(target, 0);
+            var waitFor = function (selector, context) {
+                return new Promise(function (resolve) {
+                    var element = context.querySelector(selector);
+                    if (element)
+                        resolve(element);
+                    var observer = new MutationObserver(function () {
+                        var element = context.querySelector(selector);
+                        if (element) {
+                            observer.disconnect();
+                            resolve(element);
+                        }
+                    });
+                    observer.observe(context, {
+                        attributes: true,
+                        childList: true,
+                        subtree: true,
+                    });
                 });
-            }
-            var findCommentElements = function (_a) {
-                var parentElement = _a.parentElement;
-                var id = parentElement.id;
-                var divId = id.replace("-link", "");
-                var div = document.getElementById(divId);
-                var injectNextTo = div.querySelector(".js-comment-form-layout button:last-of-type");
-                var placeCommentIn = div.querySelector("textarea");
-                return [injectNextTo, placeCommentIn];
             };
-            var findEditSummaryElements = function (where) {
-                var href = where.href;
-                var _a = __read(href.match(/posts\/(\d+)\/edit/) || [], 2), divid = _a[1];
-                var injectTo = document.getElementById("submit-button-".concat(divid));
-                var placeIn = document.getElementById("edit-comment-".concat(divid));
-                return [injectTo, placeIn];
+            var observe = function (selector, context, callback) {
+                var observerCallback = function () {
+                    var collection = context.querySelectorAll(selector);
+                    if (collection.length)
+                        callback(__spreadArray([], __read(collection), false));
+                };
+                var observer = new MutationObserver(observerCallback);
+                observer.observe(context, {
+                    attributes: true,
+                    childList: true,
+                    subtree: true,
+                });
+                observerCallback();
             };
-            var findClosureElements = function (_where) {
-                var injectTo = document.querySelector("#close-question-form .js-popup-submit");
-                var placeIn = document.querySelector("#site-specific-comment textarea");
-                return [injectTo, placeIn];
-            };
-            var findReviewQueueElements = function (_where) {
-                var injectTo = document.querySelector(".js-review-editor [id^='submit-button']");
-                var placeIn = document.querySelector(".js-review-editor .js-post-edit-comment-field");
-                return [injectTo, placeIn];
-            };
+            var addTriggerButton = function (selector, locator, injector, actor) { return __awaiter(void 0, void 0, void 0, function () {
+                var content;
+                return __generator(this, function (_a) {
+                    content = document.getElementById("content");
+                    if (!content) {
+                        debugLogger.log("missing main content");
+                        return [2];
+                    }
+                    observe(selector, content, function (targets) {
+                        targets
+                            .filter(function (_a) {
+                            var dataset = _a.dataset;
+                            return dataset.arc !== "ready";
+                        })
+                            .forEach(function (target) {
+                            target.addEventListener("click", function () { return __awaiter(void 0, void 0, void 0, function () {
+                                var _a, injectNextTo, placeIn;
+                                return __generator(this, function (_b) {
+                                    switch (_b.label) {
+                                        case 0: return [4, locator(target)];
+                                        case 1:
+                                            _a = __read.apply(void 0, [_b.sent(), 2]), injectNextTo = _a[0], placeIn = _a[1];
+                                            if (!injectNextTo)
+                                                return [2];
+                                            document
+                                                .querySelectorAll("[data-arc=current]")
+                                                .forEach(function (e) { return delete e.dataset.arc; });
+                                            placeIn.dataset.arc = "current";
+                                            return [2, injector(injectNextTo, actor)];
+                                    }
+                                });
+                            }); }, { once: true });
+                            target.dataset.arc = "ready";
+                        });
+                    });
+                    return [2];
+                });
+            }); };
+            var findCommentElements = function (where) { return __awaiter(void 0, void 0, void 0, function () {
+                var id, divId, div, injectNextTo, placeCommentIn;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            id = where.parentElement.id;
+                            divId = id.replace("-link", "");
+                            div = document.getElementById(divId);
+                            return [4, waitFor(".js-comment-form-layout button:last-of-type", div)];
+                        case 1:
+                            injectNextTo = _a.sent();
+                            placeCommentIn = div.querySelector("textarea");
+                            console.log({ injectNextTo: injectNextTo, div: div, divId: divId, placeCommentIn: placeCommentIn });
+                            return [2, [injectNextTo, placeCommentIn]];
+                    }
+                });
+            }); };
+            var findEditSummaryElements = function (where) { return __awaiter(void 0, void 0, void 0, function () {
+                var href, _a, divid, injectTo, placeIn;
+                return __generator(this, function (_b) {
+                    href = where.getAttribute("href") || "";
+                    _a = __read(href.match(/posts\/(\d+)\/edit/) || [], 2), divid = _a[1];
+                    injectTo = document.getElementById("submit-button-".concat(divid));
+                    placeIn = document.getElementById("edit-comment-".concat(divid));
+                    return [2, [injectTo, placeIn]];
+                });
+            }); };
+            var findClosureElements = function (_where) { return __awaiter(void 0, void 0, void 0, function () {
+                var injectTo, placeIn;
+                return __generator(this, function (_a) {
+                    injectTo = document.querySelector("#close-question-form .js-popup-submit");
+                    placeIn = document.querySelector("#site-specific-comment textarea");
+                    return [2, [injectTo, placeIn]];
+                });
+            }); };
+            var findReviewQueueElements = function (_where) { return __awaiter(void 0, void 0, void 0, function () {
+                var injectTo, placeIn;
+                return __generator(this, function (_a) {
+                    injectTo = document.querySelector(".js-review-editor [id^='submit-button']");
+                    placeIn = document.querySelector(".js-review-editor .js-post-edit-comment-field");
+                    return [2, [injectTo, placeIn]];
+                });
+            }); };
             var makePopupOpenButton = function (callback) {
                 var params = [];
                 for (var _i = 1; _i < arguments.length; _i++) {
