@@ -1617,7 +1617,7 @@ window.addEventListener("load", function () {
                                 comments.forEach(function (_a, i) {
                                     var name = _a.name, description = _a.description;
                                     Store.save("name-".concat(i), name);
-                                    Store.save("desc-".concat(i), tag(markdownToHTML(description)));
+                                    Store.save("desc-".concat(i), tag(description));
                                 });
                                 return [2];
                         }

@@ -2711,11 +2711,10 @@ window.addEventListener("load", () => {
 
             /**
              * @summary loads comments from a remote source
-             * @param {string} url remore URL to fetch from
-             * @param {boolean} [isJSONP] JSONP switch
-             * @returns {Promise<void>}
+             * @param url remore URL to fetch from
+             * @param [isJSONP] JSONP switch
              */
-            const fetchFromRemote = async (url: string, isJSONP = false) => {
+            const fetchFromRemote = async (url: string, isJSONP = false): Promise<void> => {
                 debugLogger.log({ isJSONP });
 
                 const fetcher = isJSONP ? getJSONP : getJSON;
@@ -2727,7 +2726,7 @@ window.addEventListener("load", () => {
                 Store.clear("desc-");
                 comments.forEach(({ name, description }, i) => {
                     Store.save(`name-${i}`, name);
-                    Store.save(`desc-${i}`, tag(markdownToHTML(description)));
+                    Store.save(`desc-${i}`, tag(description));
                 });
             };
 
