@@ -338,7 +338,7 @@ window.addEventListener("load", () => {
             const API_KEY = "{{API_KEY}}";
             const FILTER_UNSAFE = "{{FILTER_UNSAFE}}";
 
-            const debugLogger = new Debugger(Store.load("debug"));
+            const debugLogger = new Debugger(Store.load("debug", false));
 
             const site = window.location.hostname;
 
@@ -1108,6 +1108,12 @@ window.addEventListener("load", () => {
                     Store.load("hide-desc", false)
                 );
 
+                const [debugToggle] = makeStacksToggle(
+                    "toggleDebug",
+                    "ARC debug mode",
+                    Store.load("debug", false)
+                );
+
                 const resetBtn = makeButton(
                     "reset",
                     "reset any custom comments",
@@ -1116,7 +1122,7 @@ window.addEventListener("load", () => {
                     "s-btn__danger"
                 );
 
-                generalWrap.append(descrToggle);
+                generalWrap.append(descrToggle, debugToggle);
                 dangerWrap.append(resetBtn);
 
                 view.append(generalWrap, dangerWrap);
@@ -1127,6 +1133,9 @@ window.addEventListener("load", () => {
                             ".popup-actions-reset": (p, t) => {
                                 resetComments(commentDefaults);
                                 updateComments(p, t);
+                            },
+                            "#toggleDebug": () => {
+                                Store.toggle("debug");
                             },
                             "#toggleDescr": (p) =>
                                 toggleDescriptionVisibility(

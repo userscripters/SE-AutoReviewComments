@@ -302,7 +302,7 @@ window.addEventListener("load", function () {
             var API_VER = "2.2";
             var API_KEY = "5J)5cHN9KbyhE9Yf9S*G)g((";
             var FILTER_UNSAFE = ")7tZ5Od";
-            var debugLogger = new Debugger(Store.load("debug"));
+            var debugLogger = new Debugger(Store.load("debug", false));
             var site = window.location.hostname;
             var sitename = (StackExchange.options.site.name || "").replace(/\s?Stack Exchange/, "");
             debugLogger.log({
@@ -649,8 +649,9 @@ window.addEventListener("load", function () {
                 var generalWrap = el("div", "flex--item");
                 var dangerWrap = el("div", "flex--item");
                 var _a = __read(makeStacksToggle("toggleDescr", "hide comment descriptions", Store.load("hide-desc", false)), 1), descrToggle = _a[0];
+                var _b = __read(makeStacksToggle("toggleDebug", "ARC debug mode", Store.load("debug", false)), 1), debugToggle = _b[0];
                 var resetBtn = makeButton("reset", "reset any custom comments", "popup-actions-reset", "s-btn__outlined", "s-btn__danger");
-                generalWrap.append(descrToggle);
+                generalWrap.append(descrToggle, debugToggle);
                 dangerWrap.append(resetBtn);
                 view.append(generalWrap, dangerWrap);
                 popup.addEventListener("click", function (_a) {
@@ -659,6 +660,9 @@ window.addEventListener("load", function () {
                         ".popup-actions-reset": function (p, t) {
                             resetComments(commentDefaults);
                             updateComments(p, t);
+                        },
+                        "#toggleDebug": function () {
+                            Store.toggle("debug");
                         },
                         "#toggleDescr": function (p) {
                             return toggleDescriptionVisibility(p, Store.toggle("hide-desc"));
