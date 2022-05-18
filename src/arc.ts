@@ -2063,17 +2063,16 @@ window.addEventListener("load", () => {
 
             /**
              * @summary get basic user info from the API
-             * @param {string} userid
-             * @returns {Promise<StackExchangeAPI.User|null>}
+             * @param userid id of the user
              */
-            const getUserInfo = async (userid: string) => {
+            const getUserInfo = async (userid: string): Promise<StackExchangeAPI.User | null> => {
                 const url = new URL(
                     `https://api.stackexchange.com/${API_VER}/users/${userid}`
                 );
                 url.search = new URLSearchParams({
                     site,
                     key: API_KEY,
-                    unsafe: FILTER_UNSAFE,
+                    filter: FILTER_UNSAFE,
                 }).toString();
 
                 const res = await fetch(url.toString());
