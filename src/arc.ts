@@ -550,7 +550,6 @@ window.addEventListener("load", () => {
                     `.${arc}.popup .main .action-list li label .action-desc {
                     margin: 0;
                     padding: 0;
-                    color: #888;
                     cursor: default;
                 }`,
                     `.${arc}.popup .main .action-list li label .quick-insert{
