@@ -553,22 +553,8 @@ window.addEventListener("load", () => {
                     cursor: default;
                 }`,
                     `.${arc}.popup .main .action-list li label .quick-insert{
-                    display:none;
-                    position:absolute;
-                    top:0;
-                    right:0;
-                    height:100%;
-                    margin:0;font-size:300%;
-                    color:transparent;
-                    border:0;
-                    transition:.3s;
-                    text-shadow:0 0 1px #fff;
-                    cursor:pointer;
-                    background-color:rgba(0,0,0,0.1);
-                    background:rgba(0,0,0,0.1);
-                    box-shadow:none;
-                    -moz-box-shadow:none;
-                    -webkit-box-shadow:none;
+                    display: none;
+                    transition: .3s;
                 }`,
                     `.${arc}.popup .main .action-list li:hover label .quick-insert{
                     display:block
@@ -1772,16 +1758,15 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes an auto comment option
-             * @param {string} id
-             * @param {string} name
-             * @param {string} desc
-             * @returns {HTMLElement}
+             * @param id comment item id
+             * @param name comment name
+             * @param desc comment description
              */
             const makeCommentItem = (
                 id: string,
                 name: string,
                 desc: string
-            ) => {
+            ): HTMLLIElement => {
                 const li = el("li", "pr8");
 
                 const reviewRadio = el("input");
@@ -1790,20 +1775,27 @@ window.addEventListener("load", () => {
                 reviewRadio.name = "commentreview";
                 reviewRadio.hidden = true;
 
-                const lbl = el("label");
+                const lbl = el("label", "d-flex", "fw-wrap", "jc-space-between");
                 lbl.htmlFor = reviewRadio.id;
 
-                const nameEl = el("span", "action-name");
+                const nameEl = el("span", "action-name", "flex--item12");
                 nameEl.id = `name-${id}`;
                 nameEl.innerHTML = name;
 
-                const descEl = el("span", "action-desc");
+                const descEl = el("span", "action-desc", "flex--item11");
                 descEl.id = `desc-${id}`;
                 descEl.innerHTML = desc;
 
-                const insertBtn = el("button", "quick-insert");
-                insertBtn.innerHTML = "↓";
-                insertBtn.title = "Insert now";
+                const insertBtn = makeButton(
+                    "↓",
+                    "insert comment",
+                    {
+                        classes: [
+                            "s-btn", "s-btn__muted", "s-btn__outlined",
+                            "quick-insert"
+                        ]
+                    }
+                )
 
                 lbl.append(nameEl, descEl, insertBtn);
                 li.append(reviewRadio, lbl);

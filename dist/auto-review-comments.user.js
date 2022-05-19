@@ -408,7 +408,7 @@ window.addEventListener("load", function () {
                     ".".concat(arc, ".popup .main .action-list li label{\n                    position:relative;\n                    display:block;\n                    padding:10px;\n                }"),
                     ".".concat(arc, ".popup .main .action-list li label .action-name {\n                    display: block;\n                    margin-bottom: 3px;\n                    cursor: default;\n                    margin: 0 0 1vh 0;\n                }"),
                     ".".concat(arc, ".popup .main .action-list li label .action-desc {\n                    margin: 0;\n                    padding: 0;\n                    cursor: default;\n                }"),
-                    ".".concat(arc, ".popup .main .action-list li label .quick-insert{\n                    display:none;\n                    position:absolute;\n                    top:0;\n                    right:0;\n                    height:100%;\n                    margin:0;font-size:300%;\n                    color:transparent;\n                    border:0;\n                    transition:.3s;\n                    text-shadow:0 0 1px #fff;\n                    cursor:pointer;\n                    background-color:rgba(0,0,0,0.1);\n                    background:rgba(0,0,0,0.1);\n                    box-shadow:none;\n                    -moz-box-shadow:none;\n                    -webkit-box-shadow:none;\n                }"),
+                    ".".concat(arc, ".popup .main .action-list li label .quick-insert{\n                    display: none;\n                    transition: .3s;\n                }"),
                     ".".concat(arc, ".popup .main .action-list li:hover label .quick-insert{\n                    display:block\n                }"),
                     ".".concat(arc, ".popup .main .action-list li label .quick-insert:hover{\n                    background-color:#222;\n                    color:#fff\n                }"),
                     ".".concat(arc, ".announcement strong:first-child {\n                    display: block;\n                }"),
@@ -1061,17 +1061,20 @@ window.addEventListener("load", function () {
                 reviewRadio.type = "radio";
                 reviewRadio.name = "commentreview";
                 reviewRadio.hidden = true;
-                var lbl = el("label");
+                var lbl = el("label", "d-flex", "fw-wrap", "jc-space-between");
                 lbl.htmlFor = reviewRadio.id;
-                var nameEl = el("span", "action-name");
+                var nameEl = el("span", "action-name", "flex--item12");
                 nameEl.id = "name-".concat(id);
                 nameEl.innerHTML = name;
-                var descEl = el("span", "action-desc");
+                var descEl = el("span", "action-desc", "flex--item11");
                 descEl.id = "desc-".concat(id);
                 descEl.innerHTML = desc;
-                var insertBtn = el("button", "quick-insert");
-                insertBtn.innerHTML = "↓";
-                insertBtn.title = "Insert now";
+                var insertBtn = makeButton("↓", "insert comment", {
+                    classes: [
+                        "s-btn", "s-btn__muted", "s-btn__outlined",
+                        "quick-insert"
+                    ]
+                });
                 lbl.append(nameEl, descEl, insertBtn);
                 li.append(reviewRadio, lbl);
                 return li;
