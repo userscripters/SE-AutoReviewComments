@@ -2194,12 +2194,13 @@ window.addEventListener("load", () => {
                 const html = escapeHtml(markdown);
 
                 const rules: [RegExp, string][] = [
-                    // code should match before any conversion is done to preserve text
-                    [/`(.+?)`/g, htmlinlinecode`$1`],
                     //strong should match before italics to avoid overcomplicating the regex
                     [/([*_]{2})(.+?)\1/g, htmlstrong`$2`],
                     //it is imperative that italics are matched before links as _blank is very hard to exclude
-                    [/([*_])([^`*_]+?)\1(?![*_])/g, htmlem`$2`],
+                    // https://regex101.com/r/LvjLPz/1
+                    [/(?<!`.*?(?=.+`))([*_])([^`*_]+?)\1(?![*_])/g, htmlem`$2`],
+                    // convert paired backticks into <code> elements
+                    [/`(.+?)`/g, htmlinlinecode`$1`],
                     [/\[([^\]]+)\]\((.+?)\)/g, htmllink("$2", "$1")],
                 ];
 

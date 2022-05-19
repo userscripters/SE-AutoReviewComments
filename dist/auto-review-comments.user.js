@@ -1296,9 +1296,9 @@ window.addEventListener("load", function () {
             var markdownToHTML = function (markdown) {
                 var html = escapeHtml(markdown);
                 var rules = [
-                    [/`(.+?)`/g, htmlinlinecode(__makeTemplateObject(["$1"], ["$1"]))],
                     [/([*_]{2})(.+?)\1/g, htmlstrong(__makeTemplateObject(["$2"], ["$2"]))],
-                    [/([*_])([^`*_]+?)\1(?![*_])/g, htmlem(__makeTemplateObject(["$2"], ["$2"]))],
+                    [/(?<!`.*?(?=.+`))([*_])([^`*_]+?)\1(?![*_])/g, htmlem(__makeTemplateObject(["$2"], ["$2"]))],
+                    [/`(.+?)`/g, htmlinlinecode(__makeTemplateObject(["$1"], ["$1"]))],
                     [/\[([^\]]+)\]\((.+?)\)/g, htmllink("$2", "$1")],
                 ];
                 return rules.reduce(function (a, _a) {
