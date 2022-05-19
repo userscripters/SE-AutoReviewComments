@@ -1744,6 +1744,7 @@ window.addEventListener("load", function () {
                 });
             }); };
             var waitFor = function (selector, context) {
+                if (context === void 0) { context = document; }
                 return new Promise(function (resolve) {
                     var element = context.querySelector(selector);
                     if (element)
@@ -1831,16 +1832,14 @@ window.addEventListener("load", function () {
                     }
                 });
             }); };
-            var findEditSummaryElements = function (where) { return __awaiter(void 0, void 0, void 0, function () {
-                var href, _a, divid, injectTo, placeIn;
-                return __generator(this, function (_b) {
-                    href = where.getAttribute("href") || "";
-                    _a = __read(href.match(/posts\/(\d+)\/edit/) || [], 2), divid = _a[1];
-                    injectTo = document.getElementById("submit-button-".concat(divid));
-                    placeIn = document.getElementById("edit-comment-".concat(divid));
-                    return [2, [injectTo, placeIn]];
-                });
-            }); };
+            var findEditSummaryElements = function (where) {
+                var href = where.getAttribute("href") || "";
+                var _a = __read(href.match(/posts\/(\d+)\/edit/) || [], 2), divid = _a[1];
+                return Promise.all([
+                    waitFor("#submit-button-".concat(divid)),
+                    waitFor("#edit-comment-".concat(divid)),
+                ]);
+            };
             var findClosureElements = function (_where) { return __awaiter(void 0, void 0, void 0, function () {
                 var injectTo, placeIn;
                 return __generator(this, function (_a) {

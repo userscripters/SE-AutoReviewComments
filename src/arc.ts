@@ -2864,7 +2864,7 @@ window.addEventListener("load", () => {
              */
             const waitFor = <T extends Element>(
                 selector: string,
-                context: Element
+                context: Element | Document = document
             ) => {
                 return new Promise<T>((resolve) => {
                     const element = context.querySelector<T>(selector);
@@ -2984,12 +2984,14 @@ window.addEventListener("load", () => {
              * @param where A DOM element, near which we're looking for the location where to inject our link.
              * @returns The DOM element next to which the link should be inserted and the element into which the comment should be placed.
              */
-            const findEditSummaryElements: Locator = async (where) => {
+            const findEditSummaryElements: Locator = (where) => {
                 const href = where.getAttribute("href") || "";
                 const [, divid] = href.match(/posts\/(\d+)\/edit/) || [];
-                const injectTo = document.getElementById(`submit-button-${divid}`);
-                const placeIn = document.getElementById(`edit-comment-${divid}`);
-                return [injectTo, placeIn];
+
+                return Promise.all([
+                    waitFor<HTMLElement>(`#submit-button-${divid}`),
+                    waitFor<HTMLElement>(`#edit-comment-${divid}`),
+                ]);
             };
 
             /**
