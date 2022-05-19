@@ -2292,35 +2292,32 @@ window.addEventListener("load", () => {
 
             /**
              * @summary tags the comment text
-             * @param {string} html
-             * @returns {string}
+             * @param markdown Markdown text of the comment
              */
-            const tag = (html: string) => {
+            const tag = (markdown: string): string => {
                 const regname = new RegExp(sitename, "g");
                 const regurl = new RegExp(`//${site}`, "g");
                 const reguid = new RegExp(
                     `/${getLoggedInUserId(StackExchange)}[)]`,
                     "g"
                 );
-                return html
+                return markdown
                     .replace(regname, "$SITENAME$")
                     .replace(regurl, "//$SITEURL$")
                     .replace(reguid, "/$MYUSERID$)");
             };
 
             /**
-             * @summary Save textarea contents, replace element html with new edited content
-             * @param {string} id
-             * @param {string} value
-             * @returns {string}
+             * @summary saves comment Markdown, replace element HTML with the new content
+             * @param id id of the comment
+             * @param markdown Markdown text of the comment
              */
-            const saveComment = (id: string, value: string) => {
-                const html = markdownToHTML(value);
-                Store.save(id, tag(html));
+            const saveComment = (id: string, markdown: string): string => {
+                Store.save(id, tag(markdown));
                 return (
                     ((Store.load("ShowGreeting") &&
                         Store.load("WelcomeMessage")) ||
-                        "") + untag(html)
+                        "") + untag(markdownToHTML(markdown))
                 );
             };
 

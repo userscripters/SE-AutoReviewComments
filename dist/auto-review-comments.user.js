@@ -1372,21 +1372,20 @@ window.addEventListener("load", function () {
                     .replace(/\$SITEURL\$/g, site)
                     .replace(/\$MYUSERID\$/g, getLoggedInUserId(StackExchange));
             };
-            var tag = function (html) {
+            var tag = function (markdown) {
                 var regname = new RegExp(sitename, "g");
                 var regurl = new RegExp("//".concat(site), "g");
                 var reguid = new RegExp("/".concat(getLoggedInUserId(StackExchange), "[)]"), "g");
-                return html
+                return markdown
                     .replace(regname, "$SITENAME$")
                     .replace(regurl, "//$SITEURL$")
                     .replace(reguid, "/$MYUSERID$)");
             };
-            var saveComment = function (id, value) {
-                var html = markdownToHTML(value);
-                Store.save(id, tag(html));
+            var saveComment = function (id, markdown) {
+                Store.save(id, tag(markdown));
                 return (((Store.load("ShowGreeting") &&
                     Store.load("WelcomeMessage")) ||
-                    "") + untag(html));
+                    "") + untag(markdownToHTML(markdown)));
             };
             var closeEditMode = function (commentElem, value) {
                 var dataset = commentElem.dataset;
