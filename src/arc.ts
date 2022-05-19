@@ -858,16 +858,17 @@ window.addEventListener("load", () => {
              * {@link https://stackoverflow.design/product/components/toggle-switch/}
              *
              * @summary creates a Stacks toggle
-             * @param {string} id input id (also sets the name)
-             * @param {string} label toggle label
-             * @param {boolean} [state] initial toggle state
-             * @returns {[HTMLDivElement, HTMLInputElement]}
+             * @param id input id (also sets the name)
+             * @param label toggle label
+             * @param options configuration options
              */
             const makeStacksToggle = (
                 id: string,
                 label: string,
-                state = false
-            ) => {
+                options: { state?: boolean, type?: "prefixed" | "postfixed"; } = {},
+            ): [HTMLDivElement, HTMLInputElement] => {
+                const { state = false, type = "postfixed" } = options;
+
                 const wrap = el("div", "d-flex", "ai-center", "gs8");
 
                 const lbl = el("label", "flex--item", "s-label");
@@ -881,9 +882,10 @@ window.addEventListener("load", () => {
                 const lever = el("div", "s-toggle-switch--indicator");
 
                 iwrap.append(input, lever);
-                wrap.append(lbl, iwrap);
 
-                return [wrap, input] as const;
+                wrap.append(...(type === "postfixed" ? [lbl, iwrap] : [iwrap, lbl]));
+
+                return [wrap, input];
             };
 
             /**
@@ -1142,24 +1144,30 @@ window.addEventListener("load", () => {
                 const view = el("div", "view", "d-flex", "fd-column", "gs16");
                 view.id = id;
 
-                const generalWrap = el("div", "flex--item");
+                const generalWrap = el("div", "flex--item", "gsy", "gs24");
                 const dangerWrap = el("div", "flex--item");
 
                 const [descrToggle] = makeStacksToggle(
                     "toggleDescr",
                     "hide comment descriptions",
-                    Store.load("hide-desc", false)
+                    {
+                        state: Store.load("hide-desc", false),
+                        type: "prefixed"
+                    }
                 );
 
                 const [debugToggle] = makeStacksToggle(
                     "toggleDebug",
                     "ARC debug mode",
-                    Store.load("debug", false)
+                    {
+                        state: Store.load("debug", false),
+                        type: "prefixed"
+                    }
                 );
 
                 const resetBtn = makeButton(
-                    "reset",
-                    "reset any custom comments",
+                    "reset custom comments",
+                    "resets any saved custom comments",
                     {
                         classes: [
                             "popup-actions-reset",

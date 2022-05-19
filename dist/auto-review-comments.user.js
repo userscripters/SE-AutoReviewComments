@@ -537,8 +537,9 @@ window.addEventListener("load", function () {
                 fset.append(iwrap, lbl);
                 return [fset, input];
             };
-            var makeStacksToggle = function (id, label, state) {
-                if (state === void 0) { state = false; }
+            var makeStacksToggle = function (id, label, options) {
+                if (options === void 0) { options = {}; }
+                var _a = options.state, state = _a === void 0 ? false : _a, _b = options.type, type = _b === void 0 ? "postfixed" : _b;
                 var wrap = el("div", "d-flex", "ai-center", "gs8");
                 var lbl = el("label", "flex--item", "s-label");
                 lbl.htmlFor = id;
@@ -547,7 +548,7 @@ window.addEventListener("load", function () {
                 var input = makeCheckbox(id, { checked: state });
                 var lever = el("div", "s-toggle-switch--indicator");
                 iwrap.append(input, lever);
-                wrap.append(lbl, iwrap);
+                wrap.append.apply(wrap, __spreadArray([], __read((type === "postfixed" ? [lbl, iwrap] : [iwrap, lbl])), false));
                 return [wrap, input];
             };
             var makeButton = function (text, title, options) {
@@ -673,11 +674,17 @@ window.addEventListener("load", function () {
                     return makeSettingsView.view;
                 var view = el("div", "view", "d-flex", "fd-column", "gs16");
                 view.id = id;
-                var generalWrap = el("div", "flex--item");
+                var generalWrap = el("div", "flex--item", "gsy", "gs24");
                 var dangerWrap = el("div", "flex--item");
-                var _a = __read(makeStacksToggle("toggleDescr", "hide comment descriptions", Store.load("hide-desc", false)), 1), descrToggle = _a[0];
-                var _b = __read(makeStacksToggle("toggleDebug", "ARC debug mode", Store.load("debug", false)), 1), debugToggle = _b[0];
-                var resetBtn = makeButton("reset", "reset any custom comments", {
+                var _a = __read(makeStacksToggle("toggleDescr", "hide comment descriptions", {
+                    state: Store.load("hide-desc", false),
+                    type: "prefixed"
+                }), 1), descrToggle = _a[0];
+                var _b = __read(makeStacksToggle("toggleDebug", "ARC debug mode", {
+                    state: Store.load("debug", false),
+                    type: "prefixed"
+                }), 1), debugToggle = _b[0];
+                var resetBtn = makeButton("reset custom comments", "resets any saved custom comments", {
                     classes: [
                         "popup-actions-reset",
                         "s-btn__outlined",
