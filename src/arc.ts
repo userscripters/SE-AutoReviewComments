@@ -3000,9 +3000,10 @@ window.addEventListener("load", () => {
              * @returns The DOM element next to which the link should be inserted and the element into which the comment should be placed.
              */
             const findClosureElements: Locator = async (_where) => {
-                const injectTo = document.querySelector<HTMLElement>("#close-question-form .js-popup-submit");
-                const placeIn = document.querySelector<HTMLElement>("#site-specific-comment textarea");
-                return [injectTo, placeIn];
+                return Promise.all([
+                    waitFor<HTMLElement>("#close-question-form .js-popup-submit"),
+                    waitFor<HTMLElement>("#site-specific-comment textarea"),
+                ]);
             };
 
             /**

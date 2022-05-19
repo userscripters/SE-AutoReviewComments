@@ -1841,11 +1841,11 @@ window.addEventListener("load", function () {
                 ]);
             };
             var findClosureElements = function (_where) { return __awaiter(void 0, void 0, void 0, function () {
-                var injectTo, placeIn;
                 return __generator(this, function (_a) {
-                    injectTo = document.querySelector("#close-question-form .js-popup-submit");
-                    placeIn = document.querySelector("#site-specific-comment textarea");
-                    return [2, [injectTo, placeIn]];
+                    return [2, Promise.all([
+                            waitFor("#close-question-form .js-popup-submit"),
+                            waitFor("#site-specific-comment textarea"),
+                        ])];
                 });
             }); };
             var findReviewQueueElements = function (_where) { return __awaiter(void 0, void 0, void 0, function () {
