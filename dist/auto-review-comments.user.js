@@ -1255,7 +1255,7 @@ window.addEventListener("load", function () {
                     if (ln.startsWith("#"))
                         return names.push(ln.replace(/^#+/g, ""));
                     if (ln)
-                        return descs.push(tag(markdownToHTML(ln)));
+                        return descs.push(tag(ln));
                 });
                 var numNames = names.length;
                 var numDescs = descs.length;
@@ -1296,7 +1296,7 @@ window.addEventListener("load", function () {
             var markdownToHTML = function (markdown) {
                 var html = escapeHtml(markdown);
                 var rules = [
-                    [/([*_]{2})(.+?)\1/g, htmlstrong(__makeTemplateObject(["$2"], ["$2"]))],
+                    [/(?<!`.*?(?=.+`))([*_]{2})(.+?)\1/g, htmlstrong(__makeTemplateObject(["$2"], ["$2"]))],
                     [/(?<!`.*?(?=.+`))([*_])([^`*_]+?)\1(?![*_])/g, htmlem(__makeTemplateObject(["$2"], ["$2"]))],
                     [/`(.+?)`/g, htmlinlinecode(__makeTemplateObject(["$1"], ["$1"]))],
                     [/\[([^\]]+)\]\((.+?)\)/g, htmllink("$2", "$1")],
@@ -1755,7 +1755,6 @@ window.addEventListener("load", function () {
                         case 1:
                             injectNextTo = _a.sent();
                             placeCommentIn = div.querySelector("textarea");
-                            console.log({ injectNextTo: injectNextTo, div: div, divId: divId, placeCommentIn: placeCommentIn });
                             return [2, [injectNextTo, placeCommentIn]];
                     }
                 });
