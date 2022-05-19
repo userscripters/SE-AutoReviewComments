@@ -2903,7 +2903,6 @@ window.addEventListener("load", () => {
                 const injectNextTo = await waitFor<HTMLElement>(".js-comment-form-layout button:last-of-type", div);
 
                 const placeCommentIn = div.querySelector("textarea")!;
-                console.log({ injectNextTo, div, divId, placeCommentIn });
                 return [injectNextTo, placeCommentIn];
             };
 
