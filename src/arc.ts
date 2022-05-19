@@ -10,7 +10,7 @@ interface Document {
 
 type PostType = "answer" | "question";
 
-type Placement = readonly [insert: HTMLElement | null, place: HTMLElement];
+type Placement = readonly [insert: HTMLElement | null, place: HTMLElement | null];
 
 type Locator<T extends HTMLElement = HTMLElement> = (where: T) => Promise<Placement>;
 
@@ -2944,7 +2944,10 @@ window.addEventListener("load", () => {
 
                             target.addEventListener("click", async () => {
                                 const [injectNextTo, placeIn] = await locator(target);
-                                if (!injectNextTo) return;
+
+                                debugLogger.log({ injectNextTo, placeIn });
+
+                                if (!injectNextTo || !placeIn) return;
 
                                 document
                                     .querySelectorAll<HTMLElement>("[data-arc=current]")
@@ -2972,7 +2975,7 @@ window.addEventListener("load", () => {
 
                 const injectNextTo = await waitFor<HTMLElement>(".js-comment-form-layout button:last-of-type", div);
 
-                const placeCommentIn = div.querySelector("textarea")!;
+                const placeCommentIn = div.querySelector("textarea");
                 return [injectNextTo, placeCommentIn];
             };
 
@@ -2984,8 +2987,8 @@ window.addEventListener("load", () => {
             const findEditSummaryElements: Locator = async (where) => {
                 const href = where.getAttribute("href") || "";
                 const [, divid] = href.match(/posts\/(\d+)\/edit/) || [];
-                const injectTo = document.getElementById(`submit-button-${divid}`)!;
-                const placeIn = document.getElementById(`edit-comment-${divid}`)!;
+                const injectTo = document.getElementById(`submit-button-${divid}`);
+                const placeIn = document.getElementById(`edit-comment-${divid}`);
                 return [injectTo, placeIn];
             };
 
@@ -2995,8 +2998,8 @@ window.addEventListener("load", () => {
              * @returns The DOM element next to which the link should be inserted and the element into which the comment should be placed.
              */
             const findClosureElements: Locator = async (_where) => {
-                const injectTo = document.querySelector<HTMLElement>("#close-question-form .js-popup-submit")!;
-                const placeIn = document.querySelector<HTMLElement>("#site-specific-comment textarea")!;
+                const injectTo = document.querySelector<HTMLElement>("#close-question-form .js-popup-submit");
+                const placeIn = document.querySelector<HTMLElement>("#site-specific-comment textarea");
                 return [injectTo, placeIn];
             };
 
@@ -3006,8 +3009,8 @@ window.addEventListener("load", () => {
              * @returns The DOM element next to which the link should be inserted and the element into which the comment should be placed.
              */
             const findReviewQueueElements: Locator = async (_where) => {
-                const injectTo = document.querySelector<HTMLElement>(".js-review-editor [id^='submit-button']")!;
-                const placeIn = document.querySelector<HTMLElement>(".js-review-editor .js-post-edit-comment-field")!;
+                const injectTo = document.querySelector<HTMLElement>(".js-review-editor [id^='submit-button']");
+                const placeIn = document.querySelector<HTMLElement>(".js-review-editor .js-post-edit-comment-field");
                 return [injectTo, placeIn];
             };
 

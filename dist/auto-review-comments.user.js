@@ -1798,7 +1798,8 @@ window.addEventListener("load", function () {
                                         case 0: return [4, locator(target)];
                                         case 1:
                                             _a = __read.apply(void 0, [_b.sent(), 2]), injectNextTo = _a[0], placeIn = _a[1];
-                                            if (!injectNextTo)
+                                            debugLogger.log({ injectNextTo: injectNextTo, placeIn: placeIn });
+                                            if (!injectNextTo || !placeIn)
                                                 return [2];
                                             document
                                                 .querySelectorAll("[data-arc=current]")
