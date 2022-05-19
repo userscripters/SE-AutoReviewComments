@@ -2098,11 +2098,9 @@ window.addEventListener("load", () => {
 
             /**
              * @summary imports comments given text
-             * @param {HTMLElement} popup parent popup
-             * @param {string} text comment text to parse
-             * @returns {void}
+             * @param text comment text to parse
              */
-            const importComments = (text: string) => {
+            const importComments = (text: string): void => {
                 Store.clear("name-");
                 Store.clear("desc-");
 
@@ -2117,7 +2115,7 @@ window.addEventListener("load", () => {
                     if (ln.startsWith("#"))
                         return names.push(ln.replace(/^#+/g, ""));
 
-                    if (ln) return descs.push(tag(markdownToHTML(ln)));
+                    if (ln) return descs.push(tag(ln));
                 });
 
                 const { length: numNames } = names;
