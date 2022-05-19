@@ -1792,7 +1792,7 @@ window.addEventListener("load", () => {
                     {
                         classes: [
                             "s-btn", "s-btn__muted", "s-btn__outlined",
-                            "quick-insert"
+                            "quick-insert", "d-none"
                         ]
                     }
                 )
@@ -2323,23 +2323,26 @@ window.addEventListener("load", () => {
 
             /**
              * @summary finalizes the edit mode (save or cancel)
-             * @param {HTMLElement} commentElem
-             * @returns {void}
+             * @param popup wrapper popup
+             * @param commentElem comment item container
              */
-            const closeEditMode = (commentElem: HTMLElement, value: string) => {
-                const { dataset } = commentElem;
+            const closeEditMode = (popup: HTMLElement, commentElem: HTMLElement, value: string) => {
                 empty(commentElem);
                 commentElem.innerHTML = value;
                 commentElem.closest("li")!.querySelector("input")!.disabled =
                     false;
-                dataset.mode = "insert";
+
+                commentElem.dataset.mode = "insert";
+
+                popup
+                    .querySelectorAll<HTMLElement>(".quick-insert")
+                    .forEach(show);
             };
 
             /**
              * @summary opens the comment edit mode
-             * @param {HTMLElement} commentElem
-             * @param {HTMLElement} popup
-             * @returns {void}
+             * @param commentElem comment item container
+             * @param popup wrapper popup
              */
             const openEditMode = (
                 commentElem: HTMLElement,
@@ -2378,7 +2381,7 @@ window.addEventListener("load", () => {
 
                 area.addEventListener("change", ({ target }) => {
                     const { id, value } = <HTMLTextAreaElement>target;
-                    closeEditMode(commentElem, replaceVars(saveComment(id, value)));
+                    closeEditMode(popup, commentElem, replaceVars(saveComment(id, value)));
                 });
 
                 // Disable comment input while editing
@@ -2399,7 +2402,7 @@ window.addEventListener("load", () => {
                     popup
                         .querySelectorAll<HTMLElement>(".quick-insert")
                         .forEach(show);
-                    closeEditMode(commentElem, initialHTML);
+                    closeEditMode(popup, commentElem, initialHTML);
                 });
 
                 actions.append(cancel);

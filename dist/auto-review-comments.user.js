@@ -1072,7 +1072,7 @@ window.addEventListener("load", function () {
                 var insertBtn = makeButton("↓", "insert comment", {
                     classes: [
                         "s-btn", "s-btn__muted", "s-btn__outlined",
-                        "quick-insert"
+                        "quick-insert", "d-none"
                     ]
                 });
                 lbl.append(nameEl, descEl, insertBtn);
@@ -1397,13 +1397,15 @@ window.addEventListener("load", function () {
                     Store.load("WelcomeMessage")) ||
                     "") + untag(markdownToHTML(markdown)));
             };
-            var closeEditMode = function (commentElem, value) {
-                var dataset = commentElem.dataset;
+            var closeEditMode = function (popup, commentElem, value) {
                 empty(commentElem);
                 commentElem.innerHTML = value;
                 commentElem.closest("li").querySelector("input").disabled =
                     false;
-                dataset.mode = "insert";
+                commentElem.dataset.mode = "insert";
+                popup
+                    .querySelectorAll(".quick-insert")
+                    .forEach(show);
             };
             var openEditMode = function (commentElem, popup) {
                 var id = commentElem.id, dataset = commentElem.dataset, _a = commentElem.dataset.mode, mode = _a === void 0 ? "insert" : _a;
@@ -1429,7 +1431,7 @@ window.addEventListener("load", function () {
                 area.addEventListener("change", function (_a) {
                     var target = _a.target;
                     var _b = target, id = _b.id, value = _b.value;
-                    closeEditMode(commentElem, replaceVars(saveComment(id, value)));
+                    closeEditMode(popup, commentElem, replaceVars(saveComment(id, value)));
                 });
                 commentElem.closest("li").querySelector("input").disabled =
                     true;
@@ -1443,7 +1445,7 @@ window.addEventListener("load", function () {
                     popup
                         .querySelectorAll(".quick-insert")
                         .forEach(show);
-                    closeEditMode(commentElem, initialHTML);
+                    closeEditMode(popup, commentElem, initialHTML);
                 });
                 actions.append(cancel);
                 commentElem.append(preview, areaWrap, actions);
