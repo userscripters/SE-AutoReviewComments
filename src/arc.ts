@@ -888,19 +888,23 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes a button
-             * @param {string} text
-             * @param {string} title
-             * @param {...string} classes
-             * @returns {HTMLAnchorElement}
+             * @param text text to display
+             * @param title text for the hint
+             * @param options configuration options
              */
             const makeButton = (
                 text: string,
                 title: string,
-                ...classes: string[]
-            ) => {
+                options: { id?: string; classes?: string[]; } = {}
+            ): HTMLButtonElement => {
+                const { id, classes = [] } = options;
+
                 const button = el("button", "s-btn", ...classes);
                 button.innerHTML = text;
+
+                if (id) button.id = id;
                 if (title) button.title = title;
+
                 return button;
             };
 
@@ -938,16 +942,34 @@ window.addEventListener("load", () => {
             };
 
             /**
+             * @summary switches currently selected tab highlighting
+             * @param tabs list of tab buttons
+             * @param active new active tab button
+             */
+            const updateCurrentTab = (tabs: HTMLElement[], active?: HTMLElement) => {
+                tabs.forEach(({ classList }) => classList.remove("is-selected"));
+                active?.classList.add("is-selected");
+            };
+
+            /**
              * @summary hides the rest of the views and shows the current one
-             * @param {string} viewsSel selector for views
-             * @returns {(view:HTMLElement) => HTMLElement}
+             * @param popup wrapper popup
+             * @param viewsSel selector for views
              */
             const makeViewSwitcher =
-                (viewsSel: string) => (view: HTMLElement) => {
+                (popup: HTMLElement, viewsSel: string) => (view: HTMLElement): HTMLElement => {
                     document
                         .querySelectorAll<HTMLElement>(viewsSel)
                         .forEach(hide);
                     show(view);
+
+                    const [currentId] = view.id.split("-");
+
+                    const tabButtons = [...popup.querySelectorAll<HTMLElement>("[id$=-tab]")];
+                    const currentTab = tabButtons.find((t) => t.id === `${currentId}-tab`);
+
+                    updateCurrentTab(tabButtons, currentTab);
+
                     Store.save("CurrentView", view.id);
                     debugLogger.log(`switched to view: ${view.id}`);
                     return view;
@@ -979,44 +1001,66 @@ window.addEventListener("load", () => {
 
                 const buttons = [
                     makeButton(
-                        "filter",
-                        "filter",
-                        ...btnGroupClasses,
-                        "popup-actions-filter"
+                        "search",
+                        "search",
+                        {
+                            id: "search-tab",
+                            classes: [
+                                ...btnGroupClasses,
+                                "popup-actions-search"
+                            ]
+                        }
                     ),
                     makeButton(
                         "import/export",
                         "import/export all comments",
-                        ...btnGroupClasses,
-                        "popup-actions-impexp"
+                        {
+                            id: "impexp-tab",
+                            classes: [
+                                ...btnGroupClasses,
+                                "popup-actions-impexp"
+                            ]
+                        }
                     ),
                     makeButton(
                         "remote",
                         "setup remote source",
-                        ...btnGroupClasses,
-                        "popup-actions-remote"
+                        {
+                            id: "remote-tab",
+                            classes: [
+                                ...btnGroupClasses,
+                                "popup-actions-remote"
+                            ]
+                        }
                     ),
                     makeButton(
                         "welcome",
                         "configure welcome",
-                        ...btnGroupClasses,
-                        "popup-actions-welcome"
+                        {
+                            id: "welcome-tab",
+                            classes: [
+                                ...btnGroupClasses,
+                                "popup-actions-welcome"
+                            ]
+                        }
                     ),
                     makeButton(
                         "settings",
                         "configure ARC",
-                        ...btnGroupClasses,
-                        "popup-actions-settings"
+                        {
+                            id: "settings-tab",
+                            classes: [
+                                ...btnGroupClasses,
+                                "popup-actions-settings"
+                            ]
+                        }
                     ),
                 ];
 
                 tabGroup.append(...buttons);
 
                 tabGroup.addEventListener("click", ({ target }) => {
-                    buttons.forEach(({ classList }) =>
-                        classList.remove("is-selected")
-                    );
-                    (target as HTMLElement).classList.add("is-selected");
+                    updateCurrentTab(buttons, target as HTMLElement);
                 });
 
                 const iconGroup = el(
@@ -1116,9 +1160,13 @@ window.addEventListener("load", () => {
                 const resetBtn = makeButton(
                     "reset",
                     "reset any custom comments",
-                    "popup-actions-reset",
-                    "s-btn__outlined",
-                    "s-btn__danger"
+                    {
+                        classes: [
+                            "popup-actions-reset",
+                            "s-btn__outlined",
+                            "s-btn__danger"
+                        ]
+                    }
                 );
 
                 generalWrap.append(descrToggle, debugToggle);
@@ -1252,22 +1300,29 @@ window.addEventListener("load", () => {
                     makeButton(
                         "force",
                         "force",
-                        "welcome-force",
-                        "s-btn__primary",
-                        "s-btn__filled",
-                        "flex--item"
+                        {
+                            classes: [
+                                "welcome-force", "s-btn__primary",
+                                "s-btn__filled",
+                                "flex--item"
+                            ]
+                        }
                     ),
                     makeButton(
                         "cancel",
                         "cancel",
-                        "welcome-cancel",
-                        "s-btn__danger",
-                        "s-btn__outlined",
-                        "flex--item"
+                        {
+                            classes: [
+                                "welcome-cancel",
+                                "s-btn__danger",
+                                "s-btn__outlined",
+                                "flex--item"
+                            ]
+                        }
                     ),
                 ];
 
-                const viewSwitcher = makeViewSwitcher(viewsSel);
+                const viewSwitcher = makeViewSwitcher(popup, viewsSel);
 
                 popup.addEventListener("click", ({ target }) => {
                     runFromHashmap<PopupActionMap>(
@@ -1353,17 +1408,25 @@ window.addEventListener("load", () => {
                 const toJsonBtn = makeButton(
                     "JSON",
                     "Convert to JSON",
-                    "s-btn__primary",
-                    "flex--item"
+                    {
+                        classes: [
+                            "s-btn__primary",
+                            "flex--item"
+                        ]
+                    }
                 );
                 const cancelBtn = makeButton(
                     "cancel",
                     "cancel import/export",
-                    "s-btn__danger",
-                    "flex--item"
+                    {
+                        classes: [
+                            "s-btn__danger",
+                            "flex--item"
+                        ]
+                    }
                 );
 
-                const viewSwitcher = makeViewSwitcher(viewsSel);
+                const viewSwitcher = makeViewSwitcher(popup, viewsSel);
                 cancelBtn.addEventListener("click", () =>
                     viewSwitcher(
                         makeSearchView(popup, "search-popup", postType)
@@ -1526,14 +1589,22 @@ window.addEventListener("load", () => {
                 const getJSONbtn = makeButton(
                     getNowText,
                     "get JSON remote",
-                    "remote-json-get",
-                    ...commonBtnClasses
+                    {
+                        classes: [
+                            "remote-json-get",
+                            ...commonBtnClasses
+                        ]
+                    }
                 );
                 const getJSONPbtn = makeButton(
                     getNowText,
                     "get JSONP remote",
-                    "remote-jsonp-get",
-                    ...commonBtnClasses
+                    {
+                        classes: [
+                            "remote-jsonp-get",
+                            ...commonBtnClasses
+                        ]
+                    }
                 );
 
                 popup.addEventListener("click", ({ target }) => {
@@ -1610,7 +1681,7 @@ window.addEventListener("load", () => {
                 const main = el("div", "main");
                 main.id = "main";
 
-                const viewSwitcher = makeViewSwitcher(viewsSel);
+                const viewSwitcher = makeViewSwitcher(popup, viewsSel);
 
                 popup.addEventListener("click", ({ target }) => {
                     runFromHashmap<PopupActionMap>(
@@ -1631,7 +1702,7 @@ window.addEventListener("load", () => {
                                 viewSwitcher(
                                     makeImpExpView(p, "impexp-popup", t)
                                 ),
-                            ".popup-actions-filter": (p, t) =>
+                            ".popup-actions-search": (p, t) =>
                                 viewSwitcher(
                                     makeSearchView(p, "search-popup", t)
                                 ),
@@ -1670,7 +1741,7 @@ window.addEventListener("load", () => {
                 setupCommentHandlers(popup, commentViewId);
 
                 const view = views.find(({ id }) => id === commentViewId)!;
-                makeViewSwitcher(viewsSel)(view);
+                makeViewSwitcher(popup, viewsSel)(view);
 
                 return (makePopup.popup = popup);
             };

@@ -550,13 +550,13 @@ window.addEventListener("load", function () {
                 wrap.append(lbl, iwrap);
                 return [wrap, input];
             };
-            var makeButton = function (text, title) {
-                var classes = [];
-                for (var _i = 2; _i < arguments.length; _i++) {
-                    classes[_i - 2] = arguments[_i];
-                }
+            var makeButton = function (text, title, options) {
+                if (options === void 0) { options = {}; }
+                var id = options.id, _a = options.classes, classes = _a === void 0 ? [] : _a;
                 var button = el.apply(void 0, __spreadArray(["button", "s-btn"], __read(classes), false));
                 button.innerHTML = text;
+                if (id)
+                    button.id = id;
                 if (title)
                     button.title = title;
                 return button;
@@ -578,11 +578,22 @@ window.addEventListener("load", function () {
                 svg.append(ttl);
                 return svg;
             };
-            var makeViewSwitcher = function (viewsSel) { return function (view) {
+            var updateCurrentTab = function (tabs, active) {
+                tabs.forEach(function (_a) {
+                    var classList = _a.classList;
+                    return classList.remove("is-selected");
+                });
+                active === null || active === void 0 ? void 0 : active.classList.add("is-selected");
+            };
+            var makeViewSwitcher = function (popup, viewsSel) { return function (view) {
                 document
                     .querySelectorAll(viewsSel)
                     .forEach(hide);
                 show(view);
+                var _a = __read(view.id.split("-"), 1), currentId = _a[0];
+                var tabButtons = __spreadArray([], __read(popup.querySelectorAll("[id$=-tab]")), false);
+                var currentTab = tabButtons.find(function (t) { return t.id === "".concat(currentId, "-tab"); });
+                updateCurrentTab(tabButtons, currentTab);
                 Store.save("CurrentView", view.id);
                 debugLogger.log("switched to view: ".concat(view.id));
                 return view;
@@ -596,25 +607,41 @@ window.addEventListener("load", function () {
                 var tabGroup = el("div", "s-btn-group", "flex--item");
                 var btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
                 var buttons = [
-                    makeButton.apply(void 0, __spreadArray(__spreadArray(["filter",
-                        "filter"], __read(btnGroupClasses), false), ["popup-actions-filter"], false)),
-                    makeButton.apply(void 0, __spreadArray(__spreadArray(["import/export",
-                        "import/export all comments"], __read(btnGroupClasses), false), ["popup-actions-impexp"], false)),
-                    makeButton.apply(void 0, __spreadArray(__spreadArray(["remote",
-                        "setup remote source"], __read(btnGroupClasses), false), ["popup-actions-remote"], false)),
-                    makeButton.apply(void 0, __spreadArray(__spreadArray(["welcome",
-                        "configure welcome"], __read(btnGroupClasses), false), ["popup-actions-welcome"], false)),
-                    makeButton.apply(void 0, __spreadArray(__spreadArray(["settings",
-                        "configure ARC"], __read(btnGroupClasses), false), ["popup-actions-settings"], false)),
+                    makeButton("search", "search", {
+                        id: "search-tab",
+                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
+                            "popup-actions-search"
+                        ], false)
+                    }),
+                    makeButton("import/export", "import/export all comments", {
+                        id: "impexp-tab",
+                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
+                            "popup-actions-impexp"
+                        ], false)
+                    }),
+                    makeButton("remote", "setup remote source", {
+                        id: "remote-tab",
+                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
+                            "popup-actions-remote"
+                        ], false)
+                    }),
+                    makeButton("welcome", "configure welcome", {
+                        id: "welcome-tab",
+                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
+                            "popup-actions-welcome"
+                        ], false)
+                    }),
+                    makeButton("settings", "configure ARC", {
+                        id: "settings-tab",
+                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
+                            "popup-actions-settings"
+                        ], false)
+                    }),
                 ];
                 tabGroup.append.apply(tabGroup, __spreadArray([], __read(buttons), false));
                 tabGroup.addEventListener("click", function (_a) {
                     var target = _a.target;
-                    buttons.forEach(function (_a) {
-                        var classList = _a.classList;
-                        return classList.remove("is-selected");
-                    });
-                    target.classList.add("is-selected");
+                    updateCurrentTab(buttons, target);
                 });
                 var iconGroup = el("div", "d-flex", "flex--item", "gs8", "ba", "bar-pill", "bc-black-300");
                 var iconClasses = ["flex--item", "mute-text"];
@@ -650,7 +677,13 @@ window.addEventListener("load", function () {
                 var dangerWrap = el("div", "flex--item");
                 var _a = __read(makeStacksToggle("toggleDescr", "hide comment descriptions", Store.load("hide-desc", false)), 1), descrToggle = _a[0];
                 var _b = __read(makeStacksToggle("toggleDebug", "ARC debug mode", Store.load("debug", false)), 1), debugToggle = _b[0];
-                var resetBtn = makeButton("reset", "reset any custom comments", "popup-actions-reset", "s-btn__outlined", "s-btn__danger");
+                var resetBtn = makeButton("reset", "reset any custom comments", {
+                    classes: [
+                        "popup-actions-reset",
+                        "s-btn__outlined",
+                        "s-btn__danger"
+                    ]
+                });
                 generalWrap.append(descrToggle, debugToggle);
                 dangerWrap.append(resetBtn);
                 view.append(generalWrap, dangerWrap);
@@ -720,10 +753,23 @@ window.addEventListener("load", function () {
                 welcomeWrap.append(input);
                 var actionsWrap = el("div", "flex--item", "d-flex", "gsx", "gs8");
                 var actions = [
-                    makeButton("force", "force", "welcome-force", "s-btn__primary", "s-btn__filled", "flex--item"),
-                    makeButton("cancel", "cancel", "welcome-cancel", "s-btn__danger", "s-btn__outlined", "flex--item"),
+                    makeButton("force", "force", {
+                        classes: [
+                            "welcome-force", "s-btn__primary",
+                            "s-btn__filled",
+                            "flex--item"
+                        ]
+                    }),
+                    makeButton("cancel", "cancel", {
+                        classes: [
+                            "welcome-cancel",
+                            "s-btn__danger",
+                            "s-btn__outlined",
+                            "flex--item"
+                        ]
+                    }),
                 ];
-                var viewSwitcher = makeViewSwitcher(viewsSel);
+                var viewSwitcher = makeViewSwitcher(popup, viewsSel);
                 popup.addEventListener("click", function (_a) {
                     var target = _a.target;
                     runFromHashmap({
@@ -775,9 +821,19 @@ window.addEventListener("load", function () {
                 }); });
                 var actionWrap = el("div", "actions", "flex--item");
                 var buttonsWrap = el("div", "d-flex", "gs8", "gsx");
-                var toJsonBtn = makeButton("JSON", "Convert to JSON", "s-btn__primary", "flex--item");
-                var cancelBtn = makeButton("cancel", "cancel import/export", "s-btn__danger", "flex--item");
-                var viewSwitcher = makeViewSwitcher(viewsSel);
+                var toJsonBtn = makeButton("JSON", "Convert to JSON", {
+                    classes: [
+                        "s-btn__primary",
+                        "flex--item"
+                    ]
+                });
+                var cancelBtn = makeButton("cancel", "cancel import/export", {
+                    classes: [
+                        "s-btn__danger",
+                        "flex--item"
+                    ]
+                });
+                var viewSwitcher = makeViewSwitcher(popup, viewsSel);
                 cancelBtn.addEventListener("click", function () {
                     return viewSwitcher(makeSearchView(popup, "search-popup", postType));
                 });
@@ -859,12 +915,16 @@ window.addEventListener("load", function () {
                     "s-btn__outlined",
                     "ml8",
                 ];
-                var getJSONbtn = makeButton.apply(void 0, __spreadArray([getNowText,
-                    "get JSON remote",
-                    "remote-json-get"], __read(commonBtnClasses), false));
-                var getJSONPbtn = makeButton.apply(void 0, __spreadArray([getNowText,
-                    "get JSONP remote",
-                    "remote-jsonp-get"], __read(commonBtnClasses), false));
+                var getJSONbtn = makeButton(getNowText, "get JSON remote", {
+                    classes: __spreadArray([
+                        "remote-json-get"
+                    ], __read(commonBtnClasses), false)
+                });
+                var getJSONPbtn = makeButton(getNowText, "get JSONP remote", {
+                    classes: __spreadArray([
+                        "remote-jsonp-get"
+                    ], __read(commonBtnClasses), false)
+                });
                 popup.addEventListener("click", function (_a) {
                     var target = _a.target;
                     runFromHashmap({
@@ -928,7 +988,7 @@ window.addEventListener("load", function () {
                 var popup = el("div", "auto-review-comments", "popup");
                 var main = el("div", "main");
                 main.id = "main";
-                var viewSwitcher = makeViewSwitcher(viewsSel);
+                var viewSwitcher = makeViewSwitcher(popup, viewsSel);
                 popup.addEventListener("click", function (_a) {
                     var target = _a.target;
                     runFromHashmap({
@@ -944,7 +1004,7 @@ window.addEventListener("load", function () {
                         ".popup-actions-impexp": function (p, t) {
                             return viewSwitcher(makeImpExpView(p, "impexp-popup", t));
                         },
-                        ".popup-actions-filter": function (p, t) {
+                        ".popup-actions-search": function (p, t) {
                             return viewSwitcher(makeSearchView(p, "search-popup", t));
                         },
                     }, function (sel) { return target.matches(sel); }, popup, Store.load("post_target", Target.CommentQuestion));
@@ -974,7 +1034,7 @@ window.addEventListener("load", function () {
                     var id = _a.id;
                     return id === commentViewId;
                 });
-                makeViewSwitcher(viewsSel)(view);
+                makeViewSwitcher(popup, viewsSel)(view);
                 return (makePopup.popup = popup);
             };
             var span = function (text, _a) {
