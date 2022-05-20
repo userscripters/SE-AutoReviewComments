@@ -295,6 +295,26 @@ window.addEventListener("load", () => {
                     }
                 }
 
+                /**
+                 * @summary checks if storage has a matching key
+                 * @param text text to match
+                 */
+                static hasMatching(text: string): boolean {
+                    const { numKeys, prefix, storage } = this;
+
+                    const expr = new RegExp(`${prefix}.*?${text}`);
+
+                    for (let i = numKeys - 1; i >= 0; i--) {
+                        const key = storage.key(i) || "";
+
+                        if (expr.test(key)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
                 static load<T>(key: string, def?: T): T {
                     const { prefix, storage } = this;
                     const val = storage.getItem(prefix + key);
