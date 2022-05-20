@@ -836,13 +836,14 @@ window.addEventListener("load", function () {
                     label: "Comment source",
                     rows: 20
                 }), 2), areaWrap = _a[0], area = _a[1];
-                area.addEventListener("change", function () { return __awaiter(void 0, void 0, void 0, function () {
+                var handleChange = function () { return __awaiter(void 0, void 0, void 0, function () {
                     return __generator(this, function (_a) {
                         importComments(area.value);
                         updateComments(popup, postType);
                         return [2];
                     });
-                }); });
+                }); };
+                area.addEventListener("change", handleChange);
                 var actionWrap = el("div", "actions", "flex--item");
                 var buttonsWrap = el("div", "d-flex", "gs8", "gsx");
                 var toJsonBtn = makeButton("JSON", "Convert to JSON", {
@@ -875,6 +876,7 @@ window.addEventListener("load", function () {
                     area.value = content;
                     (_a = view.querySelector("textarea")) === null || _a === void 0 ? void 0 : _a.classList.add("ff-mono");
                     (_b = view.querySelector(".actions")) === null || _b === void 0 ? void 0 : _b.remove();
+                    area.removeEventListener("change", handleChange);
                 });
                 return (makeImpExpView.view = updateImpExpComments(view));
             };

@@ -1415,10 +1415,12 @@ window.addEventListener("load", () => {
                     rows: 20
                 });
 
-                area.addEventListener("change", async () => {
+                const handleChange = async () => {
                     importComments(area.value);
                     updateComments(popup, postType);
-                });
+                };
+
+                area.addEventListener("change", handleChange);
 
                 const actionWrap = el("div", "actions", "flex--item");
                 const buttonsWrap = el("div", "d-flex", "gs8", "gsx");
@@ -1469,6 +1471,9 @@ window.addEventListener("load", () => {
 
                     view.querySelector("textarea")?.classList.add("ff-mono"); // like a pre
                     view.querySelector(".actions")?.remove();
+
+                    // ensure we do not accidentally try to save JSON as comments
+                    area.removeEventListener("change", handleChange);
                 });
 
                 return (makeImpExpView.view = updateImpExpComments(view));
