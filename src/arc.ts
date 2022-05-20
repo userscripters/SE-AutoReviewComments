@@ -321,9 +321,15 @@ window.addEventListener("load", () => {
                     return val ? JSON.parse(val) : def;
                 }
 
-                static save<T>(key: string, val: T): void {
-                    const { prefix, storage } = this;
-                    storage.setItem(prefix + key, JSON.stringify(val));
+                static save<T>(key: string, val: T): boolean {
+                    try {
+                        const { prefix, storage } = this;
+                        storage.setItem(prefix + key, JSON.stringify(val));
+                        return true;
+                    } catch (error) {
+                        debugLogger.log(`failed to save: ${error}`);
+                        return false;
+                    }
                 }
 
                 static toggle(key: string) {
