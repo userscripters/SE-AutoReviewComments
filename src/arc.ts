@@ -81,7 +81,7 @@ type IconButtonOptions = {
 
 type CommentInfo = { name: string; description: string; targets: string[]; };
 
-type StoredComment = { id: string, name: string; desc: string; };
+type StoredComment = { id: string, name: string; description: string; };
 
 type TimeAgo = "sec" | "min" | "hour" | "day";
 
@@ -1376,19 +1376,17 @@ window.addEventListener("load", () => {
 
             /**
              * @summary updates import/export comment section
-             * @param {HTMLElement} view import/export view
-             * @returns {HTMLElement}
+             * @param view import/export view
              */
             const updateImpExpComments = (view: HTMLElement) => {
                 const area = view.querySelector("textarea")!;
 
-                const numComments = Store.load<number>("commentcount");
-                const loaded = loadComments(numComments);
+                const loaded = loadComments();
 
                 const content = loaded
                     .map(
-                        ({ name, desc }) =>
-                            `###${name}\n${HTMLtoMarkdown(desc)}`
+                        ({ name, description }) =>
+                            `###${name}\n${HTMLtoMarkdown(description)}`
                     )
                     .join("\n\n");
 
@@ -1465,9 +1463,7 @@ window.addEventListener("load", () => {
                 view.append(flexItemTextareaWrapper, flexItemActionWrap);
 
                 toJsonBtn.addEventListener("click", () => {
-                    const numComments = Store.load<number>("commentcount");
-
-                    const loaded = loadComments(numComments);
+                    const loaded = loadComments();
                     const content = JSON.stringify(loaded, null, 4);
                     area.value = content;
 
@@ -2199,9 +2195,6 @@ window.addEventListener("load", () => {
              * @param text comment text to parse
              */
             const importComments = (text: string): void => {
-                Store.clear("name-");
-                Store.clear("desc-");
-
                 const lines = text.split("\n");
 
                 const names: string[] = [];
@@ -2227,12 +2220,15 @@ window.addEventListener("load", () => {
                         "danger"
                     );
 
-                names.forEach((name, idx) => {
-                    Store.save(`name-${idx}`, name);
-                    Store.save(`desc-${idx}`, descs[idx]);
+                const comments: StoredComment[] = names.map((name, idx) => {
+                    return {
+                        id: idx.toString(),
+                        name,
+                        description: descs[idx]
+                    };
                 });
 
-                Store.save("commentcount", numNames);
+                Store.save("comments", comments);
             };
 
             // From https://stackoverflow.com/a/12034334/259953
@@ -2336,20 +2332,6 @@ window.addEventListener("load", () => {
             };
 
             /**
-             * @summary saves comment Markdown, replace element HTML with the new content
-             * @param id id of the comment
-             * @param markdown Markdown text of the comment
-             */
-            const saveComment = (id: string, markdown: string): string => {
-                Store.save(id, tag(markdown));
-                return (
-                    ((Store.load("ShowGreeting") &&
-                        Store.load("WelcomeMessage")) ||
-                        "") + untag(markdownToHTML(markdown))
-                );
-            };
-
-            /**
              * @summary finalizes the edit mode (save or cancel)
              * @param popup wrapper popup
              * @param commentElem comment item container
@@ -2384,7 +2366,16 @@ window.addEventListener("load", () => {
 
                 if (mode === "edit") return;
 
-                const desc = HTMLtoMarkdown(Store.load<string>(id));
+                const commentId = id.replace("desc-", "");
+
+                const comments = Store.load<StoredComment[]>("comments", []);
+                const originalComment = comments.find((c) => c.id === commentId);
+                if (!originalComment) {
+                    debugLogger.log(`failed to find edited comment (${commentId})`);
+                    return;
+                }
+
+                const { description } = originalComment;
 
                 empty(commentElem);
 
@@ -2395,12 +2386,12 @@ window.addEventListener("load", () => {
                     opName: getOP(),
                 });
 
-                const initialHTML = markdownToHTML(replaceVars(desc));
+                const initialHTML = markdownToHTML(replaceVars(description));
 
                 const preview = el("span", "d-inline-block", "p8");
                 preview.innerHTML = initialHTML;
 
-                const [areaWrap, area] = makeStacksTextArea(commentElem.id, { value: desc });
+                const [areaWrap, area] = makeStacksTextArea(commentElem.id, { value: description });
 
                 area.addEventListener("input", ({ target }) => {
                     const { value } = <HTMLTextAreaElement>target;
@@ -2408,8 +2399,14 @@ window.addEventListener("load", () => {
                 });
 
                 area.addEventListener("change", ({ target }) => {
-                    const { id, value } = <HTMLTextAreaElement>target;
-                    closeEditMode(popup, commentElem, replaceVars(saveComment(id, value)));
+                    const { value } = <HTMLTextAreaElement>target;
+
+                    const updatedComment: StoredComment = {
+                        ...originalComment,
+                        description: value,
+                    };
+
+                    closeEditMode(popup, commentElem, replaceVars(saveComment(updatedComment)));
                 });
 
                 // Disable comment input while editing
@@ -2443,7 +2440,7 @@ window.addEventListener("load", () => {
                 //650 is <ul> width 8 is <li> padding-right, 20 is <label> padding
                 const lineWidth = 650 - 20 - 8 - areaHorizontalPadding;
 
-                area.rows = getNumTextLines(desc, font, lineWidth);
+                area.rows = getNumTextLines(description, font, lineWidth);
 
                 area.addEventListener("input", () => {
                     const { value } = area;
@@ -2454,35 +2451,85 @@ window.addEventListener("load", () => {
             };
 
             /**
-             * @summary Empty all custom comments from storage and rewrite to ui
-             * @param {CommentInfo[]} comments new comments to overwrite with
-             * @returns {void}
+             * @summary interops with the original ARC
+             * @param numComments number of comments to load
              */
-            const resetComments = (comments: CommentInfo[]) => {
-                Store.clear("name-");
-                Store.clear("desc-");
-                comments.forEach(({ description, name, targets }, index) => {
-                    const prefix = targets ? `[${targets.join(",")}] ` : "";
-                    Store.save(`name-${index}`, prefix + name);
-                    Store.save(`desc-${index}`, description);
-                });
-                Store.save("commentcount", commentDefaults.length);
-            };
+            const originalARCinterop = (numComments: number): StoredComment[] => {
+                debugLogger.log("original ARC interop called");
 
-            /**
-             * TODO: rework once moved to config object
-             * @summary loads comments from storage
-             * @param {number} numComments
-             * @returns {StoredComment[]}
-             */
-            const loadComments = (numComments: number) => {
                 const comments: StoredComment[] = [];
+
                 for (let i = 0; i < numComments; i++) {
                     const name = Store.load<string>(`name-${i}`);
                     const desc = Store.load<string>(`desc-${i}`);
-                    comments.push({ id: i.toString(), name, desc });
+
+                    if (!name || !desc) continue;
+
+                    comments.push({
+                        id: i.toString(),
+                        name,
+                        description: HTMLtoMarkdown(desc)
+                    });
                 }
+
+                const status = Store.save("comments", comments);
+                if (status) {
+                    // clean up after the original ARC if we succeeded
+                    Store.clear("name-");
+                    Store.clear("desc-");
+                }
+
                 return comments;
+            };
+
+            /**
+             * @summary loads comments from storage
+             */
+            const loadComments = (): StoredComment[] => {
+                if (Store.hasMatching("name-") || Store.hasMatching("desc-")) {
+                    const numComments = Store.load<number>("commentcount", 0);
+                    return originalARCinterop(numComments);
+                }
+
+                return Store.load<StoredComment[]>("comments", []);
+            };
+
+            /**
+             * @summary removes all custom comments and replaces them with new ones
+             * @param comments new comments to overwrite with
+             */
+            const resetComments = (comments: CommentInfo[]) => {
+                return Store.save("comments", comments);
+            };
+
+            /**
+             * @summary saves comment Markdown
+             * @param comment comment to store
+             * @returns HTML text of the comment
+             */
+            const saveComment = (comment: StoredComment): string => {
+                const { description, id } = comment;
+
+                const toStore: StoredComment = {
+                    ...comment,
+                    description: tag(description)
+                };
+
+                const comments = Store.load<StoredComment[]>("comments", []);
+
+                const commentIdx = comments.findIndex((c) => c.id === id);
+
+                commentIdx === -1 ?
+                    comments.push(toStore) :
+                    comments.splice(commentIdx, 1, toStore);
+
+                Store.save("comments", comments);
+
+                return (
+                    ((Store.load("ShowGreeting") &&
+                        Store.load("WelcomeMessage")) ||
+                        "") + untag(markdownToHTML(description))
+                );
             };
 
             /**
@@ -2614,16 +2661,15 @@ window.addEventListener("load", () => {
              * @param popup wrapper popup
              * @param target comment target type
              */
-            const updateComments = (popup: HTMLElement, target: Target) => {
-                const numComments = Store.load<number>("commentcount");
-
-                if (!numComments) resetComments(commentDefaults);
+            const updateComments = (popup: HTMLElement, target: Target): void => {
+                const comments = loadComments();
+                if (!comments.length) {
+                    resetComments(commentDefaults);
+                    return updateComments(popup, target);
+                }
 
                 const ul = popup.querySelector(".action-list")!;
-
                 empty(ul);
-
-                const comments = loadComments(numComments);
 
                 const myId = getLoggedInUserId(StackExchange);
                 const opName = getOP();
@@ -2652,18 +2698,15 @@ window.addEventListener("load", () => {
 
                 const listItems = comments
                     .filter(({ name }) => isCommentValidForTarget(name, target))
-                    .map(({ name, id, desc }) => {
+                    .map(({ name, id, description }) => {
                         const cname = name.replace(allTgtMatcher, "");
 
-                        const description = replaceVars(desc).replace(
-                            /\$/g,
-                            "$$$"
-                        );
+                        const desc = replaceVars(description).replace(/\$/g, "$$$");
 
                         return makeCommentItem(
                             id,
                             cname.replace(/\$/g, "$$$"),
-                            markdownToHTML(greeting + description)
+                            markdownToHTML(greeting + desc)
                         );
                     });
 
@@ -2816,15 +2859,12 @@ window.addEventListener("load", () => {
 
                 const fetcher = isJSONP ? getJSONP : getJSON;
 
-                const comments: CommentInfo[] = await fetcher(url);
+                const remoteComments: Omit<StoredComment, "id">[] = await fetcher(url);
+                const comments: StoredComment[] = remoteComments.map(
+                    (remoteComment, i) => ({ ...remoteComment, id: i.toString() })
+                );
 
-                Store.save("commentcount", comments.length);
-                Store.clear("name-");
-                Store.clear("desc-");
-                comments.forEach(({ name, description }, i) => {
-                    Store.save(`name-${i}`, name);
-                    Store.save(`desc-${i}`, tag(description));
-                });
+                Store.save("comments", comments);
             };
 
             /**

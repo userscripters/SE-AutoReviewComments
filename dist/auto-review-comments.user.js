@@ -261,14 +261,32 @@ window.addEventListener("load", function () {
                             storage.removeItem(key);
                     }
                 };
+                Store.hasMatching = function (text) {
+                    var _a = this, numKeys = _a.numKeys, prefix = _a.prefix, storage = _a.storage;
+                    var expr = new RegExp("".concat(prefix, ".*?").concat(text));
+                    for (var i = numKeys - 1; i >= 0; i--) {
+                        var key = storage.key(i) || "";
+                        if (expr.test(key)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
                 Store.load = function (key, def) {
                     var _a = this, prefix = _a.prefix, storage = _a.storage;
                     var val = storage.getItem(prefix + key);
                     return val ? JSON.parse(val) : def;
                 };
                 Store.save = function (key, val) {
-                    var _a = this, prefix = _a.prefix, storage = _a.storage;
-                    storage.setItem(prefix + key, JSON.stringify(val));
+                    try {
+                        var _a = this, prefix = _a.prefix, storage_1 = _a.storage;
+                        storage_1.setItem(prefix + key, JSON.stringify(val));
+                        return true;
+                    }
+                    catch (error) {
+                        debugLogger.log("failed to save: ".concat(error));
+                        return false;
+                    }
                 };
                 Store.toggle = function (key) {
                     return Store.save(key, !Store.load(key));
@@ -798,12 +816,11 @@ window.addEventListener("load", function () {
             };
             var updateImpExpComments = function (view) {
                 var area = view.querySelector("textarea");
-                var numComments = Store.load("commentcount");
-                var loaded = loadComments(numComments);
+                var loaded = loadComments();
                 var content = loaded
                     .map(function (_a) {
-                    var name = _a.name, desc = _a.desc;
-                    return "###".concat(name, "\n").concat(HTMLtoMarkdown(desc));
+                    var name = _a.name, description = _a.description;
+                    return "###".concat(name, "\n").concat(HTMLtoMarkdown(description));
                 })
                     .join("\n\n");
                 area.value = content;
@@ -853,8 +870,7 @@ window.addEventListener("load", function () {
                 view.append(flexItemTextareaWrapper, flexItemActionWrap);
                 toJsonBtn.addEventListener("click", function () {
                     var _a, _b;
-                    var numComments = Store.load("commentcount");
-                    var loaded = loadComments(numComments);
+                    var loaded = loadComments();
                     var content = JSON.stringify(loaded, null, 4);
                     area.value = content;
                     (_a = view.querySelector("textarea")) === null || _a === void 0 ? void 0 : _a.classList.add("ff-mono");
@@ -1317,8 +1333,6 @@ window.addEventListener("load", function () {
                 return lsep;
             };
             var importComments = function (text) {
-                Store.clear("name-");
-                Store.clear("desc-");
                 var lines = text.split("\n");
                 var names = [];
                 var descs = [];
@@ -1334,11 +1348,14 @@ window.addEventListener("load", function () {
                 debugLogger.log({ numNames: numNames, numDescs: numDescs });
                 if (numNames !== numDescs)
                     return notify("Failed to import: titles and descriptions do not match", "danger");
-                names.forEach(function (name, idx) {
-                    Store.save("name-".concat(idx), name);
-                    Store.save("desc-".concat(idx), descs[idx]);
+                var comments = names.map(function (name, idx) {
+                    return {
+                        id: idx.toString(),
+                        name: name,
+                        description: descs[idx]
+                    };
                 });
-                Store.save("commentcount", numNames);
+                Store.save("comments", comments);
             };
             var entityMapToHtml = {
                 "&": "&amp;",
@@ -1393,12 +1410,6 @@ window.addEventListener("load", function () {
                     .replace(regurl, "//$SITEURL$")
                     .replace(reguid, "/$MYUSERID$)");
             };
-            var saveComment = function (id, markdown) {
-                Store.save(id, tag(markdown));
-                return (((Store.load("ShowGreeting") &&
-                    Store.load("WelcomeMessage")) ||
-                    "") + untag(markdownToHTML(markdown)));
-            };
             var closeEditMode = function (popup, commentElem, value) {
                 empty(commentElem);
                 commentElem.innerHTML = value;
@@ -1413,7 +1424,14 @@ window.addEventListener("load", function () {
                 var id = commentElem.id, dataset = commentElem.dataset, _a = commentElem.dataset.mode, mode = _a === void 0 ? "insert" : _a;
                 if (mode === "edit")
                     return;
-                var desc = HTMLtoMarkdown(Store.load(id));
+                var commentId = id.replace("desc-", "");
+                var comments = Store.load("comments", []);
+                var originalComment = comments.find(function (c) { return c.id === commentId; });
+                if (!originalComment) {
+                    debugLogger.log("failed to find edited comment (".concat(commentId, ")"));
+                    return;
+                }
+                var description = originalComment.description;
                 empty(commentElem);
                 var replaceVars = makeVariableReplacer({
                     site: site,
@@ -1421,10 +1439,10 @@ window.addEventListener("load", function () {
                     myId: getLoggedInUserId(StackExchange),
                     opName: getOP(),
                 });
-                var initialHTML = markdownToHTML(replaceVars(desc));
+                var initialHTML = markdownToHTML(replaceVars(description));
                 var preview = el("span", "d-inline-block", "p8");
                 preview.innerHTML = initialHTML;
-                var _b = __read(makeStacksTextArea(commentElem.id, { value: desc }), 2), areaWrap = _b[0], area = _b[1];
+                var _b = __read(makeStacksTextArea(commentElem.id, { value: description }), 2), areaWrap = _b[0], area = _b[1];
                 area.addEventListener("input", function (_a) {
                     var target = _a.target;
                     var value = target.value;
@@ -1432,8 +1450,9 @@ window.addEventListener("load", function () {
                 });
                 area.addEventListener("change", function (_a) {
                     var target = _a.target;
-                    var _b = target, id = _b.id, value = _b.value;
-                    closeEditMode(popup, commentElem, replaceVars(saveComment(id, value)));
+                    var value = target.value;
+                    var updatedComment = __assign(__assign({}, originalComment), { description: value });
+                    closeEditMode(popup, commentElem, replaceVars(saveComment(updatedComment)));
                 });
                 commentElem.closest("li").querySelector("input").disabled =
                     true;
@@ -1454,32 +1473,56 @@ window.addEventListener("load", function () {
                 var _c = window.getComputedStyle(area), paddingLeft = _c.paddingLeft, paddingRight = _c.paddingRight, font = _c.font;
                 var areaHorizontalPadding = parseInt(paddingLeft) + parseInt(paddingRight);
                 var lineWidth = 650 - 20 - 8 - areaHorizontalPadding;
-                area.rows = getNumTextLines(desc, font, lineWidth);
+                area.rows = getNumTextLines(description, font, lineWidth);
                 area.addEventListener("input", function () {
                     var value = area.value;
                     area.rows = getNumTextLines(value, font, lineWidth);
                 });
                 dataset.mode = "edit";
             };
-            var resetComments = function (comments) {
-                Store.clear("name-");
-                Store.clear("desc-");
-                comments.forEach(function (_a, index) {
-                    var description = _a.description, name = _a.name, targets = _a.targets;
-                    var prefix = targets ? "[".concat(targets.join(","), "] ") : "";
-                    Store.save("name-".concat(index), prefix + name);
-                    Store.save("desc-".concat(index), description);
-                });
-                Store.save("commentcount", commentDefaults.length);
-            };
-            var loadComments = function (numComments) {
+            var originalARCinterop = function (numComments) {
+                debugLogger.log("original ARC interop called");
                 var comments = [];
                 for (var i = 0; i < numComments; i++) {
                     var name_1 = Store.load("name-".concat(i));
                     var desc = Store.load("desc-".concat(i));
-                    comments.push({ id: i.toString(), name: name_1, desc: desc });
+                    if (!name_1 || !desc)
+                        continue;
+                    comments.push({
+                        id: i.toString(),
+                        name: name_1,
+                        description: HTMLtoMarkdown(desc)
+                    });
+                }
+                var status = Store.save("comments", comments);
+                if (status) {
+                    Store.clear("name-");
+                    Store.clear("desc-");
                 }
                 return comments;
+            };
+            var loadComments = function () {
+                if (Store.hasMatching("name-") || Store.hasMatching("desc-")) {
+                    var numComments = Store.load("commentcount", 0);
+                    return originalARCinterop(numComments);
+                }
+                return Store.load("comments", []);
+            };
+            var resetComments = function (comments) {
+                return Store.save("comments", comments);
+            };
+            var saveComment = function (comment) {
+                var description = comment.description, id = comment.id;
+                var toStore = __assign(__assign({}, comment), { description: tag(description) });
+                var comments = Store.load("comments", []);
+                var commentIdx = comments.findIndex(function (c) { return c.id === id; });
+                commentIdx === -1 ?
+                    comments.push(toStore) :
+                    comments.splice(commentIdx, 1, toStore);
+                Store.save("comments", comments);
+                return (((Store.load("ShowGreeting") &&
+                    Store.load("WelcomeMessage")) ||
+                    "") + untag(markdownToHTML(description)));
             };
             var switchSelectedComment = function (popup, action) {
                 var acts = popup.querySelector(".action-list");
@@ -1562,12 +1605,13 @@ window.addEventListener("load", function () {
                 };
             };
             var updateComments = function (popup, target) {
-                var numComments = Store.load("commentcount");
-                if (!numComments)
+                var comments = loadComments();
+                if (!comments.length) {
                     resetComments(commentDefaults);
+                    return updateComments(popup, target);
+                }
                 var ul = popup.querySelector(".action-list");
                 empty(ul);
-                var comments = loadComments(numComments);
                 var myId = getLoggedInUserId(StackExchange);
                 var opName = getOP();
                 var opts = {
@@ -1587,10 +1631,10 @@ window.addEventListener("load", function () {
                     return isCommentValidForTarget(name, target);
                 })
                     .map(function (_a) {
-                    var name = _a.name, id = _a.id, desc = _a.desc;
+                    var name = _a.name, id = _a.id, description = _a.description;
                     var cname = name.replace(allTgtMatcher, "");
-                    var description = replaceVars(desc).replace(/\$/g, "$$$");
-                    return makeCommentItem(id, cname.replace(/\$/g, "$$$"), markdownToHTML(greeting + description));
+                    var desc = replaceVars(description).replace(/\$/g, "$$$");
+                    return makeCommentItem(id, cname.replace(/\$/g, "$$$"), markdownToHTML(greeting + desc));
                 });
                 ul.append.apply(ul, __spreadArray([], __read(listItems), false));
                 toggleDescriptionVisibility(popup);
@@ -1675,7 +1719,7 @@ window.addEventListener("load", function () {
             var fetchFromRemote = function (url, isJSONP) {
                 if (isJSONP === void 0) { isJSONP = false; }
                 return __awaiter(void 0, void 0, void 0, function () {
-                    var fetcher, comments;
+                    var fetcher, remoteComments, comments;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
@@ -1683,15 +1727,9 @@ window.addEventListener("load", function () {
                                 fetcher = isJSONP ? getJSONP : getJSON;
                                 return [4, fetcher(url)];
                             case 1:
-                                comments = _a.sent();
-                                Store.save("commentcount", comments.length);
-                                Store.clear("name-");
-                                Store.clear("desc-");
-                                comments.forEach(function (_a, i) {
-                                    var name = _a.name, description = _a.description;
-                                    Store.save("name-".concat(i), name);
-                                    Store.save("desc-".concat(i), tag(description));
-                                });
+                                remoteComments = _a.sent();
+                                comments = remoteComments.map(function (remoteComment, i) { return (__assign(__assign({}, remoteComment), { id: i.toString() })); });
+                                Store.save("comments", comments);
                                 return [2];
                         }
                     });
