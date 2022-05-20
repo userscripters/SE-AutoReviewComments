@@ -852,6 +852,20 @@ window.addEventListener("load", function () {
                         "flex--item"
                     ]
                 });
+                var toMarkdownBtn = makeButton("Markdown", "Go back to Markdown view", {
+                    classes: [
+                        "s-btn__primary",
+                        "flex--item",
+                        "d-none"
+                    ]
+                });
+                toMarkdownBtn.addEventListener("click", function () {
+                    area.addEventListener("change", handleChange);
+                    hide(toMarkdownBtn);
+                    show(toJsonBtn);
+                    show(cancelBtn);
+                    updateImpExpComments(view);
+                });
                 var cancelBtn = makeButton("cancel", "cancel import/export", {
                     classes: [
                         "s-btn__danger",
@@ -862,7 +876,7 @@ window.addEventListener("load", function () {
                 cancelBtn.addEventListener("click", function () {
                     return viewSwitcher(makeSearchView(popup, "search-popup", postType));
                 });
-                buttonsWrap.append(toJsonBtn, cancelBtn);
+                buttonsWrap.append(toMarkdownBtn, toJsonBtn, cancelBtn);
                 actionWrap.append(buttonsWrap);
                 var flexItemTextareaWrapper = el("div", "flex--item");
                 var flexItemActionWrap = el("div", "flex--item");
@@ -870,12 +884,14 @@ window.addEventListener("load", function () {
                 flexItemActionWrap.append(actionWrap);
                 view.append(flexItemTextareaWrapper, flexItemActionWrap);
                 toJsonBtn.addEventListener("click", function () {
-                    var _a, _b;
+                    var _a;
                     var loaded = loadComments();
                     var content = JSON.stringify(loaded, null, 4);
                     area.value = content;
                     (_a = view.querySelector("textarea")) === null || _a === void 0 ? void 0 : _a.classList.add("ff-mono");
-                    (_b = view.querySelector(".actions")) === null || _b === void 0 ? void 0 : _b.remove();
+                    hide(toJsonBtn);
+                    hide(cancelBtn);
+                    show(toMarkdownBtn);
                     area.removeEventListener("change", handleChange);
                 });
                 return (makeImpExpView.view = updateImpExpComments(view));

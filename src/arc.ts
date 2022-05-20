@@ -1435,6 +1435,27 @@ window.addEventListener("load", () => {
                         ]
                     }
                 );
+
+                const toMarkdownBtn = makeButton(
+                    "Markdown",
+                    "Go back to Markdown view",
+                    {
+                        classes: [
+                            "s-btn__primary",
+                            "flex--item",
+                            "d-none"
+                        ]
+                    }
+                );
+
+                toMarkdownBtn.addEventListener("click", () => {
+                    area.addEventListener("change", handleChange);
+                    hide(toMarkdownBtn);
+                    show(toJsonBtn);
+                    show(cancelBtn);
+                    updateImpExpComments(view);
+                });
+
                 const cancelBtn = makeButton(
                     "cancel",
                     "cancel import/export",
@@ -1453,7 +1474,7 @@ window.addEventListener("load", () => {
                     )
                 );
 
-                buttonsWrap.append(toJsonBtn, cancelBtn);
+                buttonsWrap.append(toMarkdownBtn, toJsonBtn, cancelBtn);
                 actionWrap.append(buttonsWrap);
 
                 const flexItemTextareaWrapper = el("div", "flex--item");
@@ -1470,7 +1491,10 @@ window.addEventListener("load", () => {
                     area.value = content;
 
                     view.querySelector("textarea")?.classList.add("ff-mono"); // like a pre
-                    view.querySelector(".actions")?.remove();
+
+                    hide(toJsonBtn);
+                    hide(cancelBtn);
+                    show(toMarkdownBtn);
 
                     // ensure we do not accidentally try to save JSON as comments
                     area.removeEventListener("change", handleChange);
