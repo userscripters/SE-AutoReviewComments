@@ -1071,8 +1071,10 @@ window.addEventListener("load", function () {
                 descEl.innerHTML = desc;
                 var insertBtn = makeButton("↓", "insert comment", {
                     classes: [
-                        "s-btn", "s-btn__muted", "s-btn__outlined",
-                        "quick-insert", "d-none"
+                        "s-btn",
+                        "s-btn__muted",
+                        "s-btn__outlined",
+                        "quick-insert"
                     ]
                 });
                 lbl.append(nameEl, descEl, insertBtn);

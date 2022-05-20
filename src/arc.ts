@@ -1791,8 +1791,10 @@ window.addEventListener("load", () => {
                     "insert comment",
                     {
                         classes: [
-                            "s-btn", "s-btn__muted", "s-btn__outlined",
-                            "quick-insert", "d-none"
+                            "s-btn",
+                            "s-btn__muted",
+                            "s-btn__outlined",
+                            "quick-insert"
                         ]
                     }
                 )
