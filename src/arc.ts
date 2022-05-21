@@ -79,9 +79,7 @@ type IconButtonOptions = {
     classes?: string[];
 };
 
-type CommentInfo = { name: string; description: string; targets: string[]; };
-
-type StoredComment = { id: string, name: string; description: string; };
+type StoredComment = { id: string, name: string; description: string; targets: Target[]; };
 
 type TimeAgo = "sec" | "min" | "hour" | "day";
 
@@ -429,18 +427,21 @@ window.addEventListener("load", () => {
                 `<code>${text}</code>`;
 
             //default comments
-            const commentDefaults: CommentInfo[] = [
+            const commentDefaults: StoredComment[] = [
                 {
+                    id: "default-0",
                     targets: [Target.CommentQuestion],
                     name: "More than one question asked",
                     description: `It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!`,
                 },
                 {
+                    id: "default-1",
                     targets: [Target.CommentQuestion],
                     name: "Duplicate Closure",
                     description: `This question will likely be closed as a duplicate soon. If the answers from the duplicates do not fully address your question, please edit it to include why and flag this for re-opening. Thanks!`,
                 },
                 {
+                    id: "default-2",
                     targets: [Target.CommentAnswer],
                     name: "Answers just to say Thanks!",
                     description: `Please do not add "thanks" as answers. Invest some time in the site and you will gain sufficient ${htmllink(
@@ -449,6 +450,7 @@ window.addEventListener("load", () => {
                     )} to upvote answers you like, which is our way of saying thank you.`,
                 },
                 {
+                    id: "default-3",
                     targets: [Target.CommentAnswer],
                     name: "Nothing but a URL (and isn't spam)",
                     description: `Whilst this may theoretically answer the question, ${htmllink(
@@ -457,6 +459,7 @@ window.addEventListener("load", () => {
                     )} to include the essential parts of the answer here, and provide the link for reference.`,
                 },
                 {
+                    id: "default-4",
                     targets: [Target.CommentAnswer],
                     name: "Requests to OP for further information",
                     description: `This is really a comment, not an answer. With a bit more rep, ${htmllink(
@@ -465,11 +468,13 @@ window.addEventListener("load", () => {
                     )}. For the moment, I have added the comment for you and flagging the post for deletion.`,
                 },
                 {
+                    id: "default-5",
                     targets: [Target.CommentAnswer],
                     name: "OP using an answer for further information",
                     description: `Please use the ${htmlem`Post answer`} button only for actual answers. You should modify your original question to add additional information.`,
                 },
                 {
+                    id: "default-6",
                     targets: [Target.CommentAnswer],
                     name: "OP adding a new question as an answer",
                     description: `If you have another question, please ask it by clicking the ${htmllink(
@@ -478,6 +483,7 @@ window.addEventListener("load", () => {
                     )} button.`,
                 },
                 {
+                    id: "default-7",
                     targets: [Target.CommentAnswer],
                     name: 'Another user adding a "Me too!"',
                     description: `If you have a ${htmlem`new`} question, please ask it by clicking the ${htmllink(
@@ -489,11 +495,13 @@ window.addEventListener("load", () => {
                     )} the question. Alternatively, "star" it as a favorite, and you will be notified of any new answers.`,
                 },
                 {
+                    id: "default-8",
                     targets: [Target.Closure],
                     name: "Too localized",
                     description: `This question appears to be off-topic because it is too localized.`,
                 },
                 {
+                    id: "default-9",
                     targets: [Target.EditSummaryQuestion],
                     name: "Improper tagging",
                     description: `The tags you used are not appropriate for the question. Please review ${htmllink(
@@ -956,6 +964,32 @@ window.addEventListener("load", () => {
             };
 
             /**
+             * @summary extracts comment {@link Target}s from its name
+             * @param name comment name
+             */
+            const getCommentTargetsFromName = (name: string): Target[] => {
+                const targets: Target[] = [];
+
+                // https://regex101.com/r/N2yroj/1
+                const [, serialized] = /^\[([\w,]+?)\]\s+/i.exec(name) || [];
+
+                if (!serialized) return targets;
+
+                const mapped = serialized.split(",") as Target[];
+
+                return [...targets, ...mapped];
+            };
+
+            /**
+             * @summary removes comment {@link Target} from its name
+             * @param name comment name
+             */
+            const trimCommentTargetFromName = (name: string): string => {
+                // https://regex101.com/r/N2yroj/1
+                return name.replace(/^\[([\w,]+?)\]\s+/, "");
+            };
+
+            /**
              * @summary switches currently selected tab highlighting
              * @param tabs list of tab buttons
              * @param active new active tab button
@@ -1385,8 +1419,8 @@ window.addEventListener("load", () => {
 
                 const content = loaded
                     .map(
-                        ({ name, description }) =>
-                            `###${name}\n${HTMLtoMarkdown(description)}`
+                        ({ name, description, targets }) =>
+                            `###[${targets.join(",")}] ${name}\n${HTMLtoMarkdown(description)}`
                     )
                     .join("\n\n");
 
@@ -2229,6 +2263,14 @@ window.addEventListener("load", () => {
             };
 
             /**
+             * @summary checks if all arrays are of the same length
+             * @param arrays list of arrays to check
+             */
+            const areSameLength = (...arrays: unknown[][]) => {
+                return new Set(arrays.map((a) => a.length)).size === 1;
+            };
+
+            /**
              * @summary imports comments given text
              * @param text comment text to parse
              */
@@ -2237,32 +2279,36 @@ window.addEventListener("load", () => {
 
                 const names: string[] = [];
                 const descs: string[] = [];
+                const targets: Target[][] = [];
 
                 lines.forEach((line) => {
                     const ln = line.trim();
 
-                    if (ln.startsWith("#"))
-                        return names.push(ln.replace(/^#+/g, ""));
+                    if (ln.startsWith("#")) {
+                        const name = ln.replace(/^#+/, "");
+                        names.push(name);
+                        targets.push(getCommentTargetsFromName(name));
+                        return;
+                    }
 
                     if (ln) return descs.push(tag(ln));
                 });
 
-                const { length: numNames } = names;
-                const { length: numDescs } = descs;
+                if (!areSameLength(names, descs, targets)) {
+                    debugLogger.log({ names, descs, targets });
 
-                debugLogger.log({ numNames, numDescs });
-
-                if (numNames !== numDescs)
                     return notify(
                         "Failed to import: titles and descriptions do not match",
                         "danger"
                     );
+                }
 
                 const comments: StoredComment[] = names.map((name, idx) => {
                     return {
                         id: idx.toString(),
-                        name,
-                        description: descs[idx]
+                        name: trimCommentTargetFromName(name),
+                        description: descs[idx],
+                        targets: getCommentTargetsFromName(name)
                     };
                 });
 
@@ -2505,8 +2551,9 @@ window.addEventListener("load", () => {
 
                     comments.push({
                         id: i.toString(),
-                        name,
-                        description: HTMLtoMarkdown(desc)
+                        name: trimCommentTargetFromName(name),
+                        description: HTMLtoMarkdown(desc),
+                        targets: getCommentTargetsFromName(name)
                     });
                 }
 
@@ -2536,7 +2583,7 @@ window.addEventListener("load", () => {
              * @summary removes all custom comments and replaces them with new ones
              * @param comments new comments to overwrite with
              */
-            const resetComments = (comments: CommentInfo[]) => {
+            const resetComments = (comments: StoredComment[]) => {
                 return Store.save("comments", comments);
             };
 
@@ -2695,6 +2742,16 @@ window.addEventListener("load", () => {
                     };
 
             /**
+             * @summary Checks if a given comment could be used together with a given post type
+             * @param comment {@link StoredComment} to match
+             * @param target {@link Target} to match
+             */
+            const isCommentValidForTarget = (comment: StoredComment, target: Target) => {
+                const { targets } = comment;
+                return targets.includes(target);
+            };
+
+            /**
              * @summary updates comments in the UI
              * @param popup wrapper popup
              * @param target comment target type
@@ -2735,7 +2792,7 @@ window.addEventListener("load", () => {
                 });
 
                 const listItems = comments
-                    .filter(({ name }) => isCommentValidForTarget(name, target))
+                    .filter((comment) => isCommentValidForTarget(comment, target))
                     .map(({ name, id, description }) => {
                         const cname = name.replace(allTgtMatcher, "");
 
@@ -2751,16 +2808,6 @@ window.addEventListener("load", () => {
                 ul.append(...listItems);
 
                 toggleDescriptionVisibility(popup);
-            };
-
-            /**
-             * @summary Checks if a given comment could be used together with a given post type.
-             * @param text The comment content itself.
-             * @param target {@link Target} to match.
-             */
-            const isCommentValidForTarget = (text: string, target: Target) => {
-                const [, matched] = text.match(allTgtMatcher) || [];
-                return matched === target;
             };
 
             /**
@@ -2899,7 +2946,12 @@ window.addEventListener("load", () => {
 
                 const remoteComments: Omit<StoredComment, "id">[] = await fetcher(url);
                 const comments: StoredComment[] = remoteComments.map(
-                    (remoteComment, i) => ({ ...remoteComment, id: i.toString() })
+                    ({ description, name, targets }, i) => ({
+                        description,
+                        id: i.toString(),
+                        name: trimCommentTargetFromName(name),
+                        targets: targets || getCommentTargetsFromName(name)
+                    })
                 );
 
                 Store.save("comments", comments);

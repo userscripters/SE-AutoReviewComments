@@ -352,51 +352,61 @@ window.addEventListener("load", function () {
             };
             var commentDefaults = [
                 {
+                    id: "default-0",
                     targets: [Target.CommentQuestion],
                     name: "More than one question asked",
                     description: "It is preferred if you can post separate questions instead of combining your questions into one. That way, it helps the people answering your question and also others hunting for at least one of your questions. Thanks!",
                 },
                 {
+                    id: "default-1",
                     targets: [Target.CommentQuestion],
                     name: "Duplicate Closure",
                     description: "This question will likely be closed as a duplicate soon. If the answers from the duplicates do not fully address your question, please edit it to include why and flag this for re-opening. Thanks!",
                 },
                 {
+                    id: "default-2",
                     targets: [Target.CommentAnswer],
                     name: "Answers just to say Thanks!",
                     description: "Please do not add \"thanks\" as answers. Invest some time in the site and you will gain sufficient ".concat(htmllink("/privileges", "privileges"), " to upvote answers you like, which is our way of saying thank you."),
                 },
                 {
+                    id: "default-3",
                     targets: [Target.CommentAnswer],
                     name: "Nothing but a URL (and isn't spam)",
                     description: "Whilst this may theoretically answer the question, ".concat(htmllink("https://meta.stackexchange.com/q/8259", "it would be preferable"), " to include the essential parts of the answer here, and provide the link for reference."),
                 },
                 {
+                    id: "default-4",
                     targets: [Target.CommentAnswer],
                     name: "Requests to OP for further information",
                     description: "This is really a comment, not an answer. With a bit more rep, ".concat(htmllink("/privileges/comment", "you will be able to post comments"), ". For the moment, I have added the comment for you and flagging the post for deletion."),
                 },
                 {
+                    id: "default-5",
                     targets: [Target.CommentAnswer],
                     name: "OP using an answer for further information",
                     description: "Please use the ".concat(htmlem(__makeTemplateObject(["Post answer"], ["Post answer"])), " button only for actual answers. You should modify your original question to add additional information."),
                 },
                 {
+                    id: "default-6",
                     targets: [Target.CommentAnswer],
                     name: "OP adding a new question as an answer",
                     description: "If you have another question, please ask it by clicking the ".concat(htmllink("/questions/ask", "Ask Question"), " button."),
                 },
                 {
+                    id: "default-7",
                     targets: [Target.CommentAnswer],
                     name: 'Another user adding a "Me too!"',
                     description: "If you have a ".concat(htmlem(__makeTemplateObject(["new"], ["new"])), " question, please ask it by clicking the ").concat(htmllink("/questions/ask", "Ask Question"), " button. If you have sufficient reputation, ").concat(htmllink("/privileges/vote-up", "you may upvote"), " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers."),
                 },
                 {
+                    id: "default-8",
                     targets: [Target.Closure],
                     name: "Too localized",
                     description: "This question appears to be off-topic because it is too localized.",
                 },
                 {
+                    id: "default-9",
                     targets: [Target.EditSummaryQuestion],
                     name: "Improper tagging",
                     description: "The tags you used are not appropriate for the question. Please review ".concat(htmllink("/help/tagging", "What are tags, and how should I use them?")),
@@ -596,6 +606,17 @@ window.addEventListener("load", function () {
                 }
                 svg.append(ttl);
                 return svg;
+            };
+            var getCommentTargetsFromName = function (name) {
+                var targets = [];
+                var _a = __read(/^\[([\w,]+?)\]\s+/i.exec(name) || [], 2), serialized = _a[1];
+                if (!serialized)
+                    return targets;
+                var mapped = serialized.split(",");
+                return __spreadArray(__spreadArray([], __read(targets), false), __read(mapped), false);
+            };
+            var trimCommentTargetFromName = function (name) {
+                return name.replace(/^\[([\w,]+?)\]\s+/, "");
             };
             var updateCurrentTab = function (tabs, active) {
                 tabs.forEach(function (_a) {
@@ -819,8 +840,8 @@ window.addEventListener("load", function () {
                 var loaded = loadComments();
                 var content = loaded
                     .map(function (_a) {
-                    var name = _a.name, description = _a.description;
-                    return "###".concat(name, "\n").concat(HTMLtoMarkdown(description));
+                    var name = _a.name, description = _a.description, targets = _a.targets;
+                    return "###[".concat(targets.join(","), "] ").concat(name, "\n").concat(HTMLtoMarkdown(description));
                 })
                     .join("\n\n");
                 area.value = content;
@@ -1362,27 +1383,39 @@ window.addEventListener("load", function () {
                 lsep.innerHTML = " | ";
                 return lsep;
             };
+            var areSameLength = function () {
+                var arrays = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    arrays[_i] = arguments[_i];
+                }
+                return new Set(arrays.map(function (a) { return a.length; })).size === 1;
+            };
             var importComments = function (text) {
                 var lines = text.split("\n");
                 var names = [];
                 var descs = [];
+                var targets = [];
                 lines.forEach(function (line) {
                     var ln = line.trim();
-                    if (ln.startsWith("#"))
-                        return names.push(ln.replace(/^#+/g, ""));
+                    if (ln.startsWith("#")) {
+                        var name_1 = ln.replace(/^#+/, "");
+                        names.push(name_1);
+                        targets.push(getCommentTargetsFromName(name_1));
+                        return;
+                    }
                     if (ln)
                         return descs.push(tag(ln));
                 });
-                var numNames = names.length;
-                var numDescs = descs.length;
-                debugLogger.log({ numNames: numNames, numDescs: numDescs });
-                if (numNames !== numDescs)
+                if (!areSameLength(names, descs, targets)) {
+                    debugLogger.log({ names: names, descs: descs, targets: targets });
                     return notify("Failed to import: titles and descriptions do not match", "danger");
+                }
                 var comments = names.map(function (name, idx) {
                     return {
                         id: idx.toString(),
-                        name: name,
-                        description: descs[idx]
+                        name: trimCommentTargetFromName(name),
+                        description: descs[idx],
+                        targets: getCommentTargetsFromName(name)
                     };
                 });
                 Store.save("comments", comments);
@@ -1514,14 +1547,15 @@ window.addEventListener("load", function () {
                 debugLogger.log("original ARC interop called");
                 var comments = [];
                 for (var i = 0; i < numComments; i++) {
-                    var name_1 = Store.load("name-".concat(i));
+                    var name_2 = Store.load("name-".concat(i));
                     var desc = Store.load("desc-".concat(i));
-                    if (!name_1 || !desc)
+                    if (!name_2 || !desc)
                         continue;
                     comments.push({
                         id: i.toString(),
-                        name: name_1,
-                        description: HTMLtoMarkdown(desc)
+                        name: trimCommentTargetFromName(name_2),
+                        description: HTMLtoMarkdown(desc),
+                        targets: getCommentTargetsFromName(name_2)
                     });
                 }
                 var status = Store.save("comments", comments);
@@ -1634,6 +1668,10 @@ window.addEventListener("load", function () {
                     }, text);
                 };
             };
+            var isCommentValidForTarget = function (comment, target) {
+                var targets = comment.targets;
+                return targets.includes(target);
+            };
             var updateComments = function (popup, target) {
                 var comments = loadComments();
                 if (!comments.length) {
@@ -1656,10 +1694,7 @@ window.addEventListener("load", function () {
                 var greeting = greet ? "".concat(replaceVars(welcome), " ") : "";
                 debugLogger.log(__assign({ comments: comments, target: target, greet: greet, welcome: welcome, greeting: greeting }, opts));
                 var listItems = comments
-                    .filter(function (_a) {
-                    var name = _a.name;
-                    return isCommentValidForTarget(name, target);
-                })
+                    .filter(function (comment) { return isCommentValidForTarget(comment, target); })
                     .map(function (_a) {
                     var name = _a.name, id = _a.id, description = _a.description;
                     var cname = name.replace(allTgtMatcher, "");
@@ -1668,10 +1703,6 @@ window.addEventListener("load", function () {
                 });
                 ul.append.apply(ul, __spreadArray([], __read(listItems), false));
                 toggleDescriptionVisibility(popup);
-            };
-            var isCommentValidForTarget = function (text, target) {
-                var _a = __read(text.match(allTgtMatcher) || [], 2), matched = _a[1];
-                return matched === target;
             };
             var matchText = function (source, term) {
                 var strict = term.startsWith("\"") && term.endsWith("\"");
@@ -1758,7 +1789,15 @@ window.addEventListener("load", function () {
                                 return [4, fetcher(url)];
                             case 1:
                                 remoteComments = _a.sent();
-                                comments = remoteComments.map(function (remoteComment, i) { return (__assign(__assign({}, remoteComment), { id: i.toString() })); });
+                                comments = remoteComments.map(function (_a, i) {
+                                    var description = _a.description, name = _a.name, targets = _a.targets;
+                                    return ({
+                                        description: description,
+                                        id: i.toString(),
+                                        name: trimCommentTargetFromName(name),
+                                        targets: targets || getCommentTargetsFromName(name)
+                                    });
+                                });
                                 Store.save("comments", comments);
                                 return [2];
                         }
