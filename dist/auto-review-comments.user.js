@@ -970,11 +970,17 @@ window.addEventListener("load", function () {
                     var target = _a.target;
                     runFromHashmap({
                         ".remote-json-get": function () { return __awaiter(void 0, void 0, void 0, function () {
+                            var url;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
+                                        url = jsonInput.value;
+                                        if (!url) {
+                                            notify("JSON remote URL is not provided", "warning");
+                                            return [2];
+                                        }
                                         getJSONbtn.classList.add("is-loading");
-                                        return [4, fetchFromRemote(scheme(jsonInput.value))];
+                                        return [4, fetchFromRemote(scheme(url))];
                                     case 1:
                                         _a.sent();
                                         updateComments(popup, commentTarget);
@@ -984,11 +990,17 @@ window.addEventListener("load", function () {
                             });
                         }); },
                         ".remote-jsonp-get": function () { return __awaiter(void 0, void 0, void 0, function () {
+                            var url;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
+                                        url = jsonpInput.value;
+                                        if (!url) {
+                                            notify("JSONP remote URL is not provided", "warning");
+                                            return [2];
+                                        }
                                         getJSONPbtn.classList.add("is-loading");
-                                        return [4, fetchFromRemote(scheme(jsonpInput.value), true)];
+                                        return [4, fetchFromRemote(scheme(url), true)];
                                     case 1:
                                         _a.sent();
                                         updateComments(popup, commentTarget);

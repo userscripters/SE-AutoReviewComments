@@ -1656,17 +1656,26 @@ window.addEventListener("load", () => {
                     runFromHashmap(
                         {
                             ".remote-json-get": async () => {
+                                const url = jsonInput.value;
+                                if (!url) {
+                                    notify("JSON remote URL is not provided", "warning");
+                                    return;
+                                }
+
                                 getJSONbtn.classList.add("is-loading");
-                                await fetchFromRemote(scheme(jsonInput.value));
+                                await fetchFromRemote(scheme(url));
                                 updateComments(popup, commentTarget);
                                 getJSONbtn.classList.remove("is-loading");
                             },
                             ".remote-jsonp-get": async () => {
+                                const url = jsonpInput.value;
+                                if (!url) {
+                                    notify("JSONP remote URL is not provided", "warning");
+                                    return;
+                                }
+
                                 getJSONPbtn.classList.add("is-loading");
-                                await fetchFromRemote(
-                                    scheme(jsonpInput.value),
-                                    true
-                                );
+                                await fetchFromRemote(scheme(url), true);
                                 updateComments(popup, commentTarget);
                                 getJSONPbtn.classList.remove("is-loading");
                             },
