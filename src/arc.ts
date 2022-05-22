@@ -336,7 +336,7 @@ window.addEventListener("load", () => {
                 static save<T>(key: string, val: T): boolean {
                     try {
                         const { prefix, storage } = this;
-                        storage.setItem(prefix + key, JSON.stringify(val));
+                        storage.setItem(prefix + key, typeof val !== "string" ? JSON.stringify(val) : val);
                         return true;
                     } catch (error) {
                         debugLogger.log(`failed to save: ${error}`);
@@ -1582,7 +1582,7 @@ window.addEventListener("load", () => {
                     document.getElementById<HTMLInputElement>(inputId);
                 if (!input) return false;
 
-                input.value = unscheme(Store.load(key) || "");
+                input.value = unscheme(Store.load(key, ""));
                 return true;
             };
 
@@ -1625,7 +1625,7 @@ window.addEventListener("load", () => {
                 wrap.id = id;
 
                 const initialScheme = "https://";
-                const initialURL = unscheme(Store.load(storeKeyJSONP) || "");
+                const initialURL = unscheme(Store.load(storeKeyJSONP, ""));
 
                 const inputWrap = el("div", "d-flex", "fd-column", "gs8");
 
@@ -2618,7 +2618,7 @@ window.addEventListener("load", () => {
                 Store.save("comments", comments);
 
                 return (
-                    ((Store.load("ShowGreeting") &&
+                    ((Store.load("ShowGreeting", false) &&
                         Store.load("WelcomeMessage", "")) ||
                         "") + untag(markdownToHTML(description))
                 );
@@ -2653,7 +2653,7 @@ window.addEventListener("load", () => {
                             classList.remove("action-selected")
                         );
 
-                        if (Store.load("hide-desc")) {
+                        if (Store.load("hide-desc", false)) {
                             popup
                                 .querySelectorAll<HTMLElement>(".action-desc")
                                 .forEach(hide);
@@ -2710,7 +2710,7 @@ window.addEventListener("load", () => {
                 const selectHandler = makeCommentClickHandler(popup);
 
                 popup.addEventListener("click", (event) => {
-                    const currView = Store.load("CurrentView");
+                    const currView = Store.load("CurrentView", "search-popup");
                     debugLogger.log({ currView, viewId });
                     if (currView !== viewId) return;
                     insertHandler(event);
@@ -2883,7 +2883,7 @@ window.addEventListener("load", () => {
              */
             const toggleDescriptionVisibility = (
                 popup: HTMLElement,
-                hidden = Store.load("hide-desc")
+                hidden = Store.load("hide-desc", false)
             ): void => {
                 popup
                     .querySelectorAll<HTMLElement>(
@@ -2988,15 +2988,18 @@ window.addEventListener("load", () => {
 
                 showPopup(popup);
 
+                const jsonURL = Store.load("RemoteUrl", "");
+                const jsonpURL = Store.load("remote_json", "");
+
                 //Auto-load from JSONP remote if enabled
-                if (Store.load("AutoRemote")) {
+                if (jsonpURL && Store.load("AutoRemote", false)) {
                     debugLogger.log(`autofetching JSONP remote`);
-                    await fetchFromRemote(Store.load("RemoteUrl"), true);
+                    await fetchFromRemote(jsonpURL, true);
                 }
 
-                if (Store.load("remote_json_auto")) {
+                if (jsonURL && Store.load("remote_json_auto", false)) {
                     debugLogger.log(`autofetching JSON remote`);
-                    await fetchFromRemote(Store.load("remote_json"));
+                    await fetchFromRemote(jsonURL);
                 }
 
                 //Get user info and inject

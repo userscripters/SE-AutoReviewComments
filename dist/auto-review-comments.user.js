@@ -282,7 +282,7 @@ window.addEventListener("load", function () {
                 Store.save = function (key, val) {
                     try {
                         var _a = this, prefix = _a.prefix, storage_1 = _a.storage;
-                        storage_1.setItem(prefix + key, JSON.stringify(val));
+                        storage_1.setItem(prefix + key, typeof val !== "string" ? JSON.stringify(val) : val);
                         return true;
                     }
                     catch (error) {
@@ -940,7 +940,7 @@ window.addEventListener("load", function () {
                 var input = document.getElementById(inputId);
                 if (!input)
                     return false;
-                input.value = unscheme(Store.load(key) || "");
+                input.value = unscheme(Store.load(key, ""));
                 return true;
             };
             var makeOnRemoteChange = function (storeKey, input) {
@@ -964,7 +964,7 @@ window.addEventListener("load", function () {
                 var wrap = el("div", "view");
                 wrap.id = id;
                 var initialScheme = "https://";
-                var initialURL = unscheme(Store.load(storeKeyJSONP) || "");
+                var initialURL = unscheme(Store.load(storeKeyJSONP, ""));
                 var inputWrap = el("div", "d-flex", "fd-column", "gs8");
                 var _a = __read(makeStacksURLInput(storeKeyJSON, initialScheme, {
                     label: "JSON source",
@@ -1600,7 +1600,7 @@ window.addEventListener("load", function () {
                     comments.push(toStore) :
                     comments.splice(commentIdx, 1, toStore);
                 Store.save("comments", comments);
-                return (((Store.load("ShowGreeting") &&
+                return (((Store.load("ShowGreeting", false) &&
                     Store.load("WelcomeMessage", "")) ||
                     "") + untag(markdownToHTML(description)));
             };
@@ -1623,7 +1623,7 @@ window.addEventListener("load", function () {
                         var classList = _a.classList;
                         return classList.remove("action-selected");
                     });
-                    if (Store.load("hide-desc")) {
+                    if (Store.load("hide-desc", false)) {
                         popup
                             .querySelectorAll(".action-desc")
                             .forEach(hide);
@@ -1661,7 +1661,7 @@ window.addEventListener("load", function () {
                 var insertHandler = makeQuickInsertHandler(popup);
                 var selectHandler = makeCommentClickHandler(popup);
                 popup.addEventListener("click", function (event) {
-                    var currView = Store.load("CurrentView");
+                    var currView = Store.load("CurrentView", "search-popup");
                     debugLogger.log({ currView: currView, viewId: viewId });
                     if (currView !== viewId)
                         return;
@@ -1755,7 +1755,7 @@ window.addEventListener("load", function () {
                 searchInput.addEventListener("search", callback);
             };
             var toggleDescriptionVisibility = function (popup, hidden) {
-                if (hidden === void 0) { hidden = Store.load("hide-desc"); }
+                if (hidden === void 0) { hidden = Store.load("hide-desc", false); }
                 popup
                     .querySelectorAll("li:not(.action-selected) .action-desc")
                     .forEach(function (d) { return (hidden ? hide(d) : show(d)); });
@@ -1828,7 +1828,7 @@ window.addEventListener("load", function () {
                 classList.remove("popup-closing", "popup-closed");
             };
             var autoLinkAction = function (where, target) { return __awaiter(void 0, void 0, void 0, function () {
-                var popup, userid, uinfo;
+                var popup, jsonURL, jsonpURL, userid, uinfo;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -1837,16 +1837,18 @@ window.addEventListener("load", function () {
                             if (!popup.isConnected)
                                 document.body.append(popup);
                             showPopup(popup);
-                            if (!Store.load("AutoRemote")) return [3, 2];
+                            jsonURL = Store.load("RemoteUrl", "");
+                            jsonpURL = Store.load("remote_json", "");
+                            if (!(jsonpURL && Store.load("AutoRemote", false))) return [3, 2];
                             debugLogger.log("autofetching JSONP remote");
-                            return [4, fetchFromRemote(Store.load("RemoteUrl"), true)];
+                            return [4, fetchFromRemote(jsonpURL, true)];
                         case 1:
                             _a.sent();
                             _a.label = 2;
                         case 2:
-                            if (!Store.load("remote_json_auto")) return [3, 4];
+                            if (!(jsonURL && Store.load("remote_json_auto", false))) return [3, 4];
                             debugLogger.log("autofetching JSON remote");
-                            return [4, fetchFromRemote(Store.load("remote_json"))];
+                            return [4, fetchFromRemote(jsonURL)];
                         case 3:
                             _a.sent();
                             _a.label = 4;
