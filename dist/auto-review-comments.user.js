@@ -448,11 +448,12 @@ window.addEventListener("load", function () {
                     ".".concat(arc, ".popup code {\n                    display: inline-block;\n                    margin: 1px;\n                    padding: 0px;\n                    background: none;\n                    border: 1px solid var(--black-200);\n                    border-radius: 2px;\n                    line-height: 1.5;\n                }"),
                 ].forEach(function (rule) { return sheet.insertRule(rule); });
             };
-            var makeTextInput = function (id, _a) {
-                var _b;
-                var _c = _a === void 0 ? {} : _a, _d = _c.value, value = _d === void 0 ? "" : _d, _e = _c.classes, classes = _e === void 0 ? [] : _e, _f = _c.placeholder, placeholder = _f === void 0 ? "" : _f, title = _c.title;
+            var makeTextInput = function (id, options) {
+                var _a;
+                if (options === void 0) { options = {}; }
+                var _b = options.value, value = _b === void 0 ? "" : _b, _c = options.classes, classes = _c === void 0 ? [] : _c, _d = options.placeholder, placeholder = _d === void 0 ? "" : _d, title = options.title;
                 var input = document.createElement("input");
-                (_b = input.classList).add.apply(_b, __spreadArray([], __read(classes), false));
+                (_a = input.classList).add.apply(_a, __spreadArray([], __read(classes), false));
                 input.type = "text";
                 input.id = input.name = id;
                 input.placeholder = placeholder;
@@ -461,11 +462,12 @@ window.addEventListener("load", function () {
                     input.title = title;
                 return input;
             };
-            var makeCheckbox = function (id, _a) {
-                var _b;
-                var _c = _a === void 0 ? {} : _a, _d = _c.checked, checked = _d === void 0 ? false : _d, _e = _c.classes, classes = _e === void 0 ? [] : _e;
+            var makeCheckbox = function (id, options) {
+                var _a;
+                if (options === void 0) { options = {}; }
+                var _b = options.checked, checked = _b === void 0 ? false : _b, _c = options.classes, classes = _c === void 0 ? [] : _c;
                 var input = document.createElement("input");
-                (_b = input.classList).add.apply(_b, __spreadArray([], __read(classes), false));
+                (_a = input.classList).add.apply(_a, __spreadArray([], __read(classes), false));
                 input.type = "checkbox";
                 input.id = input.name = id;
                 input.checked = checked;
@@ -481,8 +483,9 @@ window.addEventListener("load", function () {
                 (_a = el.classList).add.apply(_a, __spreadArray([], __read(classes), false));
                 return el;
             };
-            var makeStacksTextArea = function (id, _a) {
-                var _b = _a.label, label = _b === void 0 ? "" : _b, _c = _a.rows, rows = _c === void 0 ? 1 : _c, _d = _a.value, value = _d === void 0 ? "" : _d;
+            var makeStacksTextArea = function (id, options) {
+                if (options === void 0) { options = {}; }
+                var _a = options.label, label = _a === void 0 ? "" : _a, _b = options.rows, rows = _b === void 0 ? 1 : _b, _c = options.value, value = _c === void 0 ? "" : _c;
                 var wrap = el("div", "d-flex", "fd-column", "gs4", "gsy");
                 if (label) {
                     var lbl = el("label", "flex--item", "s-label");
@@ -515,9 +518,9 @@ window.addEventListener("load", function () {
                 svg.append(d);
                 return [svg, d];
             };
-            var makeStacksIconInput = function (id, icon, path, _a) {
-                if (_a === void 0) { _a = {}; }
-                var label = _a.label, _b = _a.classes, classes = _b === void 0 ? [] : _b, _c = _a.iconClasses, iconClasses = _c === void 0 ? [] : _c, _d = _a.inputClasses, inputClasses = _d === void 0 ? [] : _d, inputOptions = __rest(_a, ["label", "classes", "iconClasses", "inputClasses"]);
+            var makeStacksIconInput = function (id, icon, path, options) {
+                if (options === void 0) { options = {}; }
+                var label = options.label, _a = options.classes, classes = _a === void 0 ? [] : _a, _b = options.iconClasses, iconClasses = _b === void 0 ? [] : _b, _c = options.inputClasses, inputClasses = _c === void 0 ? [] : _c, inputOptions = __rest(options, ["label", "classes", "iconClasses", "inputClasses"]);
                 var wrap = el.apply(void 0, __spreadArray(["div", "ps-relative"], __read(classes), false));
                 if (label) {
                     var lbl = el("label", "flex--item", "s-label");
@@ -526,15 +529,15 @@ window.addEventListener("load", function () {
                     wrap.append(lbl);
                 }
                 var input = makeTextInput(id, __assign(__assign({}, inputOptions), { classes: __spreadArray(["s-input"], __read(inputClasses), false) }));
-                var _e = __read(makeStacksIcon.apply(void 0, __spreadArray([icon,
+                var _d = __read(makeStacksIcon.apply(void 0, __spreadArray([icon,
                     path,
-                    "s-input-icon"], __read(iconClasses), false)), 1), iconSVG = _e[0];
+                    "s-input-icon"], __read(iconClasses), false)), 1), iconSVG = _d[0];
                 wrap.append(input, iconSVG);
                 return [wrap, input];
             };
-            var makeStacksURLInput = function (id, schema, _a) {
-                if (_a === void 0) { _a = {}; }
-                var label = _a.label, inputOptions = __rest(_a, ["label"]);
+            var makeStacksURLInput = function (id, schema, options) {
+                if (options === void 0) { options = {}; }
+                var label = options.label, inputOptions = __rest(options, ["label"]);
                 var wrap = el("div", "d-flex", "gs4", "gsy", "fd-column");
                 if (label) {
                     var lbl = el("label", "flex--item", "s-label");
@@ -592,10 +595,11 @@ window.addEventListener("load", function () {
                     button.title = title;
                 return button;
             };
-            var makeStacksIconButton = function (icon, title, path, _a) {
-                var url = _a.url, _b = _a.classes, classes = _b === void 0 ? [] : _b;
+            var makeStacksIconButton = function (icon, title, path, options) {
+                if (options === void 0) { options = {}; }
+                var url = options.url, _a = options.classes, classes = _a === void 0 ? [] : _a;
                 var NS = "http://www.w3.org/2000/svg";
-                var _c = __read(makeStacksIcon.apply(void 0, __spreadArray([icon, path], __read(classes), false)), 2), svg = _c[0], d = _c[1];
+                var _b = __read(makeStacksIcon.apply(void 0, __spreadArray([icon, path], __read(classes), false)), 2), svg = _b[0], d = _b[1];
                 var ttl = document.createElementNS(NS, "title");
                 ttl.textContent = title;
                 if (url) {
@@ -640,7 +644,7 @@ window.addEventListener("load", function () {
                 debugLogger.log("switched to view: ".concat(view.id));
                 return view;
             }; };
-            var makeTabsView = function (popup, id, _postType) {
+            var makeTabsView = function (popup, id) {
                 if (makeTabsView.view)
                     return makeTabsView.view;
                 var wrap = el("div", "view", "d-flex", "ai-center", "jc-space-between");
@@ -690,11 +694,15 @@ window.addEventListener("load", function () {
                 var seeBtn = makeStacksIconButton("iconEye", "see through", "M9.06 3C4 3 1 9 1 9s3 6 8.06 6C14 15 17 9 17 9s-3-6-7.94-6zM9\n             13a4 4 0 110-8 4 4 0 0 1 0 8zm0-2a2 2 0 002-2 2 2 0 0 0-2-2 2\n             2 0 0 0-2 2 2 2 0 0 0 2 2z", { classes: iconClasses });
                 seeBtn.addEventListener("mouseenter", function () {
                     fadeTo(popup, 0.4);
-                    fadeOut(seeBtn.closest(".main"));
+                    var main = seeBtn.closest(".main");
+                    if (main)
+                        fadeOut(main);
                 });
                 seeBtn.addEventListener("mouseleave", function () {
                     fadeTo(popup, 1.0);
-                    fadeTo(seeBtn.closest(".main"), 1);
+                    var main = seeBtn.closest(".main");
+                    if (main)
+                        fadeTo(main, 1);
                 });
                 var info = makeStacksIconButton("iconInfo", "see info about ARC (v".concat(VERSION, ")"), "M9 1a8 8 0 110 16A8 8 0 019 1zm1 13V8H8v6h2zm0-8V4H8v2h2z", { url: GITHUB_URL, classes: iconClasses });
                 var closeWrap = el("div", "flex--item");
@@ -1113,11 +1121,12 @@ window.addEventListener("load", function () {
                 makeViewSwitcher(popup, viewsSel)(view);
                 return (makePopup.popup = popup);
             };
-            var span = function (text, _a) {
-                var _b;
-                var _c = _a.classes, classes = _c === void 0 ? [] : _c, _d = _a.unsafe, unsafe = _d === void 0 ? false : _d, _e = _a.title, title = _e === void 0 ? "" : _e;
+            var span = function (text, options) {
+                var _a;
+                if (options === void 0) { options = {}; }
+                var _b = options.classes, classes = _b === void 0 ? [] : _b, _c = options.unsafe, unsafe = _c === void 0 ? false : _c, _d = options.title, title = _d === void 0 ? "" : _d;
                 var el = document.createElement("span");
-                (_b = el.classList).add.apply(_b, __spreadArray([], __read(classes), false));
+                (_a = el.classList).add.apply(_a, __spreadArray([], __read(classes), false));
                 unsafe ? (el.innerHTML = text) : (el.innerText = text);
                 if (title)
                     el.title = title;
@@ -1301,8 +1310,8 @@ window.addEventListener("load", function () {
                 var deleted = question.querySelector(".owner .user-details");
                 return (getOP.op = (deleted && deleted.innerHTML) || "OP");
             };
-            var capitalize = function (str) {
-                return str[0].toUpperCase() + str.slice(1).toLowerCase();
+            var capitalize = function (text) {
+                return text[0].toUpperCase() + text.slice(1).toLowerCase();
             };
             var b = function (text) {
                 var strong = document.createElement("strong");
@@ -1321,23 +1330,23 @@ window.addEventListener("load", function () {
                 return a;
             };
             var text = function (data) { return document.createTextNode(data); };
-            var addUserInfo = function (_a) {
-                var _b;
-                var user_id = _a.user_id, creation_date = _a.creation_date, display_name = _a.display_name, last_access_date = _a.last_access_date, reputation = _a.reputation, user_type = _a.user_type;
+            var addUserInfo = function (userInfo) {
+                var _a;
                 var container = document.getElementById("userinfo");
                 if (!container)
                     return;
+                var user_id = userInfo.user_id, creation_date = userInfo.creation_date, display_name = userInfo.display_name, last_access_date = userInfo.last_access_date, reputation = userInfo.reputation, user_type = userInfo.user_type;
                 var newUserState = isNewUser(creation_date, reputation);
                 Store.save("ShowGreeting", newUserState);
                 if (newUserState) {
-                    (_b = container
-                        .querySelector(".action-desc")) === null || _b === void 0 ? void 0 : _b.prepend(Store.load("WelcomeMessage", ""));
+                    (_a = container
+                        .querySelector(".action-desc")) === null || _a === void 0 ? void 0 : _a.prepend(Store.load("WelcomeMessage", ""));
                 }
                 var userLink = link("/users/".concat(user_id), "");
                 userLink.append(b(display_name));
                 empty(container);
                 var relativeTimeClass = "relativetime";
-                var _c = __read([
+                var _b = __read([
                     creation_date,
                     last_access_date,
                 ].map(function (date) {
@@ -1353,7 +1362,7 @@ window.addEventListener("load", function () {
                     });
                     makeB(dateSpan);
                     return dateSpan;
-                }), 2), prettyCreation = _c[0], prettyLastSeen = _c[1];
+                }), 2), prettyCreation = _b[0], prettyLastSeen = _b[1];
                 container.append(capitalize(user_type), text(" user "), userLink, text(", joined "), prettyCreation, text(", last seen "), prettyLastSeen, text(", reputation "), b(shortenReputationNumber(reputation)));
             };
             var getUserInfo = function (userid) { return __awaiter(void 0, void 0, void 0, function () {
@@ -1655,9 +1664,9 @@ window.addEventListener("load", function () {
                     selectHandler(event);
                 });
             };
-            var makeVariableReplacer = function (_a) {
-                var myId = _a.myId, opName = _a.opName, site = _a.site, sitename = _a.sitename;
+            var makeVariableReplacer = function (options) {
                 return function (text) {
+                    var myId = options.myId, opName = options.opName, site = options.site, sitename = options.sitename;
                     var rules = {
                         SITENAME: sitename,
                         SITEURL: site,

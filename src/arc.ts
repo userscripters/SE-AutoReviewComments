@@ -56,6 +56,18 @@ type StackAPIBatchResponse<T> = {
     quota_remaining: number;
 };
 
+type SpanOptions = {
+    classes?: string[];
+    title?: string;
+    unsafe?: boolean;
+};
+
+type TextAreaOptions = {
+    label?: string;
+    rows?: number;
+    value?: string;
+};
+
 type TextInputOptions = {
     value?: string;
     title?: string;
@@ -64,9 +76,14 @@ type TextInputOptions = {
 };
 
 type StacksTextInputOptions = TextInputOptions & {
-    label?: string;
     iconClasses?: string[];
     inputClasses?: string[];
+    label?: string;
+};
+
+type StacksToggleOptions = {
+    state?: boolean,
+    type?: "prefixed" | "postfixed";
 };
 
 type CheckboxOptions = {
@@ -74,9 +91,14 @@ type CheckboxOptions = {
     classes?: string[];
 };
 
-type IconButtonOptions = {
-    url?: string;
+type ButtonOptions = {
     classes?: string[];
+    id?: string;
+};
+
+type IconButtonOptions = {
+    classes?: string[];
+    url?: string;
 };
 
 type StoredComment = { id: string, name: string; description: string; targets: Target[]; };
@@ -102,10 +124,9 @@ window.addEventListener("load", () => {
              * @summary measures real text width and returns the actual number of lines
              * @param text text to measure
              * @param font font shorthand property
-             * @param lineWidth maximum line width (in pixels)
-             * @returns {number}
+            * @param lineWidth maximum line width (in pixels)
              */
-            const getNumTextLines = (text: string, font: string, lineWidth: number) => {
+            const getNumTextLines = (text: string, font: string, lineWidth: number): number => {
                 const lines = text.split(/\r?\n/);
 
                 const canvas = document.createElement("canvas");
@@ -127,10 +148,9 @@ window.addEventListener("load", () => {
 
             /**
              * @summary centers the element
-             * @param {HTMLElement} element
-             * @returns {HTMLElement}
+             * @param element element to center
              */
-            const center = (element: HTMLElement) => {
+            const center = <T extends HTMLElement>(element: T): T => {
                 const { style } = element;
                 const update: Partial<CSSStyleDeclaration> = {
                     position: "fixed",
@@ -144,40 +164,36 @@ window.addEventListener("load", () => {
 
             /**
              * @summary hides an element
-             * @param {HTMLElement}
-             * @returns {HTMLElement}
+             * @param element element to hide
              */
-            const hide = (element: HTMLElement) =>
+            const hide = (element: HTMLElement): void =>
                 element.classList.add("d-none");
 
             /**
              * @summary shows an element
-             * @param {HTMLElement}
-             * @returns {HTMLElement}
+             * @param element element to show
              */
-            const show = (element: HTMLElement) =>
+            const show = (element: HTMLElement): void =>
                 element.classList.remove("d-none");
 
             /**
              * @summary empties a node
-             * @param {Node} node
-             * @returns {Node}
+             * @param node node to empty
              */
-            const empty = (node: Node) => {
+            const empty = <T extends Node>(node: T): T => {
                 while (node.firstChild) node.firstChild.remove();
                 return node;
             };
 
             /**
              * @summary gets an array of element siblings
-             * @param {HTMLElement} el
-             * @param {string} selector
-             * @returns {Element[]}
+             * @param el element to start from
+             * @param selector sibling selector
              */
             const siblings = <T extends Element[]>(
                 el: HTMLElement,
                 selector?: string
-            ) => {
+            ): T[number][] => {
                 const found: T[number][] = [];
                 let current: T[number] | null = el;
                 while ((current = current.nextElementSibling))
@@ -189,12 +205,11 @@ window.addEventListener("load", () => {
 
             /**
              * @summary fades element to provided opacity
-             * @param {HTMLElement} element
-             * @param {number} min
-             * @param {number} [speed]
-             * @returns {HTMLElement}
+             * @param element element to fade
+             * @param min minimum opacity
+             * @param speed speed of change
              */
-            const fadeTo = (element: HTMLElement, min: number, speed = 200) => {
+            const fadeTo = <T extends HTMLElement>(element: T, min: number, speed = 200): T => {
                 const { style } = element;
                 style.transitionProperty = "opacity";
                 style.transitionDuration = `${speed.toFixed(0)}ms`;
@@ -205,24 +220,22 @@ window.addEventListener("load", () => {
 
             /**
              * @summary fades out an element
-             * @param {HTMLElement} el
-             * @param {number} [speed]
-             * @returns {HTMLElement}
+             * @param el element to fade out
+             * @param speed speed of change
              */
-            const fadeOut = (el: HTMLElement, speed = 200) =>
+            const fadeOut = <T extends HTMLElement>(el: T, speed = 200): T =>
                 fadeTo(el, 0, speed);
 
             /**
              * @summary Return "s" if the word should be pluralised
-             * @param {number} count amount
+             * @param count amount
              */
-            const pluralise = (count: number) => (count === 1 ? "" : "s");
+            const pluralise = (count: number): string => (count === 1 ? "" : "s");
 
             /**
              * @summary finds and runs a handler from a hashmap
-             * @param {Record<string, (...args: any[]) => any>} hashmap key -> val lookup
-             * @param {(key: string) => boolean} comparator comparator function
-             * @returns {any}
+             * @param hashmap key -> val lookup
+             * @param comparator comparator function
              */
             const runFromHashmap = <
                 U extends Record<string, (...args: any[]) => any>
@@ -279,8 +292,7 @@ window.addEventListener("load", () => {
 
                 /**
                  * @summary clears storage
-                 * @param {string} startsWith
-                 * @returns {void}
+                 * @param startsWith text the key must start with
                  */
                 static clear(startsWith: string): void {
                     const { numKeys, prefix, storage } = this;
@@ -518,9 +530,8 @@ window.addEventListener("load", () => {
 
             /**
              * @summary injects ARC-specific CSS into the page
-             * @returns {void}
              */
-            const addStyles = () => {
+            const addStyles = (): void => {
                 const style = document.createElement("style");
                 document.head.append(style);
                 const { sheet } = style;
@@ -637,19 +648,20 @@ window.addEventListener("load", () => {
 
             /**
              * @summary helper function for creating text inputs
-             * @param {string} id input id (also sets the name)
-             * @param {TextInputOptions} [options]
-             * @returns {HTMLInputElement}
+             * @param id input id (also sets the name)
+             * @param options configuration options
              */
             const makeTextInput = (
                 id: string,
-                {
+                options: TextInputOptions = {}
+            ): HTMLInputElement => {
+                const {
                     value = "",
                     classes = [],
                     placeholder = "",
                     title,
-                }: TextInputOptions = {}
-            ) => {
+                } = options;
+
                 const input = document.createElement("input");
                 input.classList.add(...classes);
                 input.type = "text";
@@ -663,14 +675,15 @@ window.addEventListener("load", () => {
 
             /**
              * @summary helper function for creating checkboxes
-             * @param {string} id input id (also sets the name)
-             * @param {CheckboxOptions} [options]
-             * @returns {HTMLInputElement}
+             * @param id input id (also sets the name)
+             * @param options configuration options
              */
             const makeCheckbox = (
                 id: string,
-                { checked = false, classes = [] }: CheckboxOptions = {}
+                options: CheckboxOptions = {}
             ) => {
+                const { checked = false, classes = [] } = options;
+
                 const input = document.createElement("input");
                 input.classList.add(...classes);
                 input.type = "checkbox";
@@ -679,6 +692,11 @@ window.addEventListener("load", () => {
                 return input;
             };
 
+            /**
+             * @summary creates an element by tag and class list
+             * @param tag element's tag name
+             * @param classes list of CSS class names
+             */
             const el = <T extends keyof HTMLElementTagNameMap>(
                 tag: T,
                 ...classes: string[]
@@ -688,24 +706,20 @@ window.addEventListener("load", () => {
                 return el;
             };
 
-            type TextAreaOptions = {
-                value?: string;
-                rows?: number;
-                label?: string;
-            };
 
             /**
              * {@link https://stackoverflow.design/product/components/textarea/}
              *
              * @summary creates a Stacks textarea
-             * @param {string} id textarea id (also sets the name)
-             * @param {TextAreaOptions} options textarea options
-             * @returns {[HTMLDivElement, HTMLTextAreaElement]}
+             * @param id textarea id (also sets the name)
+             * @param options textarea options
              */
             const makeStacksTextArea = (
                 id: string,
-                { label = "", rows = 1, value = "" }: TextAreaOptions
-            ) => {
+                options: TextAreaOptions = {}
+            ): [HTMLDivElement, HTMLTextAreaElement] => {
+                const { label = "", rows = 1, value = "" } = options;
+
                 const wrap = el("div", "d-flex", "fd-column", "gs4", "gsy");
 
                 if (label) {
@@ -721,21 +735,20 @@ window.addEventListener("load", () => {
                 area.rows = rows;
                 wrap.append(area);
 
-                return [wrap, area] as const;
+                return [wrap, area];
             };
 
             /**
              * @summary helper function for making Stacks icons
-             * @param {string} icon icon class name
-             * @param {string} path icons path to set
-             * @param {...string} classes list of classes to set
-             * @returns {[SVGSVGElement, SVGPathElement]}
+             * @param icon icon class name
+             * @param path icons path to set
+             * @param classes list of classes to set
              */
             const makeStacksIcon = (
                 icon: string,
                 path: string,
                 ...classes: string[]
-            ) => {
+            ): [SVGSVGElement, SVGPathElement] => {
                 const NS = "http://www.w3.org/2000/svg";
                 const svg = document.createElementNS(NS, "svg");
                 svg.classList.add("svg-icon", icon, ...classes);
@@ -755,24 +768,25 @@ window.addEventListener("load", () => {
              * {@link https://stackoverflow.design/product/components/inputs/#icons}
              *
              * @summary creates a Stacks text input with an icon
-             * @param {string} id input id (also sets the name)
-             * @param {string} icon icons class to set
-             * @param {string} path icon path to set
-             * @param {StacksTextInputOptions} [options] text input options
-             * @returns {[HTMLDivElement, HTMLInputElement]}
+             * @param id input id (also sets the name)
+             * @param icon icons class to set
+             * @param path icon path to set
+             * @param options text input options
              */
             const makeStacksIconInput = (
                 id: string,
                 icon: string,
                 path: string,
-                {
+                options: StacksTextInputOptions = {}
+            ): [HTMLDivElement, HTMLInputElement] => {
+                const {
                     label,
                     classes = [],
                     iconClasses = [],
                     inputClasses = [],
                     ...inputOptions
-                }: StacksTextInputOptions = {}
-            ) => {
+                } = options;
+
                 const wrap = el("div", "ps-relative", ...classes);
 
                 if (label) {
@@ -795,23 +809,24 @@ window.addEventListener("load", () => {
                 );
                 wrap.append(input, iconSVG);
 
-                return [wrap, input] as const;
+                return [wrap, input];
             };
 
             /**
              * {@link https://stackoverflow.design/product/components/inputs/#input-fills}
              *
              * @summary creates a Stacks URL input
-             * @param {string} id input id (also sets the name)
-             * @param {string} schema URL schema (http://, https://, or custom)
-             * @param {StacksTextInputOptions} [options] text input options
-             * @returns {[HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLInputElement]}
+             * @param id input id (also sets the name)
+             * @param schema URL schema (http://, https://, or custom)
+             * @param options text input options
              */
             const makeStacksURLInput = (
                 id: string,
                 schema: string,
-                { label, ...inputOptions }: StacksTextInputOptions = {}
-            ) => {
+                options: StacksTextInputOptions = {}
+            ): [HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLInputElement] => {
+                const { label, ...inputOptions } = options;
+
                 const wrap = el("div", "d-flex", "gs4", "gsy", "fd-column");
 
                 if (label) {
@@ -841,23 +856,22 @@ window.addEventListener("load", () => {
                 iinput.append(input);
                 iwrap.append(ischema, iinput);
                 wrap.append(iwrap);
-                return [wrap, iwrap, iinput, input] as const;
+                return [wrap, iwrap, iinput, input];
             };
 
             /**
              * {@link https://stackoverflow.design/product/components/checkbox/}
              *
              * @summary creates a Stacks checkbox
-             * @param {string} id input id (also sets the name)
-             * @param {string} label checkbox label
-             * @param {boolean} [state] initial checkbox state
-             * @returns {[HTMLDivElement, HTMLInputElement]}
+             * @param id input id (also sets the name)
+             * @param label checkbox label
+             * @param state initial checkbox state
              */
             const makeStacksCheckbox = (
                 id: string,
                 label: string,
                 state = false
-            ) => {
+            ): [HTMLFieldSetElement, HTMLInputElement] => {
                 const fset = el("fieldset", "d-flex", "gs8");
 
                 const iwrap = el("div", "flex--item");
@@ -873,7 +887,7 @@ window.addEventListener("load", () => {
 
                 iwrap.append(input);
                 fset.append(iwrap, lbl);
-                return [fset, input] as const;
+                return [fset, input];
             };
 
             /**
@@ -887,7 +901,7 @@ window.addEventListener("load", () => {
             const makeStacksToggle = (
                 id: string,
                 label: string,
-                options: { state?: boolean, type?: "prefixed" | "postfixed"; } = {},
+                options: StacksToggleOptions = {},
             ): [HTMLDivElement, HTMLInputElement] => {
                 const { state = false, type = "postfixed" } = options;
 
@@ -919,7 +933,7 @@ window.addEventListener("load", () => {
             const makeButton = (
                 text: string,
                 title: string,
-                options: { id?: string; classes?: string[]; } = {}
+                options: ButtonOptions = {}
             ): HTMLButtonElement => {
                 const { id, classes = [] } = options;
 
@@ -934,18 +948,19 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes an info button icon
-             * @param {string} icon icon class name
-             * @param {string} title link title
-             * @param {string} path icon path
-             * @param {IconButtonOptions} options button creation options
-             * @returns {SVGSVGElement}
+             * @param icon icon class name
+             * @param title link title
+             * @param path icon path
+             * @param options button creation options
              */
             const makeStacksIconButton = (
                 icon: string,
                 title: string,
                 path: string,
-                { url, classes = [] }: IconButtonOptions
-            ) => {
+                options: IconButtonOptions = {}
+            ): SVGSVGElement => {
+                const { url, classes = [] } = options;
+
                 const NS = "http://www.w3.org/2000/svg";
                 const [svg, d] = makeStacksIcon(icon, path, ...classes);
 
@@ -996,7 +1011,7 @@ window.addEventListener("load", () => {
              * @param tabs list of tab buttons
              * @param active new active tab button
              */
-            const updateCurrentTab = (tabs: HTMLElement[], active?: HTMLElement) => {
+            const updateCurrentTab = (tabs: HTMLElement[], active?: HTMLElement): void => {
                 tabs.forEach(({ classList }) => classList.remove("is-selected"));
                 active?.classList.add("is-selected");
             };
@@ -1027,12 +1042,11 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes tabs view
-             * @param {HTMLElement} popup wrapper popup
-             * @param {string} id actions wrapper id
-             * @param {PostType} postType parent post type
-             * @returns {HTMLElement}
+             * @param popup wrapper popup
+             * @param id actions wrapper id
+
              */
-            const makeTabsView: ViewMaker = (popup, id, _postType) => {
+            const makeTabsView: ViewMaker = (popup, id) => {
                 if (makeTabsView.view) return makeTabsView.view;
 
                 const wrap = el(
@@ -1135,12 +1149,14 @@ window.addEventListener("load", () => {
 
                 seeBtn.addEventListener("mouseenter", () => {
                     fadeTo(popup, 0.4);
-                    fadeOut(seeBtn.closest(".main")!);
+                    const main = seeBtn.closest<HTMLElement>(".main");
+                    if (main) fadeOut(main);
                 });
 
                 seeBtn.addEventListener("mouseleave", () => {
                     fadeTo(popup, 1.0);
-                    fadeTo(seeBtn.closest(".main")!, 1);
+                    const main = seeBtn.closest<HTMLElement>(".main");
+                    if (main) fadeTo(main, 1);
                 });
 
                 const info = makeStacksIconButton(
@@ -1257,9 +1273,8 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes the search view
-             * @param {HTMLElement} popup wrapper popup
-             * @param {string} id view id
-             * @returns {HTMLElement}
+             * @param popup wrapper popup
+             * @param id view id
              */
             const makeSearchView: ViewMaker = (popup, id) => {
                 if (makeSearchView.view) return makeSearchView.view;
@@ -1432,10 +1447,9 @@ window.addEventListener("load", () => {
 
             /**
              * @summary Show textarea in front of popup to import/export all comments (for other sites or for posting somewhere)
-             * @param {HTMLElement} popup wrapper popup
-             * @param {string} id view id
-             * @param {PostType} postType parent post type
-             * @returns {HTMLElement}
+             * @param popup wrapper popup
+             * @param id view id
+             * @param postType parent post type
              */
             const makeImpExpView: ViewMaker = (popup, id, postType) => {
                 if (makeImpExpView.view)
@@ -1541,26 +1555,23 @@ window.addEventListener("load", () => {
 
             /**
              * @summary prepend schema to URL
-             * @param {string} url target URL
-             * @returns {string}
+             * @param url target URL
              */
-            const scheme = (url: string) =>
+            const scheme = (url: string): string =>
                 /^https?:\/\//.test(url) ? url : `https://${url}`;
 
             /**
              * @summary remove schema from URL
-             * @param {string} url target URL
-             * @returns {string}
+             * @param url target URL
              */
-            const unscheme = (url: string) => url.replace(/^https?:\/\//, "");
+            const unscheme = (url: string): string => url.replace(/^https?:\/\//, "");
 
             /**
              * @summary updates remote URL
-             * @param {string} key store key for the remote URL
-             * @param {string} inputId id of the remote input
-             * @returns {boolean}
+             * @param key store key for the remote URL
+             * @param inputId id of the remote input
              */
-            const updateRemoteURL = (key: string, inputId: string) => {
+            const updateRemoteURL = (key: string, inputId: string): boolean => {
                 const input =
                     document.getElementById<HTMLInputElement>(inputId);
                 if (!input) return false;
@@ -1571,9 +1582,8 @@ window.addEventListener("load", () => {
 
             /**
              * @summary factory for remote change listeners
-             * @param {string} storeKey key to store URL under
-             * @param {HTMLInputElement} input URL input to get value from
-             * @returns {EventListener}
+             * @param storeKey key to store URL under
+             * @param input URL input to get value from
              */
             const makeOnRemoteChange =
                 (storeKey: string, input: HTMLInputElement): EventListener =>
@@ -1838,13 +1848,15 @@ window.addEventListener("load", () => {
 
             /**
              * @summary creates a <span> element
-             * @param {string} text
-             * @param {{ unsafe ?: boolean, classes ?: string[] }} options
+             * @param text text of the element
+             * @param options configuration options
              */
             const span = (
                 text: string,
-                { classes = [] as string[], unsafe = false, title = "" }
+                options: SpanOptions = {}
             ) => {
+                const { classes = [], unsafe = false, title = "" } = options;
+
                 const el = document.createElement("span");
                 el.classList.add(...classes);
                 unsafe ? (el.innerHTML = text) : (el.innerText = text);
@@ -1943,8 +1955,7 @@ window.addEventListener("load", () => {
 
             /**
              * @summmary Get the absolute date, inspired from friendlyTime, https://dev.stackoverflow.com/content/Js/full.en.js
-             * @param {number} epochSeconds Epoch seconds of the date to convert
-             * @returns {string}
+             * @param epochSeconds Epoch seconds of the date to convert
              */
             const absoluteTime = (epochSeconds: number) => {
                 const pad = (number: number) =>
@@ -1976,8 +1987,7 @@ window.addEventListener("load", () => {
             /**
              * @summary Calculate and format datespan for "Last seen ..." and "joined ...",
              *          see prettyDate in SE's JS: https://dev.stackoverflow.com/content/Js/full.en.js
-             * @param {number} date
-             * @returns {string}
+             * @param dateSeconds date to prettify (seconds since *nix epoch)
              */
             const prettifyDate = (dateSeconds: number) => {
                 const diff = new Date().getTime() / 1000 - dateSeconds;
@@ -2020,8 +2030,7 @@ window.addEventListener("load", () => {
 
             /**
              * @summary Format reputation string, https://stackoverflow.com/a/17633552
-             * @param {number} reputationNumber
-             * @returns {string}
+             * @param reputationNumber total rep points
              */
             const shortenReputationNumber = (reputationNumber: number) => {
                 const ranges = [
@@ -2042,28 +2051,25 @@ window.addEventListener("load", () => {
 
             /**
              * @summary Get the Id of the logged-in user
-             * @param {typeof StackExchage} se
-             * @returns {string}
+             * @param se global {@link StackExchange} object
              */
-            const getLoggedInUserId = (se: typeof StackExchange) =>
+            const getLoggedInUserId = (se: typeof StackExchange): string =>
                 se.options.user.userId?.toString() || "";
 
             /**
              * @summary shows a message
-             * @param {string} toastBody
-             * @param {ToastTypes} type
-             * @returns {void}
+             * @param toastBody toast content
+             * @param type type of toast
              */
-            const notify = (toastBody: string, type: ToastTypes) => {
+            const notify = (toastBody: string, type: ToastTypes): void => {
                 StackExchange.helpers.showToast(toastBody, { type });
             };
 
             /**
              * @summary gets user Id
-             * @param {HTMLInputElement} tgt element to insert comment in
-             * @returns {string}
+             * @param tgt element to insert comment in
              */
-            const getUserId = (tgt: HTMLElement) => {
+            const getUserId = (tgt: HTMLElement): string => {
                 const parent =
                     tgt.closest(".answer") || tgt.closest(".question");
                 if (!parent) return "";
@@ -2085,7 +2091,7 @@ window.addEventListener("load", () => {
             const isNewUser = (
                 creation_date: number,
                 reputation: number
-            ) => {
+            ): boolean => {
                 return [
                     Date.now() / 1000 - creation_date < timeUnits.month,
                     reputation < 10
@@ -2095,8 +2101,7 @@ window.addEventListener("load", () => {
             /**
              * @summary get original poster username
              * @description memoizable getter for poster name
-             * @param {boolean} [refresh]
-             * @returns {string}
+             * @param refresh should update data?
              */
             const getOP: opGetter = (refresh = false) => {
                 if (getOP.op && !refresh) return getOP.op;
@@ -2117,18 +2122,16 @@ window.addEventListener("load", () => {
 
             /**
              * @summary properly capitalizes a word
-             * @param {string} str
-             * @returns {string}
+             * @param text text to capitalize
              */
-            const capitalize = (str: string) =>
-                str[0].toUpperCase() + str.slice(1).toLowerCase();
+            const capitalize = (text: string): string =>
+                text[0].toUpperCase() + text.slice(1).toLowerCase();
 
             /**
              * @summary wraps text into a <strong> element
-             * @param {string} text
-             * @returns {HTMLElement}
+             * @param text text to wrap
              */
-            const b = (text: string) => {
+            const b = (text: string): HTMLElement => {
                 const strong = document.createElement("strong");
                 strong.innerHTML = text;
                 return strong;
@@ -2136,19 +2139,17 @@ window.addEventListener("load", () => {
 
             /**
              * @summary Add font-weight: bold to passed element
-             * @param {HTMLElement} element The element
-             * @returns {void}
+             * @param element The element
              */
-            const makeB = (element: HTMLElement) =>
+            const makeB = (element: HTMLElement): void =>
                 element.classList.add("fw-bold");
 
             /**
              * @summary creates an <a> element
-             * @param {string} url
-             * @param {string} [label]
-             * @returns {HTMLAnchorElement}
+             * @param url resource URL
+             * @param label anchor label
              */
-            const link = (url: string, label = url) => {
+            const link = (url: string, label = url): HTMLAnchorElement => {
                 const a = document.createElement("a");
                 a.href = url;
                 a.target = "_blank";
@@ -2158,25 +2159,26 @@ window.addEventListener("load", () => {
 
             /**
              * @summary creates a text node
-             * @param {string} data
-             * @returns {Text}
+             * @param data node content
              */
-            const text = (data: string) => document.createTextNode(data);
+            const text = (data: string): Text => document.createTextNode(data);
 
             /**
              * @summary adds user info to the UI
-             * @param userInfo
+             * @param userInfo {@link StackExchangeAPI.User} object
              */
-            const addUserInfo = ({
-                user_id,
-                creation_date,
-                display_name,
-                last_access_date,
-                reputation,
-                user_type,
-            }: StackExchangeAPI.User) => {
+            const addUserInfo = (userInfo: StackExchangeAPI.User): void => {
                 const container = document.getElementById("userinfo");
                 if (!container) return;
+
+                const {
+                    user_id,
+                    creation_date,
+                    display_name,
+                    last_access_date,
+                    reputation,
+                    user_type,
+                } = userInfo;
 
                 const newUserState = isNewUser(creation_date, reputation);
 
@@ -2255,9 +2257,8 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes a separator <span>
-             * @returns {HTMLSpanElement}
              */
-            const makeSeparator = () => {
+            const makeSeparator = (): HTMLSpanElement => {
                 const lsep = document.createElement("span");
                 lsep.classList.add("lsep");
                 lsep.innerHTML = " | ";
@@ -2268,7 +2269,7 @@ window.addEventListener("load", () => {
              * @summary checks if all arrays are of the same length
              * @param arrays list of arrays to check
              */
-            const areSameLength = (...arrays: unknown[][]) => {
+            const areSameLength = (...arrays: unknown[][]): boolean => {
                 return new Set(arrays.map((a) => a.length)).size === 1;
             };
 
@@ -2342,10 +2343,9 @@ window.addEventListener("load", () => {
 
             /**
              * @summary unescapes HTML entities
-             * @param {string} html
-             * @returns {string}
+             * @param html HTML string to unescape
              */
-            const unescapeHtml = (html: string) =>
+            const unescapeHtml = (html: string): string =>
                 Object.entries(entityMapFromHtml).reduce(
                     (acc, [k, v]) => acc.replace(new RegExp(k, "g"), v),
                     String(html)
@@ -2353,10 +2353,9 @@ window.addEventListener("load", () => {
 
             /**
              * @summary changes HTML to Markdown
-             * @param {string} html
-             * @returns {string}
+             * @param html HTML to Markdownify
              */
-            const HTMLtoMarkdown = (html: string) =>
+            const HTMLtoMarkdown = (html: string): string =>
                 unescapeHtml(
                     html
                         .replace(/<a href="(.+?)".+?>(.+?)<\/a>/g, "[$2]($1)")
@@ -2391,10 +2390,9 @@ window.addEventListener("load", () => {
 
             /**
              * @summary untags the comment text
-             * @param {string} text
-             * @returns {string}
+             * @param text comment text to untag
              */
-            const untag = (text: string) =>
+            const untag = (text: string): string =>
                 text
                     .replace(/\$SITENAME\$/g, sitename)
                     .replace(/\$SITEURL\$/g, site)
@@ -2421,8 +2419,9 @@ window.addEventListener("load", () => {
              * @summary finalizes the edit mode (save or cancel)
              * @param popup wrapper popup
              * @param commentElem comment item container
+             * @param value comment text to display
              */
-            const closeEditMode = (popup: HTMLElement, commentElem: HTMLElement, value: string) => {
+            const closeEditMode = (popup: HTMLElement, commentElem: HTMLElement, value: string): void => {
                 empty(commentElem);
                 commentElem.innerHTML = value;
                 commentElem.closest("li")!.querySelector("input")!.disabled =
@@ -2443,7 +2442,7 @@ window.addEventListener("load", () => {
             const openEditMode = (
                 commentElem: HTMLElement,
                 popup: HTMLElement
-            ) => {
+            ): void => {
                 const {
                     id,
                     dataset,
@@ -2621,11 +2620,10 @@ window.addEventListener("load", () => {
 
             /**
              * @summary switches currently selected comment
-             * @param {HTMLElement} popup wrapper popup
-             * @param {HTMLLIElement} action comment item
-             * @returns {void}
+             * @param popup wrapper popup
+             * @param action comment item
              */
-            const switchSelectedComment = (popup: HTMLElement, action: HTMLLIElement) => {
+            const switchSelectedComment = (popup: HTMLElement, action: HTMLLIElement): void => {
                 const acts = popup.querySelector(".action-list");
                 acts?.querySelectorAll("li").forEach(({ classList }) =>
                     classList.remove("action-selected")
@@ -2635,8 +2633,7 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes the comment click handler (selecting comments)
-             * @param {HTMLElement} popup wrapper popup
-             * @returns {EventListener}
+             * @param popup wrapper popup
              */
             const makeCommentClickHandler =
                 (popup: HTMLElement): EventListener =>
@@ -2717,15 +2714,16 @@ window.addEventListener("load", () => {
 
             /**
              * @summary replaces variables with dynamic substitutions
-             * @param {VarsReplacerOptions} options
+             * @param options configuration options
              */
             const makeVariableReplacer =
-                ({ myId, opName, site, sitename }: VarsReplacerOptions) =>
+                (options: VarsReplacerOptions) =>
                     /**
-                     * @param {string} text text with user variables
-                     * @returns {string}
+                     * @param text text with user variables
                      */
-                    (text: string) => {
+                    (text: string): string => {
+                        const { myId, opName, site, sitename } = options;
+
                         const rules: Record<string, string> = {
                             SITENAME: sitename,
                             SITEURL: site,
@@ -2748,7 +2746,7 @@ window.addEventListener("load", () => {
              * @param comment {@link StoredComment} to match
              * @param target {@link Target} to match
              */
-            const isCommentValidForTarget = (comment: StoredComment, target: Target) => {
+            const isCommentValidForTarget = (comment: StoredComment, target: Target): boolean => {
                 const { targets } = comment;
                 return targets.includes(target);
             };
@@ -2853,13 +2851,12 @@ window.addEventListener("load", () => {
 
             /**
              * @summary sets up search event handlers
-             * @param {HTMLElement} popup wrapper popup
-             * @returns {void}
+             * @param popup wrapper popup
              */
             const setupSearchHandlers = (
                 popup: HTMLElement,
                 searchInput: HTMLInputElement
-            ) => {
+            ): void => {
                 const callback: EventListener = ({ target }) =>
                     setTimeout(() => {
                         const { value } = <HTMLInputElement>target;
@@ -2875,14 +2872,13 @@ window.addEventListener("load", () => {
 
             /**
              * @summary Adjust the descriptions so they show or hide based on the user's preference.
-             * @param {HTMLElement} popup
-             * @param {boolean} [hidden]
-             * @returns {void}
+             * @param popup wrapper popup
+             * @param hidden is hidden?
              */
             const toggleDescriptionVisibility = (
                 popup: HTMLElement,
                 hidden = Store.load("hide-desc")
-            ) => {
+            ): void => {
                 popup
                     .querySelectorAll<HTMLElement>(
                         "li:not(.action-selected) .action-desc"
@@ -2892,9 +2888,8 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes a JSONP request
-             * @param {string} url resource URL
-             * @param {string} [callbackName] JSONP callback name
-             * @returns {Promise<object>} response
+             * @param url resource URL
+             * @param callbackName JSONP callback name
              */
             const getJSONP = <T>(
                 url: string,
@@ -2928,8 +2923,7 @@ window.addEventListener("load", () => {
 
             /**
              * @summary makes a request for JSON data
-             * @param {string} url resource URL
-             * @returns {Promise<object>} response
+             * @param url resource URL
              */
             const getJSON = async <T>(url: string): Promise<T> => {
                 const res = await fetch(url);
@@ -2939,7 +2933,7 @@ window.addEventListener("load", () => {
             /**
              * @summary loads comments from a remote source
              * @param url remore URL to fetch from
-             * @param [isJSONP] JSONP switch
+             * @param isJSONP JSONP switch
              */
             const fetchFromRemote = async (url: string, isJSONP = false): Promise<void> => {
                 debugLogger.log({ isJSONP });
@@ -2961,10 +2955,9 @@ window.addEventListener("load", () => {
 
             /**
              * @summary shows the popup (prevents SE overrides)
-             * @param {HTMLElement} popup
-             * @returns {void}
+             * @param popup wrapper popup
              */
-            const showPopup = (popup: HTMLElement) => {
+            const showPopup = (popup: HTMLElement): void => {
                 show(popup);
                 fadeTo(popup, 1);
                 const { style, classList } = popup;
@@ -3025,7 +3018,7 @@ window.addEventListener("load", () => {
             const waitFor = <T extends Element>(
                 selector: string,
                 context: Element | Document = document
-            ) => {
+            ): Promise<T> => {
                 return new Promise<T>((resolve) => {
                     const element = context.querySelector<T>(selector);
                     if (element) resolve(element);
@@ -3056,7 +3049,7 @@ window.addEventListener("load", () => {
                 selector: string,
                 context: Element,
                 callback: (matched: T[]) => void
-            ) => {
+            ): void => {
                 const observerCallback = () => {
                     const collection = context.querySelectorAll<T>(selector);
                     if (collection.length) callback([...collection]);
@@ -3090,7 +3083,7 @@ window.addEventListener("load", () => {
                 locator: Locator<T>,
                 injector: Injector,
                 actor: Actor
-            ) => {
+            ): Promise<void> => {
                 const content = document.getElementById("content");
                 if (!content) {
                     debugLogger.log("missing main content");
