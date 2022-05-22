@@ -316,7 +316,9 @@ window.addEventListener("load", () => {
                 static load<T>(key: string, def?: T): T {
                     const { prefix, storage } = this;
                     const val = storage.getItem(prefix + key);
-                    return val ? JSON.parse(val) : def;
+                    return val ? typeof def === "string" ?
+                        val : JSON.parse(val) :
+                        def;
                 }
 
                 static save<T>(key: string, val: T): boolean {
@@ -2544,8 +2546,8 @@ window.addEventListener("load", () => {
                 const comments: StoredComment[] = [];
 
                 for (let i = 0; i < numComments; i++) {
-                    const name = Store.load<string>(`name-${i}`);
-                    const desc = Store.load<string>(`desc-${i}`);
+                    const name = Store.load<string>(`name-${i}`, "");
+                    const desc = Store.load<string>(`desc-${i}`, "");
 
                     if (!name || !desc) continue;
 

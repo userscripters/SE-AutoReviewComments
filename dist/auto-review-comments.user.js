@@ -275,7 +275,9 @@ window.addEventListener("load", function () {
                 Store.load = function (key, def) {
                     var _a = this, prefix = _a.prefix, storage = _a.storage;
                     var val = storage.getItem(prefix + key);
-                    return val ? JSON.parse(val) : def;
+                    return val ? typeof def === "string" ?
+                        val : JSON.parse(val) :
+                        def;
                 };
                 Store.save = function (key, val) {
                     try {
@@ -1547,8 +1549,8 @@ window.addEventListener("load", function () {
                 debugLogger.log("original ARC interop called");
                 var comments = [];
                 for (var i = 0; i < numComments; i++) {
-                    var name_2 = Store.load("name-".concat(i));
-                    var desc = Store.load("desc-".concat(i));
+                    var name_2 = Store.load("name-".concat(i), "");
+                    var desc = Store.load("desc-".concat(i), "");
                     if (!name_2 || !desc)
                         continue;
                     comments.push({
