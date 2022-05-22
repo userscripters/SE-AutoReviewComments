@@ -847,11 +847,16 @@ window.addEventListener("load", function () {
             };
             var updateImpExpComments = function (view) {
                 var area = view.querySelector("textarea");
+                if (!area) {
+                    debugLogger.log("missing imp/exp textarea");
+                    return view;
+                }
                 var loaded = loadComments();
                 var content = loaded
                     .map(function (_a) {
                     var name = _a.name, description = _a.description, targets = _a.targets;
-                    return "###[".concat(targets.join(","), "] ").concat(name, "\n").concat(HTMLtoMarkdown(description));
+                    var safeTargets = targets || getCommentTargetsFromName(name);
+                    return "###[".concat(safeTargets.join(","), "] ").concat(name, "\n").concat(HTMLtoMarkdown(description));
                 })
                     .join("\n\n");
                 area.value = content;

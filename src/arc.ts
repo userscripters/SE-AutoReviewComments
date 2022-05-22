@@ -1429,15 +1429,21 @@ window.addEventListener("load", () => {
              * @summary updates import/export comment section
              * @param view import/export view
              */
-            const updateImpExpComments = (view: HTMLElement) => {
-                const area = view.querySelector("textarea")!;
+            const updateImpExpComments = <T extends HTMLElement>(view: T): T => {
+                const area = view.querySelector("textarea");
+                if (!area) {
+                    debugLogger.log("missing imp/exp textarea");
+                    return view;
+                }
 
                 const loaded = loadComments();
 
                 const content = loaded
                     .map(
-                        ({ name, description, targets }) =>
-                            `###[${targets.join(",")}] ${name}\n${HTMLtoMarkdown(description)}`
+                        ({ name, description, targets }) => {
+                            const safeTargets = targets || getCommentTargetsFromName(name);
+                            return `###[${safeTargets.join(",")}] ${name}\n${HTMLtoMarkdown(description)}`;
+                        }
                     )
                     .join("\n\n");
 
