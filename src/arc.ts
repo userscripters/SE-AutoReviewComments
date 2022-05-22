@@ -283,6 +283,9 @@ window.addEventListener("load", () => {
 
                 static storage: Storage = storage || localStorage;
 
+                /**
+                 * @summary number of keys in storage
+                 */
                 static get numKeys() {
                     const {
                         storage: { length },
@@ -325,6 +328,11 @@ window.addEventListener("load", () => {
                     return false;
                 }
 
+                /**
+                 * @summary loads a value from storage
+                 * @param key key to load
+                 * @param def optional default
+                 */
                 static load<T>(key: string, def?: T): T {
                     const { prefix, storage } = this;
                     const val = storage.getItem(prefix + key);
@@ -333,6 +341,11 @@ window.addEventListener("load", () => {
                         def;
                 }
 
+                /**
+                 * @summary saves a value to storage
+                 * @param key key to save
+                 * @param val value to save
+                 */
                 static save<T>(key: string, val: T): boolean {
                     try {
                         const { prefix, storage } = this;
@@ -344,10 +357,18 @@ window.addEventListener("load", () => {
                     }
                 }
 
+                /**
+                 * @summary toggles a value in storage
+                 * @param key key to toggle the value of
+                 */
                 static toggle(key: string) {
                     return Store.save(key, !Store.load(key));
                 }
 
+                /**
+                 * @summary removes a key from storage
+                 * @param key key to remove
+                 */
                 static remove(key: string): void {
                     const { prefix, storage } = this;
                     return storage.removeItem(prefix + key);
