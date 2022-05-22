@@ -414,7 +414,7 @@ window.addEventListener("load", function () {
                     description: "The tags you used are not appropriate for the question. Please review ".concat(htmllink("/help/tagging", "What are tags, and how should I use them?")),
                 },
             ];
-            if (!Store.load("WelcomeMessage"))
+            if (!Store.load("WelcomeMessage", ""))
                 Store.save("WelcomeMessage", "Welcome to ".concat(sitename, "! "));
             var addStyles = function () {
                 var style = document.createElement("style");
@@ -1331,7 +1331,7 @@ window.addEventListener("load", function () {
                 Store.save("ShowGreeting", newUserState);
                 if (newUserState) {
                     (_b = container
-                        .querySelector(".action-desc")) === null || _b === void 0 ? void 0 : _b.prepend(Store.load("WelcomeMessage") || "");
+                        .querySelector(".action-desc")) === null || _b === void 0 ? void 0 : _b.prepend(Store.load("WelcomeMessage", ""));
                 }
                 var userLink = link("/users/".concat(user_id), "");
                 userLink.append(b(display_name));
@@ -1587,7 +1587,7 @@ window.addEventListener("load", function () {
                     comments.splice(commentIdx, 1, toStore);
                 Store.save("comments", comments);
                 return (((Store.load("ShowGreeting") &&
-                    Store.load("WelcomeMessage")) ||
+                    Store.load("WelcomeMessage", "")) ||
                     "") + untag(markdownToHTML(description)));
             };
             var switchSelectedComment = function (popup, action) {

@@ -513,7 +513,7 @@ window.addEventListener("load", () => {
                 },
             ];
 
-            if (!Store.load("WelcomeMessage"))
+            if (!Store.load("WelcomeMessage", ""))
                 Store.save("WelcomeMessage", `Welcome to ${sitename}! `);
 
             /**
@@ -2185,7 +2185,7 @@ window.addEventListener("load", () => {
                 if (newUserState) {
                     container
                         .querySelector(".action-desc")
-                        ?.prepend(Store.load("WelcomeMessage") || "");
+                        ?.prepend(Store.load("WelcomeMessage", ""));
                 }
 
                 const userLink = link(`/users/${user_id}`, "");
@@ -2614,7 +2614,7 @@ window.addEventListener("load", () => {
 
                 return (
                     ((Store.load("ShowGreeting") &&
-                        Store.load("WelcomeMessage")) ||
+                        Store.load("WelcomeMessage", "")) ||
                         "") + untag(markdownToHTML(description))
                 );
             };
