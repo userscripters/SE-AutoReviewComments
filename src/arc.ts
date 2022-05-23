@@ -947,6 +947,35 @@ window.addEventListener("load", () => {
             };
 
             /**
+             * {@link https://stackoverflow.design/product/components/navigation}
+             *
+             * @summary makes a nav element
+             * @param text text to display
+             * @param title text for the hint
+             * @param options configuration options
+             */
+            const makeNavItem = (
+                text: string,
+                title: string,
+                options: { id: string; classes: string[]; }
+            ): HTMLLIElement => {
+                const { id, classes = [] } = options;
+
+                const li = el("li");
+                li.title = title;
+
+                const button = el("button", "s-navigation--item", ...classes);
+                button.setAttribute("role", "tab");
+                button.type = "button";
+                button.innerHTML = text;
+                button.id = id;
+
+                li.append(button);
+
+                return li;
+            }
+
+            /**
              * @summary makes an info button icon
              * @param icon icon class name
              * @param title link title
@@ -1059,72 +1088,61 @@ window.addEventListener("load", () => {
                 wrap.id = id;
                 wrap.setAttribute("data-se-draggable-target", "handle");
 
-                const tabGroup = el("div", "s-btn-group", "flex--item");
+                const nav = el("ul", "s-navigation");
 
-                const btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
-
-                const buttons = [
-                    makeButton(
+                const navItems = [
+                    makeNavItem(
                         "search",
                         "search",
                         {
                             id: "search-tab",
-                            classes: [
-                                ...btnGroupClasses,
-                                "popup-actions-search"
-                            ]
+                            classes: [ "popup-actions-search" ]
                         }
                     ),
-                    makeButton(
+                    makeNavItem(
                         "import/export",
                         "import/export all comments",
                         {
                             id: "impexp-tab",
-                            classes: [
-                                ...btnGroupClasses,
-                                "popup-actions-impexp"
-                            ]
+                            classes: [ "popup-actions-impexp" ]
                         }
                     ),
-                    makeButton(
+                    makeNavItem(
                         "remote",
                         "setup remote source",
                         {
                             id: "remote-tab",
-                            classes: [
-                                ...btnGroupClasses,
-                                "popup-actions-remote"
-                            ]
+                            classes: [ "popup-actions-remote" ]
                         }
                     ),
-                    makeButton(
+                    makeNavItem(
                         "welcome",
                         "configure welcome",
                         {
                             id: "welcome-tab",
-                            classes: [
-                                ...btnGroupClasses,
-                                "popup-actions-welcome"
-                            ]
+                            classes: [ "popup-actions-welcome" ]
                         }
                     ),
-                    makeButton(
+                    makeNavItem(
                         "settings",
                         "configure ARC",
                         {
                             id: "settings-tab",
-                            classes: [
-                                ...btnGroupClasses,
-                                "popup-actions-settings"
-                            ]
+                            classes: [ "popup-actions-settings" ]
                         }
                     ),
                 ];
 
-                tabGroup.append(...buttons);
+                nav.append(...navItems);
 
-                tabGroup.addEventListener("click", ({ target }) => {
-                    updateCurrentTab(buttons, target as HTMLElement);
+                const buttons = navItems.map(el => el?.firstElementChild as HTMLElement);
+                buttons.forEach(element => {
+                    element.addEventListener("click", ({ target }) => {
+                        updateCurrentTab(
+                            buttons,
+                            target as HTMLElement
+                        );
+                    });
                 });
 
                 const iconGroup = el(
@@ -1192,7 +1210,7 @@ window.addEventListener("load", () => {
                 closeWrap.append(close);
                 iconGroup.append(seeBtn, info);
                 actionGroup.append(iconGroup, closeWrap);
-                wrap.append(tabGroup, actionGroup);
+                wrap.append(nav, actionGroup);
 
                 return (makeTabsView.view = wrap);
             };
