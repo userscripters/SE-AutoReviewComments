@@ -595,6 +595,18 @@ window.addEventListener("load", function () {
                     button.title = title;
                 return button;
             };
+            var makeNavItem = function (text, title, options) {
+                var id = options.id, _a = options.classes, classes = _a === void 0 ? [] : _a;
+                var li = el("li");
+                li.title = title;
+                var button = el.apply(void 0, __spreadArray(["button", "s-navigation--item"], __read(classes), false));
+                button.setAttribute("role", "tab");
+                button.type = "button";
+                button.innerHTML = text;
+                button.id = id;
+                li.append(button);
+                return li;
+            };
             var makeStacksIconButton = function (icon, title, path, options) {
                 if (options === void 0) { options = {}; }
                 var url = options.url, _a = options.classes, classes = _a === void 0 ? [] : _a;
@@ -650,44 +662,36 @@ window.addEventListener("load", function () {
                 var wrap = el("div", "view", "d-flex", "ai-center", "jc-space-between");
                 wrap.id = id;
                 wrap.setAttribute("data-se-draggable-target", "handle");
-                var tabGroup = el("div", "s-btn-group", "flex--item");
-                var btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
-                var buttons = [
-                    makeButton("search", "search", {
+                var nav = el("ul", "s-navigation");
+                var navItems = [
+                    makeNavItem("search", "search", {
                         id: "search-tab",
-                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
-                            "popup-actions-search"
-                        ], false)
+                        classes: ["popup-actions-search"]
                     }),
-                    makeButton("import/export", "import/export all comments", {
+                    makeNavItem("import/export", "import/export all comments", {
                         id: "impexp-tab",
-                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
-                            "popup-actions-impexp"
-                        ], false)
+                        classes: ["popup-actions-impexp"]
                     }),
-                    makeButton("remote", "setup remote source", {
+                    makeNavItem("remote", "setup remote source", {
                         id: "remote-tab",
-                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
-                            "popup-actions-remote"
-                        ], false)
+                        classes: ["popup-actions-remote"]
                     }),
-                    makeButton("welcome", "configure welcome", {
+                    makeNavItem("welcome", "configure welcome", {
                         id: "welcome-tab",
-                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
-                            "popup-actions-welcome"
-                        ], false)
+                        classes: ["popup-actions-welcome"]
                     }),
-                    makeButton("settings", "configure ARC", {
+                    makeNavItem("settings", "configure ARC", {
                         id: "settings-tab",
-                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
-                            "popup-actions-settings"
-                        ], false)
+                        classes: ["popup-actions-settings"]
                     }),
                 ];
-                tabGroup.append.apply(tabGroup, __spreadArray([], __read(buttons), false));
-                tabGroup.addEventListener("click", function (_a) {
-                    var target = _a.target;
-                    updateCurrentTab(buttons, target);
+                nav.append.apply(nav, __spreadArray([], __read(navItems), false));
+                var buttons = navItems.map(function (el) { return el === null || el === void 0 ? void 0 : el.firstElementChild; });
+                buttons.forEach(function (element) {
+                    element.addEventListener("click", function (_a) {
+                        var target = _a.target;
+                        updateCurrentTab(buttons, target);
+                    });
                 });
                 var iconGroup = el("div", "d-flex", "flex--item", "gs8", "ba", "bar-pill", "bc-black-300");
                 var iconClasses = ["flex--item", "mute-text"];
@@ -715,7 +719,7 @@ window.addEventListener("load", function () {
                 closeWrap.append(close);
                 iconGroup.append(seeBtn, info);
                 actionGroup.append(iconGroup, closeWrap);
-                wrap.append(tabGroup, actionGroup);
+                wrap.append(nav, actionGroup);
                 return (makeTabsView.view = wrap);
             };
             var makeSettingsView = function (popup, id) {
