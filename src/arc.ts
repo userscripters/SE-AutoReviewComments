@@ -987,6 +987,7 @@ window.addEventListener("load", () => {
 
                 const button = el("button", "s-navigation--item", ...classes);
                 button.setAttribute("role", "tab");
+                button.setAttribute("aria-controls", id.replace("-tab", "-popup"));
                 button.type = "button";
                 button.innerHTML = text;
                 button.id = id;
@@ -1109,11 +1110,14 @@ window.addEventListener("load", () => {
                 wrap.id = id;
                 wrap.setAttribute("data-se-draggable-target", "handle");
 
+                // https://stackoverflow.design/product/components/navigation/#example
                 const nav = el("ul", "s-navigation");
+                nav.setAttribute("data-controller", "s-navigation-tablist");
+                nav.setAttribute("role", "tablist");
 
                 const navItems = [
                     makeNavItem(
-                        "search",
+                        "Search",
                         "search",
                         {
                             id: "search-tab",
@@ -1121,7 +1125,7 @@ window.addEventListener("load", () => {
                         }
                     ),
                     makeNavItem(
-                        "import/export",
+                        "Import/export",
                         "import/export all comments",
                         {
                             id: "impexp-tab",
@@ -1129,7 +1133,7 @@ window.addEventListener("load", () => {
                         }
                     ),
                     makeNavItem(
-                        "remote",
+                        "Remote",
                         "setup remote source",
                         {
                             id: "remote-tab",
@@ -1137,7 +1141,7 @@ window.addEventListener("load", () => {
                         }
                     ),
                     makeNavItem(
-                        "welcome",
+                        "Welcome",
                         "configure welcome",
                         {
                             id: "welcome-tab",
@@ -1145,7 +1149,7 @@ window.addEventListener("load", () => {
                         }
                     ),
                     makeNavItem(
-                        "settings",
+                        "Settings",
                         "configure ARC",
                         {
                             id: "settings-tab",
@@ -1165,6 +1169,8 @@ window.addEventListener("load", () => {
                         );
                     });
                 });
+
+                buttons[0].click(); // select the first tab
 
                 const iconGroup = el(
                     "div",
@@ -1244,8 +1250,10 @@ window.addEventListener("load", () => {
             const makeSettingsView: ViewMaker = (popup, id) => {
                 if (makeSettingsView.view) return makeSettingsView.view;
 
-                const view = el("div", "view", "d-flex", "fd-column", "gs16");
-                view.id = id;
+                const parent = el("div", "view");
+                parent.id = id;
+
+                const view = el("div", "d-flex", "fd-column", "gs16");
 
                 const generalWrap = el("div", "flex--item", "gsy", "gs24");
                 const dangerWrap = el("div", "flex--item");
@@ -1307,7 +1315,9 @@ window.addEventListener("load", () => {
                     );
                 });
 
-                return (makeSettingsView.view = view);
+                parent.append(view);
+
+                return (makeSettingsView.view = parent);
             };
 
             /**
@@ -1365,15 +1375,16 @@ window.addEventListener("load", () => {
             const makeWelcomeView: ViewMaker = (popup, id, commentTarget) => {
                 if (makeWelcomeView.view) return makeWelcomeView.view;
 
+                const parent = el("div", "view");
+                parent.id = id;
+
                 const view = el(
                     "div",
-                    "view",
                     "d-flex",
                     "fd-column",
                     "gsy",
                     "gs16"
                 );
-                view.id = id;
 
                 const [welcomeWrap, input] = makeStacksIconInput(
                     "customwelcome",
@@ -1461,7 +1472,9 @@ window.addEventListener("load", () => {
                 actionsWrap.append(...actions);
 
                 view.append(welcomeWrap, actionsWrap);
-                return (makeWelcomeView.view = view);
+                parent.append(view);
+
+                return (makeWelcomeView.view = parent);
             };
 
             /**
@@ -1500,10 +1513,11 @@ window.addEventListener("load", () => {
                 if (makeImpExpView.view)
                     return updateImpExpComments(makeImpExpView.view);
 
-                const view = el("div", "view");
-                view.id = id;
+                const parent = el("div", "view");
+                parent.id = id;
+
+                const view = el("div", "d-flex", "gs8", "gsy", "fd-column");
                 // because it will include the textarea and the buttons:
-                view.classList.add("d-flex", "gs8", "gsy", "fd-column");
 
                 const [areaWrap, area] = makeStacksTextArea("impexp", {
                     label: "Comment source",
@@ -1595,7 +1609,9 @@ window.addEventListener("load", () => {
                     area.removeEventListener("change", handleChange);
                 });
 
-                return (makeImpExpView.view = updateImpExpComments(view));
+                parent.append(view);
+
+                return (makeImpExpView.view = updateImpExpComments(parent));
             };
 
             /**
@@ -1826,38 +1842,6 @@ window.addEventListener("load", () => {
                 const main = el("div", "main");
                 main.id = "main";
 
-                const viewSwitcher = makeViewSwitcher(popup, viewsSel);
-
-                popup.addEventListener("click", ({ target }) => {
-                    runFromHashmap<PopupActionMap>(
-                        {
-                            ".popup-actions-welcome": (p, t) =>
-                                viewSwitcher(
-                                    makeWelcomeView(p, "welcome-popup", t)
-                                ),
-                            ".popup-actions-remote": (p, t) =>
-                                viewSwitcher(
-                                    makeRemoteView(p, "remote-popup", t)
-                                ),
-                            ".popup-actions-settings": (p, t) =>
-                                viewSwitcher(
-                                    makeSettingsView(p, "settings-popup", t)
-                                ),
-                            ".popup-actions-impexp": (p, t) =>
-                                viewSwitcher(
-                                    makeImpExpView(p, "impexp-popup", t)
-                                ),
-                            ".popup-actions-search": (p, t) =>
-                                viewSwitcher(
-                                    makeSearchView(p, "search-popup", t)
-                                ),
-                        },
-                        (sel) => (target as HTMLElement).matches(sel),
-                        popup,
-                        Store.load("post_target", Target.CommentQuestion)
-                    );
-                });
-
                 const commentViewId = "search-popup";
 
                 const viewsMap = [
@@ -1872,9 +1856,15 @@ window.addEventListener("load", () => {
                 const initPostType = Store.load("post_target", target);
                 debugLogger.log({ initPostType, target });
 
-                const views = viewsMap.map(([id, maker]) =>
-                    maker(popup, id, initPostType)
-                );
+                const views = viewsMap.map(([id, maker]) => {
+                    const view = maker(popup, id, initPostType);
+
+                    if (id !== "tabs-popup") {
+                        view.setAttribute("aria-controlledby", id.replace("-popup", "-tab"));
+                    }
+
+                    return view;
+                });
 
                 const visibleViews = 2;
                 const hidden = views.slice(visibleViews);
@@ -1884,9 +1874,6 @@ window.addEventListener("load", () => {
                 popup.append(main);
 
                 setupCommentHandlers(popup, commentViewId);
-
-                const view = views.find(({ id }) => id === commentViewId)!;
-                makeViewSwitcher(popup, viewsSel)(view);
 
                 return (makePopup.popup = popup);
             };
