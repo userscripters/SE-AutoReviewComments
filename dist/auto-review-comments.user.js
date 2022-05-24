@@ -369,37 +369,37 @@ window.addEventListener("load", function () {
                     id: "default-2",
                     targets: [Target.CommentAnswer],
                     name: "Answers just to say Thanks!",
-                    description: "Please do not add \"thanks\" as answers. Invest some time in the site and you will gain sufficient ".concat(htmllink("/privileges", "privileges"), " to upvote answers you like, which is our way of saying thank you."),
+                    description: "Please do not add \"thanks\" as answers. Invest some time in the site and you will gain sufficient [privileges](/privileges) to upvote answers you like, which is our way of saying thank you.",
                 },
                 {
                     id: "default-3",
                     targets: [Target.CommentAnswer],
                     name: "Nothing but a URL (and isn't spam)",
-                    description: "Whilst this may theoretically answer the question, ".concat(htmllink("https://meta.stackexchange.com/q/8259", "it would be preferable"), " to include the essential parts of the answer here, and provide the link for reference."),
+                    description: "Whilst this may theoretically answer the question, [it would be preferable](https://meta.stackexchange.com/q/8259) to include the essential parts of the answer here, and provide the link for reference.",
                 },
                 {
                     id: "default-4",
                     targets: [Target.CommentAnswer],
                     name: "Requests to OP for further information",
-                    description: "This is really a comment, not an answer. With a bit more rep, ".concat(htmllink("/privileges/comment", "you will be able to post comments"), ". For the moment, I have added the comment for you and flagging the post for deletion."),
+                    description: "This is really a comment, not an answer. With a bit more rep, [you will be able to post comments](/privileges/comment). For the moment, I have added the comment for you and flagging the post for deletion.",
                 },
                 {
                     id: "default-5",
                     targets: [Target.CommentAnswer],
                     name: "OP using an answer for further information",
-                    description: "Please use the ".concat(htmlem(__makeTemplateObject(["Post answer"], ["Post answer"])), " button only for actual answers. You should modify your original question to add additional information."),
+                    description: "Please use the *Post answer* button only for actual answers. You should modify your original question to add additional information.",
                 },
                 {
                     id: "default-6",
                     targets: [Target.CommentAnswer],
                     name: "OP adding a new question as an answer",
-                    description: "If you have another question, please ask it by clicking the ".concat(htmllink("/questions/ask", "Ask Question"), " button."),
+                    description: "If you have another question, please ask it by clicking the [Ask Question](/questions/ask) button.",
                 },
                 {
                     id: "default-7",
                     targets: [Target.CommentAnswer],
                     name: 'Another user adding a "Me too!"',
-                    description: "If you have a ".concat(htmlem(__makeTemplateObject(["new"], ["new"])), " question, please ask it by clicking the ").concat(htmllink("/questions/ask", "Ask Question"), " button. If you have sufficient reputation, ").concat(htmllink("/privileges/vote-up", "you may upvote"), " the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers."),
+                    description: "If you have a *new* question, please ask it by clicking the [Ask Question](/questions/ask) button. If you have sufficient reputation, [you may upvote](/privileges/vote-up) the question. Alternatively, \"star\" it as a favorite, and you will be notified of any new answers.",
                 },
                 {
                     id: "default-8",
@@ -411,7 +411,7 @@ window.addEventListener("load", function () {
                     id: "default-9",
                     targets: [Target.EditSummaryQuestion],
                     name: "Improper tagging",
-                    description: "The tags you used are not appropriate for the question. Please review ".concat(htmllink("/help/tagging", "What are tags, and how should I use them?")),
+                    description: "The tags you used are not appropriate for the question. Please review [What are tags, and how should I use them?](/help/tagging)",
                 },
             ];
             if (!Store.load("WelcomeMessage", ""))
@@ -595,6 +595,18 @@ window.addEventListener("load", function () {
                     button.title = title;
                 return button;
             };
+            var makeNavItem = function (text, title, options) {
+                var id = options.id, _a = options.classes, classes = _a === void 0 ? [] : _a;
+                var li = el("li");
+                li.title = title;
+                var button = el.apply(void 0, __spreadArray(["button", "s-navigation--item"], __read(classes), false));
+                button.setAttribute("role", "tab");
+                button.type = "button";
+                button.innerHTML = text;
+                button.id = id;
+                li.append(button);
+                return li;
+            };
             var makeStacksIconButton = function (icon, title, path, options) {
                 if (options === void 0) { options = {}; }
                 var url = options.url, _a = options.classes, classes = _a === void 0 ? [] : _a;
@@ -650,44 +662,36 @@ window.addEventListener("load", function () {
                 var wrap = el("div", "view", "d-flex", "ai-center", "jc-space-between");
                 wrap.id = id;
                 wrap.setAttribute("data-se-draggable-target", "handle");
-                var tabGroup = el("div", "s-btn-group", "flex--item");
-                var btnGroupClasses = ["s-btn__muted", "s-btn__outlined"];
-                var buttons = [
-                    makeButton("search", "search", {
+                var nav = el("ul", "s-navigation");
+                var navItems = [
+                    makeNavItem("search", "search", {
                         id: "search-tab",
-                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
-                            "popup-actions-search"
-                        ], false)
+                        classes: ["popup-actions-search"]
                     }),
-                    makeButton("import/export", "import/export all comments", {
+                    makeNavItem("import/export", "import/export all comments", {
                         id: "impexp-tab",
-                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
-                            "popup-actions-impexp"
-                        ], false)
+                        classes: ["popup-actions-impexp"]
                     }),
-                    makeButton("remote", "setup remote source", {
+                    makeNavItem("remote", "setup remote source", {
                         id: "remote-tab",
-                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
-                            "popup-actions-remote"
-                        ], false)
+                        classes: ["popup-actions-remote"]
                     }),
-                    makeButton("welcome", "configure welcome", {
+                    makeNavItem("welcome", "configure welcome", {
                         id: "welcome-tab",
-                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
-                            "popup-actions-welcome"
-                        ], false)
+                        classes: ["popup-actions-welcome"]
                     }),
-                    makeButton("settings", "configure ARC", {
+                    makeNavItem("settings", "configure ARC", {
                         id: "settings-tab",
-                        classes: __spreadArray(__spreadArray([], __read(btnGroupClasses), false), [
-                            "popup-actions-settings"
-                        ], false)
+                        classes: ["popup-actions-settings"]
                     }),
                 ];
-                tabGroup.append.apply(tabGroup, __spreadArray([], __read(buttons), false));
-                tabGroup.addEventListener("click", function (_a) {
-                    var target = _a.target;
-                    updateCurrentTab(buttons, target);
+                nav.append.apply(nav, __spreadArray([], __read(navItems), false));
+                var buttons = navItems.map(function (el) { return el === null || el === void 0 ? void 0 : el.firstElementChild; });
+                buttons.forEach(function (element) {
+                    element.addEventListener("click", function (_a) {
+                        var target = _a.target;
+                        updateCurrentTab(buttons, target);
+                    });
                 });
                 var iconGroup = el("div", "d-flex", "flex--item", "gs8", "ba", "bar-pill", "bc-black-300");
                 var iconClasses = ["flex--item", "mute-text"];
@@ -715,7 +719,7 @@ window.addEventListener("load", function () {
                 closeWrap.append(close);
                 iconGroup.append(seeBtn, info);
                 actionGroup.append(iconGroup, closeWrap);
-                wrap.append(tabGroup, actionGroup);
+                wrap.append(nav, actionGroup);
                 return (makeTabsView.view = wrap);
             };
             var makeSettingsView = function (popup, id) {
