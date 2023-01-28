@@ -34,7 +34,7 @@
     "@types/greasemonkey": "^4.0.2",
     "@types/mocha": "^9.1.1",
     "@types/node": "^18.0.1",
-    "@types/tampermonkey": "^4.0.5",
+    "@types/tampermonkey": "^4.0.10",
     "@userscripters/generate-headers": "^2.12.1",
     "@userscripters/generate-readme": "^2.1.1",
     "@userscripters/stackexchange-api-types": "^3.4.0",
