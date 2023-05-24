@@ -601,6 +601,7 @@ window.addEventListener("load", function () {
                 li.title = title;
                 var button = el.apply(void 0, __spreadArray(["button", "s-navigation--item"], __read(classes), false));
                 button.setAttribute("role", "tab");
+                button.setAttribute("aria-controls", id.replace("-tab", "-popup"));
                 button.type = "button";
                 button.innerHTML = text;
                 button.id = id;
@@ -663,24 +664,26 @@ window.addEventListener("load", function () {
                 wrap.id = id;
                 wrap.setAttribute("data-se-draggable-target", "handle");
                 var nav = el("ul", "s-navigation");
+                nav.setAttribute("data-controller", "s-navigation-tablist");
+                nav.setAttribute("role", "tablist");
                 var navItems = [
-                    makeNavItem("search", "search", {
+                    makeNavItem("Search", "search", {
                         id: "search-tab",
                         classes: ["popup-actions-search"]
                     }),
-                    makeNavItem("import/export", "import/export all comments", {
+                    makeNavItem("Import/export", "import/export all comments", {
                         id: "impexp-tab",
                         classes: ["popup-actions-impexp"]
                     }),
-                    makeNavItem("remote", "setup remote source", {
+                    makeNavItem("Remote", "setup remote source", {
                         id: "remote-tab",
                         classes: ["popup-actions-remote"]
                     }),
-                    makeNavItem("welcome", "configure welcome", {
+                    makeNavItem("Welcome", "configure welcome", {
                         id: "welcome-tab",
                         classes: ["popup-actions-welcome"]
                     }),
-                    makeNavItem("settings", "configure ARC", {
+                    makeNavItem("Settings", "configure ARC", {
                         id: "settings-tab",
                         classes: ["popup-actions-settings"]
                     }),
@@ -693,6 +696,7 @@ window.addEventListener("load", function () {
                         updateCurrentTab(buttons, target);
                     });
                 });
+                buttons[0].click();
                 var iconGroup = el("div", "d-flex", "flex--item", "gs8", "ba", "bar-pill", "bc-black-300");
                 var iconClasses = ["flex--item", "mute-text"];
                 var seeBtn = makeStacksIconButton("iconEye", "see through", "M9.06 3C4 3 1 9 1 9s3 6 8.06 6C14 15 17 9 17 9s-3-6-7.94-6zM9\n             13a4 4 0 110-8 4 4 0 0 1 0 8zm0-2a2 2 0 002-2 2 2 0 0 0-2-2 2\n             2 0 0 0-2 2 2 2 0 0 0 2 2z", { classes: iconClasses });
@@ -725,8 +729,9 @@ window.addEventListener("load", function () {
             var makeSettingsView = function (popup, id) {
                 if (makeSettingsView.view)
                     return makeSettingsView.view;
-                var view = el("div", "view", "d-flex", "fd-column", "gs16");
-                view.id = id;
+                var parent = el("div", "view");
+                parent.id = id;
+                var view = el("div", "d-flex", "fd-column", "gs16");
                 var generalWrap = el("div", "flex--item", "gsy", "gs24");
                 var dangerWrap = el("div", "flex--item");
                 var _a = __read(makeStacksToggle("toggleDescr", "hide comment descriptions", {
@@ -762,7 +767,8 @@ window.addEventListener("load", function () {
                         },
                     }, function (key) { return target.matches(key); }, popup, Store.load("post_target", Target.CommentQuestion));
                 });
-                return (makeSettingsView.view = view);
+                parent.append(view);
+                return (makeSettingsView.view = parent);
             };
             var makeSearchView = function (popup, id) {
                 if (makeSearchView.view)
@@ -789,8 +795,9 @@ window.addEventListener("load", function () {
             var makeWelcomeView = function (popup, id, commentTarget) {
                 if (makeWelcomeView.view)
                     return makeWelcomeView.view;
-                var view = el("div", "view", "d-flex", "fd-column", "gsy", "gs16");
-                view.id = id;
+                var parent = el("div", "view");
+                parent.id = id;
+                var view = el("div", "d-flex", "fd-column", "gsy", "gs16");
                 var _a = __read(makeStacksIconInput("customwelcome", "iconSearch", "m18 16.5-5.14-5.18h-.35a7 7 0 10-1.19 1.19v.35L16.5 18l1.5-1.5zM12 7A5 5 0 112 7a5 5 0 0110 0z", {
                     value: Store.load("WelcomeMessage", ""),
                     title: '"Welcome" message (blank is none)',
@@ -847,7 +854,8 @@ window.addEventListener("load", function () {
                 });
                 actionsWrap.append.apply(actionsWrap, __spreadArray([], __read(actions), false));
                 view.append(welcomeWrap, actionsWrap);
-                return (makeWelcomeView.view = view);
+                parent.append(view);
+                return (makeWelcomeView.view = parent);
             };
             var updateImpExpComments = function (view) {
                 var area = view.querySelector("textarea");
@@ -869,9 +877,9 @@ window.addEventListener("load", function () {
             var makeImpExpView = function (popup, id, postType) {
                 if (makeImpExpView.view)
                     return updateImpExpComments(makeImpExpView.view);
-                var view = el("div", "view");
-                view.id = id;
-                view.classList.add("d-flex", "gs8", "gsy", "fd-column");
+                var parent = el("div", "view");
+                parent.id = id;
+                var view = el("div", "d-flex", "gs8", "gsy", "fd-column");
                 var _a = __read(makeStacksTextArea("impexp", {
                     label: "Comment source",
                     rows: 20
@@ -934,7 +942,8 @@ window.addEventListener("load", function () {
                     show(toMarkdownBtn);
                     area.removeEventListener("change", handleChange);
                 });
-                return (makeImpExpView.view = updateImpExpComments(view));
+                parent.append(view);
+                return (makeImpExpView.view = updateImpExpComments(parent));
             };
             var scheme = function (url) {
                 return /^https?:\/\//.test(url) ? url : "https://".concat(url);
@@ -1081,27 +1090,6 @@ window.addEventListener("load", function () {
                 var popup = el("div", "auto-review-comments", "popup");
                 var main = el("div", "main");
                 main.id = "main";
-                var viewSwitcher = makeViewSwitcher(popup, viewsSel);
-                popup.addEventListener("click", function (_a) {
-                    var target = _a.target;
-                    runFromHashmap({
-                        ".popup-actions-welcome": function (p, t) {
-                            return viewSwitcher(makeWelcomeView(p, "welcome-popup", t));
-                        },
-                        ".popup-actions-remote": function (p, t) {
-                            return viewSwitcher(makeRemoteView(p, "remote-popup", t));
-                        },
-                        ".popup-actions-settings": function (p, t) {
-                            return viewSwitcher(makeSettingsView(p, "settings-popup", t));
-                        },
-                        ".popup-actions-impexp": function (p, t) {
-                            return viewSwitcher(makeImpExpView(p, "impexp-popup", t));
-                        },
-                        ".popup-actions-search": function (p, t) {
-                            return viewSwitcher(makeSearchView(p, "search-popup", t));
-                        },
-                    }, function (sel) { return target.matches(sel); }, popup, Store.load("post_target", Target.CommentQuestion));
-                });
                 var commentViewId = "search-popup";
                 var viewsMap = [
                     ["tabs-popup", makeTabsView],
@@ -1115,7 +1103,11 @@ window.addEventListener("load", function () {
                 debugLogger.log({ initPostType: initPostType, target: target });
                 var views = viewsMap.map(function (_a) {
                     var _b = __read(_a, 2), id = _b[0], maker = _b[1];
-                    return maker(popup, id, initPostType);
+                    var view = maker(popup, id, initPostType);
+                    if (id !== "tabs-popup") {
+                        view.setAttribute("aria-controlledby", id.replace("-popup", "-tab"));
+                    }
+                    return view;
                 });
                 var visibleViews = 2;
                 var hidden = views.slice(visibleViews);
@@ -1123,11 +1115,6 @@ window.addEventListener("load", function () {
                 main.append.apply(main, __spreadArray([], __read(views), false));
                 popup.append(main);
                 setupCommentHandlers(popup, commentViewId);
-                var view = views.find(function (_a) {
-                    var id = _a.id;
-                    return id === commentViewId;
-                });
-                makeViewSwitcher(popup, viewsSel)(view);
                 return (makePopup.popup = popup);
             };
             var span = function (text, options) {
@@ -1463,7 +1450,8 @@ window.addEventListener("load", function () {
                 return unescapeHtml(html
                     .replace(/<a href="(.+?)".+?>(.+?)<\/a>/g, "[$2]($1)")
                     .replace(/<em>(.+?)<\/em>/g, "*$1*")
-                    .replace(/<strong>(.+?)<\/strong>/g, "**$1**"));
+                    .replace(/<strong>(.+?)<\/strong>/g, "**$1**")
+                    .replace(/<code>(.+?)<\/code>/g, "`$1`"));
             };
             var markdownToHTML = function (markdown) {
                 var html = escapeHtml(markdown);

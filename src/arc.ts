@@ -2372,6 +2372,7 @@ window.addEventListener("load", () => {
                         .replace(/<a href="(.+?)".+?>(.+?)<\/a>/g, "[$2]($1)")
                         .replace(/<em>(.+?)<\/em>/g, "*$1*")
                         .replace(/<strong>(.+?)<\/strong>/g, "**$1**")
+                        .replace(/<code>(.+?)<\/code>/g, "`$1`")
                 );
 
             /**
